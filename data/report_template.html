@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+/* ── Página (WeasyPrint) ───────────────────────────────────────────── */
+@page {
+  size: A4;
+  margin: 0;
+  @bottom-center {
+    content: "NutriBot · Relatório Semanal · Página " counter(page);
+    font-size: 7.5pt;
+    color: #94a3b8;
+  }
+}
+
+/* ── Reset & Base ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  color: #1e293b;
+  line-height: 1.5;
+  background: #f8fafc;
+}
+
+/* ── Header ───────────────────────────────────────────────────────── */
+.header {
+  background: linear-gradient(135deg, #064e3b 0%, #065f46 50%, #047857 100%);
+  padding: 28pt 30pt 22pt;
+  color: white;
+}
+.header-logo {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 2pt;
+  text-transform: uppercase;
+  color: #6ee7b7;
+  margin-bottom: 6pt;
+}
+.header-title {
+  font-size: 24pt;
+  font-weight: 800;
+  color: #ffffff;
+  line-height: 1.1;
+  margin-bottom: 4pt;
+}
+.header-sub {
+  font-size: 9.5pt;
+  color: #a7f3d0;
+}
+.header-meta {
+  margin-top: 14pt;
+  display: flex;
+  gap: 20pt;
+}
+.header-pill {
+  background: rgba(255,255,255,0.12);
+  border: 1pt solid rgba(255,255,255,0.2);
+  border-radius: 20pt;
+  padding: 4pt 12pt;
+  font-size: 8.5pt;
+  color: #d1fae5;
+}
+
+/* ── Body wrapper ─────────────────────────────────────────────────── */
+.body-wrap {
+  padding: 22pt 28pt;
+  background: #f8fafc;
+}
+
+/* ── Section titles ───────────────────────────────────────────────── */
+.section { margin-bottom: 20pt; }
+.section-title {
+  font-size: 11pt;
+  font-weight: 700;
+  color: #064e3b;
+  margin-bottom: 10pt;
+  padding-bottom: 5pt;
+  border-bottom: 2pt solid #d1fae5;
+  display: flex;
+  align-items: center;
+  gap: 6pt;
+}
+.section-icon {
+  display: inline-block;
+  width: 18pt;
+  height: 18pt;
+  background: #d1fae5;
+  border-radius: 4pt;
+  text-align: center;
+  line-height: 18pt;
+  font-size: 10pt;
+}
+
+/* ── KPI Cards ────────────────────────────────────────────────────── */
+.cards-grid {
+  display: flex;
+  gap: 8pt;
+  margin-bottom: 4pt;
+}
+.kpi-card {
+  flex: 1;
+  background: white;
+  border: 1pt solid #e2e8f0;
+  border-radius: 8pt;
+  padding: 12pt 10pt 10pt;
+  text-align: center;
+  box-shadow: 0 1pt 3pt rgba(0,0,0,0.06);
+}
+.kpi-card.highlight {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+.kpi-val {
+  font-size: 20pt;
+  font-weight: 800;
+  color: #065f46;
+  line-height: 1;
+  margin-bottom: 4pt;
+}
+.kpi-lbl {
+  font-size: 7.5pt;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.4pt;
+  font-weight: 600;
+  margin-bottom: 6pt;
+}
+/* barra de progresso do card */
+.kpi-bar-track {
+  background: #e2e8f0;
+  border-radius: 6pt;
+  height: 5pt;
+  width: 100%;
+  margin-bottom: 5pt;
+  overflow: hidden;
+}
+.kpi-bar-fill {
+  height: 5pt;
+  border-radius: 6pt;
+}
+/* linha meta + percentual */
+.kpi-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.kpi-goal {
+  font-size: 7.5pt;
+  color: #94a3b8;
+}
+.kpi-pct {
+  font-size: 8pt;
+  font-weight: 700;
+  padding: 1.5pt 5pt;
+  border-radius: 8pt;
+}
+.pct-ok   { background: #dcfce7; color: #14532d; }
+.pct-low  { background: #fef9c3; color: #78350f; }
+.pct-over { background: #fee2e2; color: #991b1b; }
+.pct-zero { background: #f1f5f9; color: #94a3b8; }
+
+/* ── Macro strip ──────────────────────────────────────────────────── */
+.macro-strip {
+  display: flex;
+  gap: 6pt;
+  margin-top: 8pt;
+}
+.macro-box {
+  flex: 1;
+  border-radius: 6pt;
+  padding: 8pt 6pt;
+  text-align: center;
+}
+.macro-box.prot { background: #fef2f2; border: 1pt solid #fecaca; }
+.macro-box.carb { background: #fff7ed; border: 1pt solid #fed7aa; }
+.macro-box.fat  { background: #fefce8; border: 1pt solid #fde68a; }
+.macro-box.fiber{ background: #f0fdf4; border: 1pt solid #bbf7d0; }
+.macro-val { font-size: 14pt; font-weight: 800; }
+.macro-box.prot .macro-val { color: #dc2626; }
+.macro-box.carb .macro-val { color: #ea580c; }
+.macro-box.fat  .macro-val { color: #ca8a04; }
+.macro-box.fiber .macro-val { color: #16a34a; }
+.macro-lbl { font-size: 7pt; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.3pt; margin-top: 2pt; }
+
+/* ── Day table ────────────────────────────────────────────────────── */
+.days-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.days-table thead tr {
+  background: #064e3b;
+  color: white;
+}
+.days-table th {
+  padding: 7pt 8pt;
+  text-align: left;
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.3pt;
+  text-transform: uppercase;
+}
+.days-table tbody tr { background: white; }
+.days-table tbody tr:nth-child(even) { background: #f8fafc; }
+.days-table td {
+  padding: 7pt 8pt;
+  border-bottom: 0.5pt solid #f1f5f9;
+  vertical-align: middle;
+}
+.days-table tbody tr:last-child td { border-bottom: none; }
+.day-name { font-weight: 600; color: #1e293b; }
+
+/* ── Progress bar ─────────────────────────────────────────────────── */
+.bar-wrap {
+  display: inline-block;
+  background: #e2e8f0;
+  border-radius: 6pt;
+  height: 8pt;
+  width: 80pt;
+  vertical-align: middle;
+  overflow: hidden;
+}
+.bar-fill { height: 8pt; border-radius: 6pt; display: block; }
+.bar-green  { background: linear-gradient(90deg, #16a34a, #22c55e); }
+.bar-yellow { background: linear-gradient(90deg, #d97706, #fbbf24); }
+.bar-orange { background: linear-gradient(90deg, #dc2626, #f97316); }
+.bar-gray   { background: #cbd5e1; width: 2pt !important; }
+.pct-label  { font-size: 7.5pt; color: #94a3b8; margin-left: 4pt; vertical-align: middle; }
+
+/* ── Badges ───────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2pt 7pt;
+  border-radius: 10pt;
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.2pt;
+}
+.badge-ok   { background: #dcfce7; color: #14532d; }
+.badge-low  { background: #fef9c3; color: #713f12; }
+.badge-over { background: #fee2e2; color: #7f1d1d; }
+.badge-miss { background: #f1f5f9; color: #64748b; }
+
+/* ── Highlights ───────────────────────────────────────────────────── */
+.highlights-wrap {
+  background: white;
+  border: 1pt solid #e2e8f0;
+  border-radius: 8pt;
+  padding: 12pt 14pt;
+  box-shadow: 0 1pt 3pt rgba(0,0,0,0.05);
+}
+.highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8pt;
+  padding: 4pt 0;
+  border-bottom: 0.5pt solid #f1f5f9;
+  font-size: 9.5pt;
+  color: #1e293b;
+}
+.highlight-item:last-child { border-bottom: none; }
+.highlight-dot {
+  width: 7pt;
+  height: 7pt;
+  background: #22c55e;
+  border-radius: 50%;
+  margin-top: 3pt;
+  flex-shrink: 0;
+}
+
+/* ── Suggestions ──────────────────────────────────────────────────── */
+.sug-card {
+  background: white;
+  border: 1pt solid #e2e8f0;
+  border-radius: 8pt;
+  padding: 11pt 13pt;
+  margin-bottom: 8pt;
+  box-shadow: 0 1pt 3pt rgba(0,0,0,0.05);
+  display: flex;
+  gap: 12pt;
+  align-items: flex-start;
+}
+.sug-accent {
+  width: 4pt;
+  border-radius: 4pt;
+  flex-shrink: 0;
+  align-self: stretch;
+  min-height: 30pt;
+}
+.sug-accent.proteina   { background: #dc2626; }
+.sug-accent.carboidrato{ background: #ea580c; }
+.sug-accent.gordura    { background: #ca8a04; }
+.sug-accent.hidratacao { background: #0284c7; }
+.sug-accent.horario    { background: #7c3aed; }
+.sug-accent.variedade  { background: #059669; }
+.sug-body { flex: 1; }
+.sug-cat {
+  font-size: 7pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8pt;
+  color: #64748b;
+  margin-bottom: 4pt;
+}
+.sug-txt { font-size: 9.5pt; color: #1e293b; line-height: 1.45; }
+.sug-priority {
+  font-size: 6.5pt;
+  font-weight: 700;
+  padding: 1.5pt 5pt;
+  border-radius: 8pt;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+.priority-high   { background: #fee2e2; color: #991b1b; }
+.priority-medium { background: #fef9c3; color: #78350f; }
+.priority-low    { background: #f0fdf4; color: #14532d; }
+
+/* ── Insight box ──────────────────────────────────────────────────── */
+.insight-box {
+  background: linear-gradient(135deg, #eff6ff 0%, #eef2ff 100%);
+  border: 1pt solid #bfdbfe;
+  border-radius: 8pt;
+  padding: 12pt 14pt;
+  margin-top: 6pt;
+  display: flex;
+  gap: 10pt;
+  align-items: flex-start;
+}
+.insight-icon { font-size: 14pt; flex-shrink: 0; }
+.insight-txt { font-size: 9.5pt; color: #1e40af; line-height: 1.5; }
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+.footer {
+  margin-top: 20pt;
+  padding: 12pt 0 0;
+  border-top: 1pt solid #e2e8f0;
+  font-size: 7.5pt;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.7;
+}
+.footer strong { color: #64748b; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────────────── -->
+<div class="header">
+  <div class="header-logo">NutriBot</div>
+  <div class="header-title">Relatório Semanal</div>
+  <div class="header-sub">{{ week_label }} · {{ user_name }}</div>
+  <div class="header-meta">
+    <span class="header-pill">📅 {{ days_logged }} de 7 dias registrados</span>
+    <span class="header-pill">🍽️ {{ total_meals }} refeições</span>
+    <span class="header-pill">🎯 Meta: {{ goal_kcal }} kcal/dia</span>
+  </div>
+</div>
+
+<div class="body-wrap">
+
+<!-- ── RESUMO KPIs ─────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-icon">📊</span> Resumo da Semana
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- Calorias -->
+    <div class="kpi-card highlight">
+      <div class="kpi-val">{{ avg_kcal }}</div>
+      <div class="kpi-lbl">kcal / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:{{ [pct_kcal, 100]|min }}%; background:{{ bar_color_kcal }};"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta {{ goal_kcal }} kcal</span>
+        <span class="kpi-pct {% if pct_kcal == 0 %}pct-zero{% elif pct_kcal >= 80 and pct_kcal <= 115 %}pct-ok{% elif pct_kcal < 80 %}pct-low{% else %}pct-over{% endif %}">{{ pct_kcal }}%</span>
+      </div>
+    </div>
+
+    <!-- Proteína -->
+    <div class="kpi-card">
+      <div class="kpi-val">{{ avg_protein_g }}g</div>
+      <div class="kpi-lbl">Proteína / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:{{ [pct_protein, 100]|min }}%; background:{{ bar_color_protein }};"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta {{ goal_protein_g }}g</span>
+        <span class="kpi-pct {% if pct_protein == 0 %}pct-zero{% elif pct_protein >= 80 and pct_protein <= 115 %}pct-ok{% elif pct_protein < 80 %}pct-low{% else %}pct-over{% endif %}">{{ pct_protein }}%</span>
+      </div>
+    </div>
+
+    <!-- Carboidratos -->
+    <div class="kpi-card">
+      <div class="kpi-val">{{ avg_carb_g }}g</div>
+      <div class="kpi-lbl">Carboidratos / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:{{ [pct_carb, 100]|min }}%; background:{{ bar_color_carb }};"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta {{ goal_carb_g }}g</span>
+        <span class="kpi-pct {% if pct_carb == 0 %}pct-zero{% elif pct_carb >= 80 and pct_carb <= 115 %}pct-ok{% elif pct_carb < 80 %}pct-low{% else %}pct-over{% endif %}">{{ pct_carb }}%</span>
+      </div>
+    </div>
+
+    <!-- Gorduras -->
+    <div class="kpi-card">
+      <div class="kpi-val">{{ avg_fat_g }}g</div>
+      <div class="kpi-lbl">Gorduras / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:{{ [pct_fat, 100]|min }}%; background:{{ bar_color_fat }};"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta {{ goal_fat_g }}g</span>
+        <span class="kpi-pct {% if pct_fat == 0 %}pct-zero{% elif pct_fat >= 80 and pct_fat <= 115 %}pct-ok{% elif pct_fat < 80 %}pct-low{% else %}pct-over{% endif %}">{{ pct_fat }}%</span>
+      </div>
+    </div>
+
+    <!-- Dias ativos -->
+    <div class="kpi-card">
+      <div class="kpi-val">{{ days_logged }}/7</div>
+      <div class="kpi-lbl">Dias ativos</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:{{ [pct_days, 100]|min }}%; background:{{ bar_color_days }};"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">{{ total_meals }} refeições</span>
+        <span class="kpi-pct {% if pct_days == 0 %}pct-zero{% elif pct_days >= 80 %}pct-ok{% else %}pct-low{% endif %}">{{ pct_days }}%</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── DIA A DIA ───────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-icon">📆</span> Dia a Dia
+  </div>
+  <table class="days-table">
+    <thead>
+      <tr>
+        <th>Dia</th>
+        <th>Refeições</th>
+        <th>Kcal</th>
+        <th>Progresso</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for day in days %}
+      <tr>
+        <td><span class="day-name">{{ day.label }}</span></td>
+        <td>{{ day.meals_label }}</td>
+        <td><strong>{{ day.kcal }}</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill {{ day.bar_cls }}" style="width: {{ day.bar_pct }}%;"></div>
+          </div>
+          <span class="pct-label">{{ day.pct }}%</span>
+        </td>
+        <td><span class="badge {{ day.badge_cls }}">{{ day.badge_lbl }}</span></td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<!-- ── DESTAQUES ───────────────────────────────────────────────────── -->
+{% if highlights %}
+<div class="section">
+  <div class="section-title">
+    <span class="section-icon">⭐</span> Destaques
+  </div>
+  <div class="highlights-wrap">
+    {% for h in highlights %}
+    <div class="highlight-item">
+      <div class="highlight-dot"></div>
+      <span>{{ h }}</span>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── SUGESTÕES ───────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-icon">💡</span> Sugestões Personalizadas
+  </div>
+  {% for sug in suggestions %}
+  <div class="sug-card">
+    <div class="sug-accent {{ sug.category }}"></div>
+    <div class="sug-body">
+      <div class="sug-cat">{{ sug.category }}</div>
+      <div class="sug-txt">{{ sug.text }}</div>
+    </div>
+    <span class="sug-priority priority-{{ sug.priority }}">
+      {% if sug.priority == 'high' %}Alta{% elif sug.priority == 'medium' %}Média{% else %}Baixa{% endif %}
+    </span>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- ── INSIGHT IA ──────────────────────────────────────────────────── -->
+{% if weekly_insight %}
+<div class="section">
+  <div class="section-title">
+    <span class="section-icon">🤖</span> Análise da Semana
+  </div>
+  <div class="insight-box">
+    <div class="insight-icon">💬</div>
+    <div class="insight-txt">{{ weekly_insight }}</div>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── FOOTER ──────────────────────────────────────────────────────── -->
+<div class="footer">
+  Gerado por <strong>NutriBot</strong> em {{ generated_at }}<br>
+  Valores baseados em registros de refeição. Estimativas nutricionais por IA — consulte um nutricionista para orientação profissional.
+</div>
+
+</div><!-- .body-wrap -->
+</body>
+</html>

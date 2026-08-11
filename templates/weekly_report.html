@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; color: #333; padding: 24px; font-size: 13px; }
+    h1 { color: #2e7d32; font-size: 20px; margin-bottom: 4px; }
+    .subtitle { color: #666; margin-bottom: 20px; }
+    .section { margin-bottom: 20px; }
+    .section h2 { font-size: 14px; color: #2e7d32; border-bottom: 1px solid #c8e6c9; padding-bottom: 4px; margin-bottom: 10px; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .stat-box { background: #f1f8e9; border-radius: 6px; padding: 10px; text-align: center; }
+    .stat-box .value { font-size: 22px; font-weight: bold; color: #2e7d32; }
+    .stat-box .label { font-size: 11px; color: #666; }
+    .bar-chart { margin-bottom: 12px; }
+    .bar-row { display: flex; align-items: center; margin-bottom: 6px; }
+    .bar-label { width: 60px; font-size: 11px; color: #666; }
+    .bar-track { flex: 1; background: #e8f5e9; height: 18px; border-radius: 3px; overflow: hidden; }
+    .bar-fill { background: #4caf50; height: 100%; border-radius: 3px; }
+    .bar-kcal { width: 55px; text-align: right; font-size: 11px; color: #555; padding-left: 6px; }
+    .macro-row { display: flex; gap: 10px; margin-bottom: 8px; }
+    .macro-box { flex: 1; background: #f5f5f5; border-radius: 4px; padding: 8px; text-align: center; }
+    .macro-box .val { font-size: 16px; font-weight: bold; }
+    .macro-box .lbl { font-size: 10px; color: #888; }
+    .prot .val { color: #e53935; }
+    .carb .val { color: #fb8c00; }
+    .gord .val { color: #fdd835; }
+    .suggestion { background: #e8f5e9; border-left: 3px solid #4caf50; padding: 8px 10px; margin-bottom: 8px; border-radius: 0 4px 4px 0; font-size: 12px; }
+    .streak { font-size: 24px; text-align: center; padding: 12px; }
+    .footer { margin-top: 24px; font-size: 10px; color: #999; border-top: 1px solid #eee; padding-top: 8px; }
+    .highlight { background: #fff9c4; padding: 8px 10px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; }
+  </style>
+</head>
+<body>
+  <h1>📊 NutriBot — Relatório Semanal</h1>
+  <p class="subtitle">{{ week_label }} · Gerado em {{ generated_at }}</p>
+
+  <div class="section">
+    <h2>Resumo da Semana</h2>
+    <div class="stat-grid">
+      <div class="stat-box">
+        <div class="value">{{ days_within_goal }}/7</div>
+        <div class="label">Dias na meta</div>
+      </div>
+      <div class="stat-box">
+        <div class="value">{{ avg_calories }}</div>
+        <div class="label">kcal média/dia</div>
+      </div>
+      <div class="stat-box">
+        <div class="value">🔥 {{ streak }}</div>
+        <div class="label">Dias seguidos</div>
+      </div>
+    </div>
+
+    {% if highlight %}
+    <div class="highlight">✨ {{ highlight }}</div>
+    {% endif %}
+  </div>
+
+  <div class="section">
+    <h2>Calorias por Dia</h2>
+    <div class="bar-chart">
+      {% for day in daily_data %}
+      <div class="bar-row">
+        <span class="bar-label">{{ day.label }}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width: {{ day.pct }}%"></div>
+        </div>
+        <span class="bar-kcal">{{ day.kcal }} kcal</span>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <div class="section">
+    <h2>Macronutrientes Médios/Dia</h2>
+    <div class="macro-row">
+      <div class="macro-box prot"><div class="val">{{ avg_protein }}g</div><div class="lbl">Proteína</div></div>
+      <div class="macro-box carb"><div class="val">{{ avg_carb }}g</div><div class="lbl">Carboidrato</div></div>
+      <div class="macro-box gord"><div class="val">{{ avg_fat }}g</div><div class="lbl">Gordura</div></div>
+    </div>
+  </div>
+
+  {% if suggestions %}
+  <div class="section">
+    <h2>💡 Sugestões Personalizadas</h2>
+    {% for s in suggestions %}
+    <div class="suggestion">{{ s }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="footer">
+    O NutriBot é uma ferramenta de estimativa nutricional e não substitui a avaliação de um nutricionista.<br>
+    © NutriBot · <a href="https://nutri.bot/privacidade">Política de Privacidade</a>
+  </div>
+</body>
+</html>

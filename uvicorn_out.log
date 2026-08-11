@@ -1,0 +1,21 @@
+ 2026-06-17 09:30:01,123 INFO sqlalchemy.engine.Engine select pg_catalog.version()
+2026-06-17 09:30:01,125 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-06-17 09:30:01,558 INFO sqlalchemy.engine.Engine select current_schema()
+2026-06-17 09:30:01,559 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-06-17 09:30:02,135 INFO sqlalchemy.engine.Engine show standard_conforming_strings
+2026-06-17 09:30:02,137 INFO sqlalchemy.engine.Engine [raw sql] ()
+2026-06-17 09:30:02,570 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2026-06-17 09:30:02,591 INFO sqlalchemy.engine.Engine SELECT users.id, users.channel_id, users.channel_type, users.timezone, users.daily_calorie_goal, users.goal_type, users.plan, users.plan_expires_at, users.conversation_state, users.state_data, users.state_expires_at, users.alerts_enabled, users.alerts_paused_until, users.onboarding_complete, users.onboarding_step, users.lgpd_consent_at, users.first_name, users.created_at, users.deleted_at, users.last_active_at 
+FROM users 
+WHERE users.onboarding_complete IS true AND users.alerts_enabled IS true AND users.deleted_at IS NULL
+2026-06-17 09:30:02,592 INFO sqlalchemy.engine.Engine [generated in 0.00104s] ()
+2026-06-17 09:30:03,027 INFO sqlalchemy.engine.Engine SELECT meal_logs.id, meal_logs.user_id, meal_logs.logged_at, meal_logs.meal_type, meal_logs.raw_input_encrypted, meal_logs.input_type, meal_logs.total_calories_kcal, meal_logs.total_protein_g, meal_logs.total_carb_g, meal_logs.total_fat_g, meal_logs.total_fiber_g, meal_logs.confirmed 
+FROM meal_logs 
+WHERE meal_logs.user_id = $1::UUID AND meal_logs.meal_type = $2::VARCHAR AND meal_logs.logged_at >= $3::TIMESTAMP WITH TIME ZONE AND meal_logs.logged_at < $4::TIMESTAMP WITH TIME ZONE AND meal_logs.confirmed IS true
+2026-06-17 09:30:03,028 INFO sqlalchemy.engine.Engine [generated in 0.00070s] (UUID('e8240cdb-7600-407c-a6ce-53edb31e47d0'), 'breakfast', datetime.datetime(2026, 6, 17, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='America/Sao_Paulo')), datetime.datetime(2026, 6, 18, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='America/Sao_Paulo')))
+2026-06-17 09:30:04,211 INFO sqlalchemy.engine.Engine SELECT meal_logs.id, meal_logs.user_id, meal_logs.logged_at, meal_logs.meal_type, meal_logs.raw_input_encrypted, meal_logs.input_type, meal_logs.total_calories_kcal, meal_logs.total_protein_g, meal_logs.total_carb_g, meal_logs.total_fat_g, meal_logs.total_fiber_g, meal_logs.confirmed 
+FROM meal_logs 
+WHERE meal_logs.user_id = $1::UUID AND meal_logs.meal_type = $2::VARCHAR AND meal_logs.logged_at >= $3::TIMESTAMP WITH TIME ZONE AND meal_logs.logged_at < $4::TIMESTAMP WITH TIME ZONE AND meal_logs.confirmed IS true
+2026-06-17 09:30:04,211 INFO sqlalchemy.engine.Engine [cached since 1.184s ago] (UUID('aa6d7afa-a535-43ba-8771-111d30bc1bfa'), 'breakfast', datetime.datetime(2026, 6, 17, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='America/Sao_Paulo')), datetime.datetime(2026, 6, 18, 0, 0, tzinfo=zoneinfo.ZoneInfo(key='America/Sao_Paulo')))
+2026-06-17 09:30:05,251 INFO sqlalchemy.engine.Engine ROLLBACK
+ 

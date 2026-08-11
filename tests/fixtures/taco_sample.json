@@ -1,0 +1,58 @@
+[
+  {
+    "code": "001",
+    "name": "Arroz, branco, cozido",
+    "aliases": ["arroz branco cozido", "arroz cozido", "arroz", "arroz branco"],
+    "per_100g": { "calories_kcal": 128, "protein_g": 2.5, "carb_g": 28.1, "fat_g": 0.2, "fiber_g": 1.6 },
+    "default_portion_g": 180,
+    "source": "taco"
+  },
+  {
+    "code": "082",
+    "name": "Feijão, carioca, cozido",
+    "aliases": ["feijão carioca cozido", "feijão carioca", "feijão", "feijao"],
+    "per_100g": { "calories_kcal": 76, "protein_g": 4.8, "carb_g": 13.6, "fat_g": 0.5, "fiber_g": 8.5 },
+    "default_portion_g": 86,
+    "source": "taco"
+  },
+  {
+    "code": "170",
+    "name": "Frango, peito, sem pele, grelhado",
+    "aliases": ["frango grelhado", "frango peito grelhado", "frango grelhado sem pele", "frango"],
+    "per_100g": { "calories_kcal": 163, "protein_g": 31.5, "carb_g": 0.0, "fat_g": 3.2, "fiber_g": 0.0 },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "250",
+    "name": "Ovo de galinha, inteiro, cozido",
+    "aliases": ["ovo cozido", "ovo", "ovo inteiro cozido"],
+    "per_100g": { "calories_kcal": 146, "protein_g": 13.3, "carb_g": 0.6, "fat_g": 9.5, "fiber_g": 0.0 },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "342",
+    "name": "Pão francês",
+    "aliases": ["pão francês", "pao frances", "pãozinho", "paozinho", "pão de sal"],
+    "per_100g": { "calories_kcal": 300, "protein_g": 9.4, "carb_g": 58.6, "fat_g": 3.1, "fiber_g": 2.3 },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "435",
+    "name": "Salada mista crua",
+    "aliases": ["salada mista crua", "salada", "saladinha"],
+    "per_100g": { "calories_kcal": 13, "protein_g": 0.9, "carb_g": 2.8, "fat_g": 0.1, "fiber_g": 1.5 },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "400",
+    "name": "Banana, prata",
+    "aliases": ["banana prata", "banana", "banana nanica"],
+    "per_100g": { "calories_kcal": 98, "protein_g": 1.3, "carb_g": 26.0, "fat_g": 0.1, "fiber_g": 2.0 },
+    "default_portion_g": 90,
+    "source": "taco"
+  }
+]

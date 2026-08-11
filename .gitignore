@@ -1,0 +1,32 @@
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Env
+.env
+!.env.example
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Tests
+.coverage
+htmlcov/
+.pytest_cache/
+
+# Alembic
+migrations/versions/*.py
+!migrations/versions/.gitkeep
+
+# WeasyPrint cache
+.weasyprint/
+
+# OS
+.DS_Store
+Thumbs.db

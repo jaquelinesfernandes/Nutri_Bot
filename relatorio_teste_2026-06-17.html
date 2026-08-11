@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+@page {
+  size: A4;
+  margin: 1.5cm 2cm;
+  @bottom-center {
+    content: "NutriBot · Relatório Semanal · Página " counter(page);
+    font-size: 8pt;
+    color: #9ca3af;
+  }
+}
+* { box-sizing: border-box; }
+body {
+  font-family: Helvetica, Arial, sans-serif;
+  font-size: 10pt;
+  color: #1f2937;
+  line-height: 1.4;
+}
+h1 { font-size: 22pt; color: #16a34a; margin: 0 0 3pt; }
+h2 {
+  font-size: 12pt;
+  color: #15803d;
+  margin: 18pt 0 7pt;
+  padding-bottom: 4pt;
+  border-bottom: 1.5pt solid #bbf7d0;
+}
+.subtitle { font-size: 9pt; color: #6b7280; margin: 0 0 18pt; }
+
+/* Summary cards */
+table.cards { width: 100%; border-collapse: separate; border-spacing: 6pt; margin-bottom: 4pt; }
+table.cards td {
+  width: 25%;
+  background: #f0fdf4;
+  border: 1pt solid #bbf7d0;
+  border-radius: 5pt;
+  padding: 9pt 8pt;
+  text-align: center;
+  vertical-align: top;
+}
+.card-val { font-size: 17pt; font-weight: bold; color: #15803d; }
+.card-lbl { font-size: 8pt; color: #6b7280; margin-top: 2pt; }
+.card-sub { font-size: 8.5pt; color: #374151; margin-top: 3pt; }
+
+/* Day table */
+table.days { width: 100%; border-collapse: collapse; font-size: 9pt; }
+table.days th {
+  background: #f0fdf4;
+  color: #15803d;
+  font-weight: bold;
+  padding: 5pt 7pt;
+  text-align: left;
+  border-bottom: 1.5pt solid #86efac;
+}
+table.days td {
+  padding: 5pt 7pt;
+  border-bottom: 0.5pt solid #f3f4f6;
+  vertical-align: middle;
+}
+table.days tr:last-child td { border-bottom: none; }
+
+/* Progress bar */
+.bar-wrap { display: inline-block; background: #e5e7eb; border-radius: 4pt; height: 7pt; width: 90pt; vertical-align: middle; }
+.bar-fill { height: 7pt; border-radius: 4pt; display: block; }
+.bar-green { background: #22c55e; }
+.bar-yellow { background: #facc15; }
+.bar-orange { background: #f97316; }
+.bar-gray { background: #d1d5db; width: 0 !important; }
+.pct-label { font-size: 7.5pt; color: #9ca3af; margin-left: 4pt; vertical-align: middle; }
+
+/* Badges */
+.badge {
+  display: inline-block;
+  padding: 1.5pt 6pt;
+  border-radius: 8pt;
+  font-size: 7.5pt;
+  font-weight: bold;
+}
+.badge-ok     { background: #dcfce7; color: #166534; }
+.badge-low    { background: #fef9c3; color: #854d0e; }
+.badge-over   { background: #ffedd5; color: #9a3412; }
+.badge-miss   { background: #f3f4f6; color: #6b7280; }
+
+/* Highlights */
+.highlights-list { margin: 0 0 4pt 0; padding: 0; list-style: none; }
+.highlights-list li { font-size: 9pt; color: #166534; margin-bottom: 3pt; padding-left: 14pt; position: relative; }
+.highlights-list li::before { content: "✓"; position: absolute; left: 0; color: #22c55e; font-weight: bold; }
+
+/* Suggestions */
+.suggestion {
+  background: #f0fdf4;
+  border-left: 3pt solid #22c55e;
+  padding: 8pt 10pt;
+  margin-bottom: 7pt;
+  border-radius: 0 4pt 4pt 0;
+}
+.sug-cat {
+  font-size: 7.5pt;
+  font-weight: bold;
+  color: #15803d;
+  text-transform: uppercase;
+  letter-spacing: 0.5pt;
+  margin-bottom: 3pt;
+}
+.sug-txt { font-size: 9.5pt; color: #1f2937; }
+
+/* Insight */
+.insight-box {
+  background: #eff6ff;
+  border: 1pt solid #bfdbfe;
+  padding: 9pt 11pt;
+  border-radius: 5pt;
+  margin-top: 8pt;
+  font-size: 9.5pt;
+  color: #1d4ed8;
+}
+
+.footer {
+  margin-top: 22pt;
+  padding-top: 6pt;
+  border-top: 0.5pt solid #e5e7eb;
+  font-size: 7.5pt;
+  color: #9ca3af;
+  text-align: center;
+}
+</style>
+</head>
+<body>
+
+<h1>NutriBot</h1>
+<p class="subtitle">Relatório Semanal &nbsp;·&nbsp; Aureliano &nbsp;·&nbsp; 11/06 a 17/06/2026</p>
+
+<h2>Resumo da Semana</h2>
+<table class="cards">
+  <tr>
+    <td>
+      <div class="card-val">1157</div>
+      <div class="card-lbl">kcal/dia (média)</div>
+      <div class="card-sub">Meta: 2500 kcal</div>
+    </td>
+    <td>
+      <div class="card-val">63g</div>
+      <div class="card-lbl">Proteína/dia</div>
+    </td>
+    <td>
+      <div class="card-val">165g</div>
+      <div class="card-lbl">Carboidratos/dia</div>
+    </td>
+    <td>
+      <div class="card-val">1/7</div>
+      <div class="card-lbl">Dias registrados</div>
+      <div class="card-sub">5 refeições</div>
+    </td>
+  </tr>
+</table>
+
+<h2>Dia a Dia</h2>
+<table class="days">
+  <tr>
+    <th>Dia</th>
+    <th>Refeições</th>
+    <th>Kcal</th>
+    <th>Progresso</th>
+    <th>Status</th>
+  </tr>
+  
+  <tr>
+    <td>Seg 11/06</td>
+    <td>—</td>
+    <td>—</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-gray" style="width: 0%;"></div>
+      </div>
+      <span class="pct-label">0%</span>
+    </td>
+    <td><span class="badge badge-miss">Sem registro</span></td>
+  </tr>
+  
+  <tr>
+    <td>Ter 12/06</td>
+    <td>—</td>
+    <td>—</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-gray" style="width: 0%;"></div>
+      </div>
+      <span class="pct-label">0%</span>
+    </td>
+    <td><span class="badge badge-miss">Sem registro</span></td>
+  </tr>
+  
+  <tr>
+    <td>Qua 13/06</td>
+    <td>—</td>
+    <td>—</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-gray" style="width: 0%;"></div>
+      </div>
+      <span class="pct-label">0%</span>
+    </td>
+    <td><span class="badge badge-miss">Sem registro</span></td>
+  </tr>
+  
+  <tr>
+    <td>Qui 14/06</td>
+    <td>—</td>
+    <td>—</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-gray" style="width: 0%;"></div>
+      </div>
+      <span class="pct-label">0%</span>
+    </td>
+    <td><span class="badge badge-miss">Sem registro</span></td>
+  </tr>
+  
+  <tr>
+    <td>Sex 15/06</td>
+    <td>—</td>
+    <td>—</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-gray" style="width: 0%;"></div>
+      </div>
+      <span class="pct-label">0%</span>
+    </td>
+    <td><span class="badge badge-miss">Sem registro</span></td>
+  </tr>
+  
+  <tr>
+    <td>Sáb 16/06</td>
+    <td>🌙 🍎 🍴</td>
+    <td>1158</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-yellow" style="width: 46%;"></div>
+      </div>
+      <span class="pct-label">46%</span>
+    </td>
+    <td><span class="badge badge-low">Abaixo</span></td>
+  </tr>
+  
+  <tr>
+    <td>Dom 17/06</td>
+    <td>—</td>
+    <td>—</td>
+    <td>
+      <div class="bar-wrap">
+        <div class="bar-fill bar-gray" style="width: 0%;"></div>
+      </div>
+      <span class="pct-label">0%</span>
+    </td>
+    <td><span class="badge badge-miss">Sem registro</span></td>
+  </tr>
+  
+</table>
+
+
+
+<h2>Sugestões Personalizadas</h2>
+
+<div class="suggestion">
+  <div class="sug-cat">Dica geral</div>
+  <div class="sug-txt">Continue registrando suas refeições diariamente para receber sugestões personalizadas!</div>
+</div>
+
+
+
+
+<div class="footer">
+  Gerado por NutriBot em 17/06/2026 às 09:23 &nbsp;·&nbsp;
+  Dados baseados em seus registros de refeição &nbsp;·&nbsp;
+  Sugestões geradas por IA — consulte um nutricionista para orientação profissional
+</div>
+
+</body>
+</html>

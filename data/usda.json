@@ -1,0 +1,29 @@
+[
+  {
+    "code": "usda-001",
+    "name": "Hamburger, beef patty, cooked",
+    "aliases": ["hamburguer", "hambúrguer", "x-burguer", "burguer"],
+    "category": "fast_food",
+    "per_100g": { "calories_kcal": 295, "protein_g": 17.0, "carb_g": 0.0, "fat_g": 24.0, "fiber_g": 0.0, "sodium_mg": 77.0 },
+    "default_portion_g": 150,
+    "source": "usda"
+  },
+  {
+    "code": "usda-002",
+    "name": "Pizza, cheese, frozen",
+    "aliases": ["pizza", "pizza de queijo", "pizza mussarela"],
+    "category": "fast_food",
+    "per_100g": { "calories_kcal": 266, "protein_g": 11.0, "carb_g": 33.0, "fat_g": 10.0, "fiber_g": 2.0, "sodium_mg": 551.0 },
+    "default_portion_g": 120,
+    "source": "usda"
+  },
+  {
+    "code": "usda-003",
+    "name": "Orange juice, fresh",
+    "aliases": ["suco de laranja", "suco laranja", "suco natural laranja", "suco laranja natural", "suco de laranja natural", "suco de laranja fresco"],
+    "category": "bebidas",
+    "per_100g": { "calories_kcal": 45, "protein_g": 0.7, "carb_g": 10.4, "fat_g": 0.2, "fiber_g": 0.2, "sodium_mg": 1.0 },
+    "default_portion_g": 200,
+    "source": "usda"
+  }
+]
