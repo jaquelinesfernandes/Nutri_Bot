@@ -1,7 +1,7 @@
 # NutriBot — Guia de Setup: Neon + Render + Telegram
 
 **Tipo:** Guia de Configuração  
-**Versão:** 1.0  
+**Versão:** 1.1  
 **Data:** Agosto 2026  
 **Status:** Ativo  
 **Tempo estimado:** 45–60 min  
@@ -65,19 +65,38 @@ Clique em **Create project**.
 
 ### Passo 3 — Copiar a connection string no formato correto
 
-Após criar o projeto, o Neon exibe o modal com a connection string.
+Após criar o projeto, o Neon exibe o modal com a connection string. A Neon mostra **por padrão a URL do pooler** (PgBouncer) — que **não é compatível** com asyncpg. É preciso usar a conexão direta.
 
-> ⚠️ **Ajuste obrigatório de formato:**
->
-> O Neon exibe:  
-> `postgresql://user:pass@ep-xxx.neon.tech/neondb?sslmode=require`
->
-> Você precisa usar:  
-> `postgresql+asyncpg://user:pass@ep-xxx.neon.tech/neondb?ssl=require`
->
-> **Diferenças:**
-> - Adicionar `+asyncpg` após `postgresql`
-> - Trocar `sslmode=require` por `ssl=require`
+#### 3a — Selecionar a conexão direta (não a pooled)
+
+No modal de connection string, procure o toggle ou aba:
+
+```
+Connection Details → "Pooled connection" → trocar para "Direct connection"
+```
+
+A URL direta **não tem** `-pooler` no hostname.
+
+#### 3b — Remover parâmetros incompatíveis com asyncpg
+
+| Parâmetro | Ação | Motivo |
+|---|---|---|
+| `-pooler` no hostname | ❌ Remover (usar URL direta) | PgBouncer conflita com prepared statements do asyncpg |
+| `channel_binding=require` | ❌ Remover | Parâmetro libpq — asyncpg não reconhece, lança erro |
+| `sslmode=require` | ✅ Manter | SQLAlchemy 2.0 traduz automaticamente para asyncpg |
+| `postgresql://` | ✅ Manter como está | O `config.py` converte para `+asyncpg://` automaticamente |
+
+#### 3c — Formato final correto
+
+```
+# URL que o Neon exibe (pooler — NÃO usar):
+postgresql://neondb_owner:senha@ep-xxx-pooler.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require
+
+# URL correta para o .env (direta — usar esta):
+DATABASE_URL=postgresql://neondb_owner:senha@ep-xxx.c-4.us-east-2.aws.neon.tech/neondb?sslmode=require
+```
+
+> ✅ **Não precisa adicionar `+asyncpg` manualmente.** O `app/config.py` tem um validator que converte `postgresql://` → `postgresql+asyncpg://` automaticamente ao carregar o `.env`.
 
 Salve a string ajustada — será usada como `DATABASE_URL` no Render.
 

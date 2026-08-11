@@ -20,10 +20,37 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def coerce_async_db_url(cls, v: str) -> str:
-        """Garante que a URL use o driver asyncpg (não psycopg2)."""
+        """Normaliza a DATABASE_URL para ser compatível com asyncpg.
+
+        Converte automaticamente URLs coladas do Neon ou Railway sem edição manual:
+        - postgresql://  →  postgresql+asyncpg://
+        - sslmode=require  →  ssl=require  (asyncpg não aceita parâmetro libpq)
+        - remove channel_binding=require  (parâmetro libpq não suportado por asyncpg)
+        """
+        from urllib.parse import urlparse, urlencode, urlunparse, parse_qsl
+
+        # 1. Driver prefix
         if v.startswith("postgresql://"):
             v = "postgresql+asyncpg://" + v[len("postgresql://"):]
-        return v
+
+        # 2. Normalizar query string — remover/converter parâmetros incompatíveis
+        parsed = urlparse(v)
+        params = dict(parse_qsl(parsed.query))
+
+        # sslmode (libpq) → ssl (asyncpg)
+        if "sslmode" in params:
+            sslmode = params.pop("sslmode")
+            if sslmode in ("require", "verify-full", "verify-ca"):
+                params.setdefault("ssl", "require")
+            elif sslmode == "prefer":
+                params.setdefault("ssl", "prefer")
+            # sslmode=disable → não adiciona ssl
+
+        # channel_binding é parâmetro libpq — asyncpg não reconhece
+        params.pop("channel_binding", None)
+
+        new_query = urlencode(params)
+        return urlunparse(parsed._replace(query=new_query))
 
     # Telegram
     telegram_bot_token: str = ""
