@@ -79,6 +79,12 @@ async def _process_update(update: TelegramUpdate) -> None:
     channel_id = f"tg:{chat_id}"
     first_name = msg.from_.first_name if msg.from_ else None
 
+    # /ping — responde sem DB nem AI (útil para diagnóstico de deploy)
+    if msg.text and msg.text.strip().lower() in ("/ping", "/ping@nutribot"):
+        logger.info(f"[TG] /ping de chat_id={chat_id}")
+        await _send_message(chat_id, "🏓 Pong! Bot online e respondendo.")
+        return
+
     try:
         async with AsyncSessionLocal() as db:
             user = await _get_or_create_user(db, channel_id, first_name)
