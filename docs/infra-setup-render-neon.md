@@ -1,7 +1,7 @@
 # NutriBot — Guia de Setup: Neon + Render + Telegram
 
 **Tipo:** Guia de Configuração  
-**Versão:** 1.1  
+**Versão:** 1.2  
 **Data:** Agosto 2026  
 **Status:** Ativo  
 **Tempo estimado:** 45–60 min  
@@ -28,8 +28,10 @@ Tenha em mãos antes de começar:
 |---|---|
 | **Repositório no GitHub** | Suba o código em um repo GitHub (público ou privado). O Render conecta direto ao GitHub. |
 | **Token do bot Telegram** | Telegram → @BotFather → `/newbot` → anote o token (`1234567:ABCdef…`) |
-| **Chave da OpenAI** | [platform.openai.com](https://platform.openai.com) → API Keys → Create new secret key |
+| **Chave da Anthropic** | [console.anthropic.com](https://console.anthropic.com) → API Keys → Create Key (AI primária — obrigatória) |
+| **Chave da OpenAI** | [platform.openai.com](https://platform.openai.com) → API Keys → Create new secret key (Whisper/áudio — opcional no MVP inicial) |
 | **JWT_SECRET gerado** | Gere agora: `.venv\Scripts\python -c "import secrets; print(secrets.token_hex(32))"` |
+| **RAW_INPUT_ENCRYPTION_KEY** | Gere: `.venv\Scripts\python -c "import secrets; print(secrets.token_hex(32))"` (criptografia de dados de saúde — LGPD) |
 | **.venv ativo** | Para rodar scripts locais e migrations |
 
 ---
@@ -165,19 +167,41 @@ Preencha os campos na tela de configuração:
 Role até **Environment Variables** e adicione cada variável:
 
 ```
-DATABASE_URL     = postgresql+asyncpg://[user]:[pass]@[host].neon.tech/neondb?ssl=require
-TELEGRAM_BOT_TOKEN = 1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ
-OPENAI_API_KEY   = sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxx
-JWT_SECRET       = [32+ chars hex gerado no pré-requisito]
-ENVIRONMENT      = production
+# ── Banco de dados ──────────────────────────────────────────────────────────
+DATABASE_URL          = postgresql://[user]:[pass]@[host].neon.tech/neondb?sslmode=require
+# (pode colar a URL bruta do Neon — o config.py converte para asyncpg automaticamente)
 
-# Opcionais — deixar em branco por agora
-SENTRY_DSN       =
-WHATSAPP_API_TOKEN =
-WHATSAPP_PHONE_NUMBER_ID =
+# ── AI ──────────────────────────────────────────────────────────────────────
+ANTHROPIC_API_KEY     = sk-ant-xxxxxxxxxxxxxxxxxxxxxxxxxxxx   # Claude — NLP + Vision (obrigatória)
+OPENAI_API_KEY        = sk-proj-xxxxxxxxxxxxxxxxxxxxxxxxxxxx  # Whisper — transcrição de áudio
+
+# ── Canais ──────────────────────────────────────────────────────────────────
+TELEGRAM_BOT_TOKEN    = 1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ
+
+# ── Segurança ───────────────────────────────────────────────────────────────
+JWT_SECRET            = [hex de 32+ chars — gerado no pré-requisito]
+RAW_INPUT_ENCRYPTION_KEY = [hex de 32+ chars — gerado no pré-requisito]
+
+# ── Ambiente ────────────────────────────────────────────────────────────────
+APP_ENV               = production
+
+# ── Opcionais (deixar em branco por agora) ──────────────────────────────────
+SENTRY_DSN            =
+POSTHOG_API_KEY       =
+
+# WhatsApp via Z-API (ativar quando tiver conta Z-API)
+ZAPI_INSTANCE_ID      =
+ZAPI_TOKEN            =
+ZAPI_WEBHOOK_SECRET   =
+
+# MercadoPago (ativar na Sprint de monetização)
+MERCADOPAGO_ACCESS_TOKEN  =
+MERCADOPAGO_WEBHOOK_SECRET =
+MERCADOPAGO_MONTHLY_PLAN_ID =
+MERCADOPAGO_ANNUAL_PLAN_ID  =
 ```
 
-> ⚠️ **Atenção:** O `app/config.py` usa pydantic-settings. Confirme que `WHATSAPP_API_TOKEN` tem valor padrão `None` no config — variável obrigatória sem valor trava o startup.
+> ⚠️ **Atenção:** Todas as variáveis do `app/config.py` têm valor padrão (string vazia), então o app **não trava** por variável ausente — mas funcionalidades ficam desabilitadas silenciosamente. Preencha ao menos `ANTHROPIC_API_KEY`, `DATABASE_URL`, `TELEGRAM_BOT_TOKEN`, `JWT_SECRET` e `APP_ENV` para o MVP funcionar.
 
 ---
 
@@ -355,4 +379,4 @@ Isso mantém o container ativo 24/7 dentro das 750h mensais gratuitas do Render.
 
 ---
 
-*NutriBot · Guia de Setup v1.0 · Agosto 2026 · Render + Neon*
+*NutriBot · Guia de Setup v1.2 · Agosto 2026 · Render + Neon*
