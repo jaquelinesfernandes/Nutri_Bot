@@ -21,16 +21,22 @@ load_dotenv()
 
 token = os.environ.get("TELEGRAM_BOT_TOKEN", "")
 secret = os.environ.get("TELEGRAM_WEBHOOK_SECRET", "")
+webhook_base = os.environ.get("WEBHOOK_BASE_URL", "")
 
 if not token:
-    print("ERRO: TELEGRAM_BOT_TOKEN não definido")
+    print("ERRO: TELEGRAM_BOT_TOKEN não definido no .env")
     sys.exit(1)
 
-if len(sys.argv) < 2:
-    print("Uso: python scripts/register_telegram_webhook.py https://seu-app.railway.app")
+# URL pode vir como argumento CLI ou do .env (WEBHOOK_BASE_URL)
+if len(sys.argv) >= 2:
+    app_url = sys.argv[1].rstrip("/")
+elif webhook_base:
+    app_url = webhook_base.rstrip("/")
+    print(f"Usando WEBHOOK_BASE_URL do .env: {app_url}")
+else:
+    print("ERRO: informe a URL como argumento ou defina WEBHOOK_BASE_URL no .env")
+    print("Uso: python scripts/register_telegram_webhook.py https://seu-app.onrender.com")
     sys.exit(1)
-
-app_url = sys.argv[1].rstrip("/")
 webhook_url = f"{app_url}/webhook/telegram"
 
 print(f"Registrando webhook: {webhook_url}")
