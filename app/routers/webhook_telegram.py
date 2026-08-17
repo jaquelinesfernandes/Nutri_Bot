@@ -152,7 +152,13 @@ async def webhook_telegram(
     background_tasks: BackgroundTasks,
     x_telegram_bot_api_secret_token: str | None = Header(default=None),
 ):
-    if x_telegram_bot_api_secret_token != settings.telegram_webhook_secret:
+    # Só valida o secret se estiver configurado; se vazio, aceita qualquer request
+    # (evita 403 quando TELEGRAM_WEBHOOK_SECRET não foi definido no ambiente de deploy)
+    if settings.telegram_webhook_secret and x_telegram_bot_api_secret_token != settings.telegram_webhook_secret:
+        logger.warning(
+            f"[TG] Webhook rejeitado: secret inválido "
+            f"(recebido={x_telegram_bot_api_secret_token!r})"
+        )
         raise HTTPException(status_code=403, detail="Invalid secret token")
 
     body = await request.json()

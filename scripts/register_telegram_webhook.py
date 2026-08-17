@@ -3,7 +3,7 @@
 Registra o webhook do Telegram após o deploy.
 
 Uso:
-    python scripts/register_telegram_webhook.py https://seu-app.railway.app
+    python scripts/register_telegram_webhook.py https://nutri-bot-ot0p.onrender.com
 
 Variáveis de ambiente necessárias (lidas do .env):
     TELEGRAM_BOT_TOKEN
