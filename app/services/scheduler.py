@@ -271,25 +271,30 @@ async def job_reengagement() -> None:
 
 
 async def start_scheduler() -> AsyncIOScheduler:
-    scheduler = AsyncIOScheduler(timezone="America/Sao_Paulo")
+    # Timezone explícito em todos os CronTriggers: o Render roda em UTC e o
+    # CronTrigger sem timezone usa o fuso do sistema (UTC), ignorando o timezone
+    # do scheduler. Passamos "America/Sao_Paulo" explicitamente em cada trigger
+    # para garantir que os horários sejam interpretados no fuso correto.
+    SP_TZ = "America/Sao_Paulo"
+    scheduler = AsyncIOScheduler(timezone=SP_TZ)
 
-    # Alertas de refeição — hora fixa por refeição
-    scheduler.add_job(job_alert_breakfast, CronTrigger(hour=9,  minute=30))
-    scheduler.add_job(job_alert_lunch,     CronTrigger(hour=12, minute=30))
-    scheduler.add_job(job_alert_dinner,    CronTrigger(hour=19, minute=30))
+    # Alertas de refeição — hora fixa por refeição (horário de Brasília)
+    scheduler.add_job(job_alert_breakfast, CronTrigger(hour=9,  minute=30, timezone=SP_TZ))
+    scheduler.add_job(job_alert_lunch,     CronTrigger(hour=12, minute=30, timezone=SP_TZ))
+    scheduler.add_job(job_alert_dinner,    CronTrigger(hour=19, minute=30, timezone=SP_TZ))
 
-    # Relatórios automáticos por frequência
-    scheduler.add_job(job_weekly_report,    CronTrigger(day_of_week="sun", hour=20, minute=0))
-    scheduler.add_job(job_monthly_report,   CronTrigger(day=1, hour=20, minute=0))
+    # Relatórios automáticos por frequência (horário de Brasília)
+    scheduler.add_job(job_weekly_report,    CronTrigger(day_of_week="sun", hour=20, minute=0, timezone=SP_TZ))
+    scheduler.add_job(job_monthly_report,   CronTrigger(day=1, hour=20, minute=0, timezone=SP_TZ))
     # Trimestral: 1º de jan, abr, jul, out
-    scheduler.add_job(job_quarterly_report, CronTrigger(month="1,4,7,10", day=1, hour=20, minute=0))
+    scheduler.add_job(job_quarterly_report, CronTrigger(month="1,4,7,10", day=1, hour=20, minute=0, timezone=SP_TZ))
 
-    # Re-engajamento
-    scheduler.add_job(job_reengagement, CronTrigger(day_of_week="mon", hour=10, minute=0))
+    # Re-engajamento (horário de Brasília)
+    scheduler.add_job(job_reengagement, CronTrigger(day_of_week="mon", hour=10, minute=0, timezone=SP_TZ))
 
     scheduler.start()
     logger.info(
-        "Scheduler iniciado: alertas 09:30/12:30/19:30 | "
+        "Scheduler iniciado (America/Sao_Paulo): alertas 09:30/12:30/19:30 | "
         "relatório dom 20h (semanal) | 1º/mês 20h (mensal) | 1º trimestre 20h (trimestral)"
     )
     return scheduler
