@@ -1,9 +1,9 @@
 # NutriBot — Guia de Setup: Neon + Render + Telegram
 
 **Tipo:** Guia de Configuração  
-**Versão:** 1.2  
+**Versão:** 1.3  
 **Data:** Agosto 2026  
-**Status:** Ativo  
+**Status:** ✅ Concluído — em produção  
 **Tempo estimado:** 45–60 min  
 **Canal inicial:** Telegram (só)
 
@@ -16,7 +16,9 @@
 - [Parte 2 — Render: criar conta, conectar GitHub e fazer deploy](#parte-2--render-criar-conta-conectar-github-e-fazer-deploy)
 - [Parte 3 — Migrations do banco (Alembic)](#parte-3--migrations-do-banco-alembic)
 - [Parte 4 — Registrar webhook do Telegram](#parte-4--registrar-webhook-do-telegram)
+- [Parte 5 — UptimeRobot: manter o APScheduler vivo](#parte-5--uptimerobot-manter-o-apscheduler-vivo)
 - [Checklist de verificação final](#checklist-de-verificação-final)
+- [Problemas conhecidos e fixes](#problemas-conhecidos-e-fixes)
 
 ---
 
@@ -311,7 +313,9 @@ WEBHOOK_BASE_URL=https://nutribot-xxxx.onrender.com
 python scripts\register_telegram_webhook.py
 ```
 
-O script registra `https://nutribot-xxxx.onrender.com/webhook/telegram` na Telegram Bot API.
+O script lê `WEBHOOK_BASE_URL` do `.env` automaticamente e registra `https://nutribot-xxxx.onrender.com/webhook/telegram` na Telegram Bot API.
+
+> ℹ️ Também aceita a URL como argumento: `python scripts\register_telegram_webhook.py https://nutribot-xxxx.onrender.com`
 
 **Saída esperada:**
 
@@ -349,34 +353,82 @@ Render Dashboard → nutribot → Logs
 
 ---
 
+## Parte 5 — UptimeRobot: manter o APScheduler vivo
+
+O Render free tier **suspende o container após 15 min sem requisição HTTP**, o que encerra o processo Python — incluindo o APScheduler responsável pelos alertas de refeição. O UptimeRobot faz um ping a cada 5 min para evitar a suspensão.
+
+### Passo 1 — Criar conta
+
+Acesse [uptimerobot.com](https://uptimerobot.com) e registre-se gratuitamente (sem cartão).
+
+### Passo 2 — Criar monitor
+
+No dashboard: **New Monitor**
+
+| Campo | Valor |
+|---|---|
+| Monitor Type | `HTTP(s)` |
+| Friendly Name | `NutriBot - Health` |
+| URL | `https://nutribot-xxxx.onrender.com/health` |
+| Monitoring Interval | `5 minutes` |
+
+Clique em **Create Monitor**.
+
+> ✅ Com o monitor ativo, o container permanece acordado 24/7 dentro das 750h/mês gratuitas do Render. Os alertas de janela de refeição funcionarão normalmente.
+
+---
+
 ## Checklist de verificação final
 
 Confirme cada item antes de considerar o setup concluído:
 
-- [ ] Conta Neon criada e projeto "nutribot" existente
-- [ ] Connection string no formato `postgresql+asyncpg://…?ssl=require` anotada
-- [ ] Conta Render criada e repositório GitHub conectado
-- [ ] Web Service criado com Runtime Docker e todas as variáveis de ambiente preenchidas
-- [ ] Deploy concluído com status **Live** e `Application startup complete` nos logs
-- [ ] Migrations Alembic aplicadas sem erros (`alembic upgrade head`)
-- [ ] 9 tabelas visíveis no SQL Editor do Neon
-- [ ] Webhook registrado e confirmado via `getWebhookInfo` (url preenchida, pending=0)
-- [ ] Bot respondeu à mensagem de teste no Telegram
-- [ ] Health check passando: `GET https://nutribot-xxxx.onrender.com/health` retorna 200
+- [x] Conta Neon criada e projeto "nutribot" existente
+- [x] Connection string no formato direto (sem `-pooler`) anotada
+- [x] Conta Render criada e repositório GitHub conectado
+- [x] Web Service criado com Runtime Docker e todas as variáveis de ambiente preenchidas
+- [x] Deploy concluído com status **Live** e `Application startup complete` nos logs
+- [x] Migrations Alembic aplicadas sem erros (`alembic upgrade head`) — 9 tabelas criadas
+- [x] Webhook registrado e confirmado via `getWebhookInfo` (url preenchida, pending=0)
+- [x] Bot respondeu à mensagem de teste no Telegram (`/ping` → 🏓 Pong!)
+- [x] Health check passando: `GET https://nutri-bot-ot0p.onrender.com/health` retorna 200
+- [x] UptimeRobot configurado — ping `/health` a cada 5 min
 
 ---
 
-## Dica: manter o APScheduler vivo no free tier
+---
 
-O Render suspende o container após 15 min sem requisição, o que mata o APScheduler (alertas de refeição). Para manter o app acordado:
+## Problemas conhecidos e fixes
 
-1. Acesse [uptimerobot.com](https://uptimerobot.com) e crie conta gratuita
-2. **New Monitor** → **HTTP(s)**
-3. URL: `https://nutribot-xxxx.onrender.com/health`
-4. Intervalo: **5 minutos**
+### Fix 1 — Docker build falha (exit code 100)
 
-Isso mantém o container ativo 24/7 dentro das 750h mensais gratuitas do Render.
+**Sintoma:** `process "/bin/sh -c apt-get install …" did not complete successfully: exit code: 100`
+
+**Causa:** `python:3.13-slim` (sem versão de Debian) pode quebrar quando o Debian rolling atualiza e renomeia pacotes.
+
+**Fix:** O `Dockerfile` usa `python:3.13-slim-bookworm` (Debian 12 fixo) com `apt-get update --fix-missing` e o conjunto completo de dependências WeasyPrint: `libpangocairo-1.0-0`, `libcairo-gobject2`, `libharfbuzz0b`.
 
 ---
 
-*NutriBot · Guia de Setup v1.2 · Agosto 2026 · Render + Neon*
+### Fix 2 — Bot não responde (403 silencioso)
+
+**Sintoma:** Webhook registrado, health OK, diagnóstico passa, mas o bot fica mudo.
+
+**Causa:** A validação do secret token comparava `None != ""` (quando `TELEGRAM_WEBHOOK_SECRET` não estava definido no Render), retornando 403 em todo request. O Telegram via 200 imediatamente (background task), mas o processamento falhava antes de qualquer resposta ser enviada.
+
+**Fix:** Validação agora condicional — só rejeita se o secret estiver configurado:
+```python
+if settings.telegram_webhook_secret and x_telegram_bot_api_secret_token != settings.telegram_webhook_secret:
+    raise HTTPException(status_code=403, ...)
+```
+
+---
+
+### Fix 3 — Script de webhook ignorava WEBHOOK_BASE_URL
+
+**Causa:** `register_telegram_webhook.py` exigia a URL como argumento CLI mas não lia o `.env`.
+
+**Fix:** Script atualizado — tenta argumento CLI primeiro, depois lê `WEBHOOK_BASE_URL` do `.env` como fallback.
+
+---
+
+*NutriBot · Guia de Setup v1.3 · Agosto 2026 · Render + Neon*

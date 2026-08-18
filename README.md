@@ -5,8 +5,8 @@
 ![Python](https://img.shields.io/badge/Python-3.13-3776AB?logo=python&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
-![OpenAI](https://img.shields.io/badge/OpenAI-GPT--4o-412991?logo=openai&logoColor=white)
-![Status](https://img.shields.io/badge/status-em%20desenvolvimento-yellow)
+![Anthropic](https://img.shields.io/badge/Claude-Haiku%204.5-D4A017?logo=anthropic&logoColor=white)
+![Status](https://img.shields.io/badge/status-em%20produção-brightgreen)
 ![Cobertura](https://img.shields.io/badge/cobertura-77%25-brightgreen)
 
 ---
@@ -53,10 +53,11 @@ O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de f
 ```
 Usuário
   │
-  ├── Telegram Bot API ──► Render (FastAPI) ──► Neon (PostgreSQL)
+  ├── Telegram Bot API ──► Render (FastAPI) ──► Neon (PostgreSQL 16)
   │                             │
-  └── WhatsApp Business API     ├── OpenAI API (GPT-4o + Whisper + Vision)
-                                ├── APScheduler (alertas)
+  └── WhatsApp Business API     ├── Anthropic API (Claude Haiku — NLP + Vision)
+                                ├── OpenAI API (Whisper — só áudio)
+                                ├── APScheduler (alertas) ← UptimeRobot mantém vivo
                                 └── WeasyPrint (PDF)
 ```
 
@@ -72,10 +73,11 @@ Usuário
 |---|---|
 | **Backend** | Python 3.13 · FastAPI · uvicorn |
 | **Banco de dados** | PostgreSQL 16 · SQLAlchemy (asyncio) · asyncpg · Alembic |
-| **AI / NLP** | OpenAI GPT-4o · GPT-4 Vision · Whisper |
+| **AI primária** | Anthropic Claude Haiku 4.5 — NLP + Vision (texto e foto) |
+| **AI secundária** | OpenAI Whisper — transcrição de áudio |
 | **Busca nutricional** | RapidFuzz (fuzzy matching) · TACO JSON · USDA JSON |
-| **Canais** | python-telegram-bot · WhatsApp Business API (Twilio / Z-API) |
-| **Alertas** | APScheduler 3.x (MVP) → Cloud Scheduler (escala) |
+| **Canais** | Telegram Bot API · WhatsApp Business API (Z-API) |
+| **Alertas** | APScheduler AsyncIOScheduler · UptimeRobot (keep-alive) |
 | **PDF** | WeasyPrint · Jinja2 |
 | **Auth** | JWT · bcrypt (cryptography) |
 | **Pagamentos** | MercadoPago SDK |
@@ -193,11 +195,15 @@ Copy-Item .env.example .env
 Variáveis obrigatórias no `.env`:
 
 ```env
-DATABASE_URL=postgresql+asyncpg://user:pass@host/db?ssl=require
+DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
+# (pode colar a URL bruta do Neon — config.py converte para asyncpg automaticamente)
+
+ANTHROPIC_API_KEY=sk-ant-...   # Claude — NLP + Vision (obrigatória)
+OPENAI_API_KEY=sk-proj-...     # Whisper — transcrição de áudio
 TELEGRAM_BOT_TOKEN=1234567890:ABCdef...
-OPENAI_API_KEY=sk-proj-...
-JWT_SECRET=    # gerar: python -c "import secrets; print(secrets.token_hex(32))"
-ENVIRONMENT=development
+JWT_SECRET=        # gerar: python -c "import secrets; print(secrets.token_hex(32))"
+RAW_INPUT_ENCRYPTION_KEY=      # gerar: mesmo comando acima
+APP_ENV=development
 ```
 
 ### 3. Aplicar migrations
@@ -227,14 +233,21 @@ python scripts/run_bot_polling.py
 Para o guia completo de criação de conta e configuração:  
 → **[`docs/infra-setup-render-neon.md`](docs/infra-setup-render-neon.md)**
 
+**Status atual: ✅ Em produção** — `https://nutri-bot-ot0p.onrender.com`
+
 Resumo dos passos:
 
 ```
 1. Criar conta em neon.tech → projeto "nutribot" → anotar DATABASE_URL
-2. Criar conta em render.com → Web Service → conectar GitHub → configurar env vars
-3. alembic upgrade head  (via Render Shell ou local)
+2. Criar conta em render.com → Web Service → Runtime Docker → configurar env vars
+3. alembic upgrade head  (via Render Shell ou local com .env apontando para Neon)
 4. python scripts/register_telegram_webhook.py
+5. Configurar UptimeRobot → ping /health a cada 5 min (mantém APScheduler vivo)
 ```
+
+> ⚠️ **Atenção:** A AI primária é **Anthropic** (`ANTHROPIC_API_KEY`), não OpenAI. O OpenAI é usado apenas para Whisper (áudio).
+
+> ⚠️ **Docker:** o `Dockerfile` usa `python:3.13-slim-bookworm` — não alterar para `slim` sem versão ou as dependências do WeasyPrint falham no build.
 
 ---
 
@@ -286,8 +299,11 @@ alembic revision --autogenerate -m "descrição da mudança"
 # Verificar conexão com banco
 python scripts/check_db.py
 
-# Registrar webhook Telegram
+# Registrar webhook Telegram (lê WEBHOOK_BASE_URL do .env automaticamente)
 python scripts/register_telegram_webhook.py
+
+# Diagnóstico completo do bot (health + webhook + envio de mensagem)
+python scripts/test_telegram_bot.py
 
 # Gerar relatório PDF de teste
 python scripts/testar_relatorio.py
@@ -298,6 +314,22 @@ python scripts/testar_alerta.py
 # Expandir base TACO
 python scripts/expand_taco.py
 ```
+
+### Comandos do bot (Telegram)
+
+| Comando | Descrição |
+|---|---|
+| `/start` | Onboarding ou resumo do dia |
+| `/ajuda` | Lista todos os comandos |
+| `/hoje` | Resumo calórico do dia |
+| `/historico` | Histórico de refeições |
+| `/meta` | Configurar meta de calorias |
+| `/agua` | Registrar consumo de água |
+| `/relatorio` | Gerar relatório PDF sob demanda |
+| `/deletar` | Remover última refeição |
+| `/ping` | Verificar se o bot está online |
+| `/privacidade` | Informações LGPD e seus dados |
+| `/deletar_dados` | Exclusão de conta (LGPD) |
 
 ---
 
@@ -322,7 +354,7 @@ O NutriBot lida com **dados sensíveis de saúde** (LGPD Art. 11 — comportamen
 | [`docs/NutriBot_PRD_v2.1.md`](docs/NutriBot_PRD_v2.1.md) | PRD completo do produto (requisitos, personas, roadmap) |
 | [`docs/architecture.md`](docs/architecture.md) | Decisões de arquitetura e ADRs |
 | [`docs/api-spec.md`](docs/api-spec.md) | Especificação dos endpoints da API |
-| [`docs/prompts.md`](docs/prompts.md) | Prompts do sistema enviados ao GPT-4o |
+| [`docs/prompts.md`](docs/prompts.md) | Prompts do sistema enviados ao Claude |
 | [`docs/fuzzy-match.md`](docs/fuzzy-match.md) | Algoritmo de busca fuzzy na base TACO |
 | [`docs/infra-arch-render-neon.md`](docs/infra-arch-render-neon.md) | Arquitetura de infra + plano de migração para GCP |
 | [`docs/infra-setup-render-neon.md`](docs/infra-setup-render-neon.md) | Setup passo a passo: Neon + Render + Telegram |
@@ -338,4 +370,4 @@ O NutriBot lida com **dados sensíveis de saúde** (LGPD Art. 11 — comportamen
 
 ---
 
-*NutriBot · Agosto 2026 · Python 3.13 · FastAPI · PostgreSQL*
+*NutriBot · Agosto 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude*
