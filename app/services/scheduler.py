@@ -20,9 +20,19 @@ _ALERT_JOBS = [
         "Me conta o que comeu para eu registrar suas calorias! 🥣",
     ),
     (
+        "morning_snack", 10, 30,
+        "Oi, {name}! 🍌 Que tal um lanchinho da manhã?\n"
+        "Se beliscou algo, me conta para eu registrar! 😊",
+    ),
+    (
         "lunch", 12, 30,
         "Ei, {name}! 🍽️ Já passaram das 12h — você já almoçou?\n"
         "Me conta o que comeu! 🥗",
+    ),
+    (
+        "afternoon_snack", 16, 0,
+        "Boa tarde, {name}! 🍊 Hora do lanche da tarde!\n"
+        "Comeu algo? Me conta para eu registrar! 🙂",
     ),
     (
         "dinner", 19, 30,
@@ -91,12 +101,20 @@ async def job_alert_breakfast() -> None:
     await _send_meal_alert("breakfast", _ALERT_JOBS[0][3])
 
 
+async def job_alert_morning_snack() -> None:
+    await _send_meal_alert("morning_snack", _ALERT_JOBS[1][3])
+
+
 async def job_alert_lunch() -> None:
-    await _send_meal_alert("lunch", _ALERT_JOBS[1][3])
+    await _send_meal_alert("lunch", _ALERT_JOBS[2][3])
+
+
+async def job_alert_afternoon_snack() -> None:
+    await _send_meal_alert("afternoon_snack", _ALERT_JOBS[3][3])
 
 
 async def job_alert_dinner() -> None:
-    await _send_meal_alert("dinner", _ALERT_JOBS[2][3])
+    await _send_meal_alert("dinner", _ALERT_JOBS[4][3])
 
 
 async def _send_periodic_report(period_type: str) -> None:
@@ -279,9 +297,11 @@ async def start_scheduler() -> AsyncIOScheduler:
     scheduler = AsyncIOScheduler(timezone=SP_TZ)
 
     # Alertas de refeição — hora fixa por refeição (horário de Brasília)
-    scheduler.add_job(job_alert_breakfast, CronTrigger(hour=9,  minute=30, timezone=SP_TZ))
-    scheduler.add_job(job_alert_lunch,     CronTrigger(hour=12, minute=30, timezone=SP_TZ))
-    scheduler.add_job(job_alert_dinner,    CronTrigger(hour=19, minute=30, timezone=SP_TZ))
+    scheduler.add_job(job_alert_breakfast,       CronTrigger(hour=9,  minute=30, timezone=SP_TZ))
+    scheduler.add_job(job_alert_morning_snack,   CronTrigger(hour=10, minute=30, timezone=SP_TZ))
+    scheduler.add_job(job_alert_lunch,           CronTrigger(hour=12, minute=30, timezone=SP_TZ))
+    scheduler.add_job(job_alert_afternoon_snack, CronTrigger(hour=16, minute=0,  timezone=SP_TZ))
+    scheduler.add_job(job_alert_dinner,          CronTrigger(hour=19, minute=30, timezone=SP_TZ))
 
     # Relatórios automáticos por frequência (horário de Brasília)
     scheduler.add_job(job_weekly_report,    CronTrigger(day_of_week="sun", hour=20, minute=0, timezone=SP_TZ))
@@ -294,7 +314,7 @@ async def start_scheduler() -> AsyncIOScheduler:
 
     scheduler.start()
     logger.info(
-        "Scheduler iniciado (America/Sao_Paulo): alertas 09:30/12:30/19:30 | "
+        "Scheduler iniciado (America/Sao_Paulo): alertas 09:30/10:30/12:30/16:00/19:30 | "
         "relatório dom 20h (semanal) | 1º/mês 20h (mensal) | 1º trimestre 20h (trimestral)"
     )
     return scheduler

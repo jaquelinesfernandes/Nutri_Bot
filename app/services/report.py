@@ -22,11 +22,13 @@ from app.models.weekly_report import WeeklyReport
 logger = logging.getLogger(__name__)
 
 _MEAL_ICONS = {
-    "breakfast": "☀️",
-    "lunch": "🍽️",
-    "dinner": "🌙",
-    "snack": "🍎",
-    "other": "🍴",
+    "breakfast":       "☀️",
+    "morning_snack":   "🍌",
+    "lunch":           "🍽️",
+    "afternoon_snack": "🍊",
+    "dinner":          "🌙",
+    "snack":           "🍎",
+    "other":           "🍴",
 }
 _DAY_NAMES_PT = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 _MONTH_NAMES_PT = [
@@ -96,7 +98,7 @@ def _build_row(
     else:
         badge_cls, badge_lbl = "badge-over", "Acima"
 
-    icon_order = ["breakfast", "lunch", "dinner", "snack", "other"]
+    icon_order = ["breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner", "snack", "other"]
     meals_label = " ".join(_MEAL_ICONS[m] for m in icon_order if m in meal_types) or "—"
 
     return {

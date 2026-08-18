@@ -42,9 +42,17 @@ REGRAS OBRIGATÓRIAS:
    - queijo fatiado: 20g (1 fatia)
 5. Para cada alimento, forneça estimativas nutricionais por 100g nos campos est_calories_kcal, est_protein_g, est_carb_g, est_fat_g.
 6. Responda SOMENTE com JSON válido, sem texto adicional, sem markdown.
+7. CLASSIFICAÇÃO DE REFEIÇÃO (meal_type):
+   - breakfast: café da manhã (manhã, café, pão, ovo pela manhã)
+   - morning_snack: lanche da manhã (explícito "lanche da manhã", "lanchinho antes do almoço", horário 9h–11h30)
+   - lunch: almoço (almoço, almoçar, meio-dia)
+   - afternoon_snack: lanche da tarde (explícito "lanche da tarde", "lanchinho", horário 14h–18h)
+   - dinner: jantar (jantar, janta, noite)
+   - snack: lanche sem contexto claro de horário (use quando não for possível distinguir manhã/tarde)
+   - other: qualquer refeição não classificável acima
 
 SCHEMA:
-{"foods":[{"name":"string","original_term":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|lunch|dinner|snack|other","meal_time_hint":"string|null","unrecognized_terms":[]}"""
+{"foods":[{"name":"string","original_term":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other","meal_time_hint":"string|null","unrecognized_terms":[]}"""
 
 SYSTEM_PROMPT_VISION = """Você é um assistente especializado em nutrição brasileira com visão computacional.
 Analise a foto de uma refeição e identifique os alimentos presentes.
@@ -71,7 +79,7 @@ REGRAS:
 6. Responda SOMENTE com JSON válido, sem texto adicional, sem markdown.
 
 SCHEMA:
-{"image_has_food":true,"image_quality":"good|poor|unreadable","foods":[{"name":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|lunch|dinner|snack|other","overall_confidence":number}"""
+{"image_has_food":true,"image_quality":"good|poor|unreadable","foods":[{"name":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other","overall_confidence":number}"""
 
 
 class AIService:

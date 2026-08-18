@@ -18,7 +18,9 @@ class ExtractedFoodItem(BaseModel):
 
 class FoodExtractionResponse(BaseModel):
     foods: list[ExtractedFoodItem]
-    meal_type: Literal["breakfast", "lunch", "dinner", "snack", "other"] = "other"
+    meal_type: Literal[
+        "breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner", "snack", "other"
+    ] = "other"
     meal_time_hint: str | None = None
     unrecognized_terms: list[str] = []
     image_has_food: bool = True

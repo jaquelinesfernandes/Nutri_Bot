@@ -30,7 +30,15 @@ ConversationState = Literal[
 CONFIRM_WORDS = {"sim", "s", "yes", "y", "ok", "confirmar", "confirma", "certo", "isso", "exato", "correto"}
 DENY_WORDS = {"não", "nao", "n", "no", "errado", "corrigir", "incorreto", "errada"}
 
-MEAL_EMOJI = {"breakfast": "🌅", "lunch": "☀️", "dinner": "🌙", "snack": "🍎", "other": "🍽️"}
+MEAL_EMOJI = {
+    "breakfast":      "🌅",
+    "morning_snack":  "🍌",
+    "lunch":          "☀️",
+    "afternoon_snack":"🍊",
+    "dinner":         "🌙",
+    "snack":          "🍎",
+    "other":          "🍽️",
+}
 
 GOAL_SUGGESTIONS = {
     "perder": 1500,
@@ -328,14 +336,22 @@ class ConversationService:
     _MEAL_TYPE_MAP: dict[str, str] = {
         "café": "breakfast", "cafe": "breakfast", "café da manhã": "breakfast",
         "cafe da manha": "breakfast", "pequeno almoço": "breakfast",
+        "lanche da manhã": "morning_snack", "lanche da manha": "morning_snack",
+        "lanchinho da manhã": "morning_snack", "lanchinho da manha": "morning_snack",
         "almoço": "lunch", "almoco": "lunch",
-        "jantar": "dinner",
+        "lanche da tarde": "afternoon_snack", "lanchinho da tarde": "afternoon_snack",
         "lanche": "snack", "lanchinho": "snack",
+        "jantar": "dinner",
         "ceia": "snack",
     }
     _MEAL_NAME: dict[str, str] = {
-        "breakfast": "Café da manhã", "lunch": "Almoço",
-        "dinner": "Jantar", "snack": "Lanche", "other": "Refeição",
+        "breakfast":      "Café da manhã",
+        "morning_snack":  "Lanche da manhã",
+        "lunch":          "Almoço",
+        "afternoon_snack":"Lanche da tarde",
+        "dinner":         "Jantar",
+        "snack":          "Lanche",
+        "other":          "Refeição",
     }
 
     async def _cmd_deletar_refeicao(self, user: User, args: str | None, db: AsyncSession) -> str:
@@ -884,8 +900,11 @@ class ConversationService:
         total_carb = sum(l.total_carb_g for l in logs)
         total_fat = sum(l.total_fat_g for l in logs)
 
-        meal_names = {"breakfast": "Café", "lunch": "Almoço", "dinner": "Jantar",
-                      "snack": "Lanche", "other": "Refeição"}
+        meal_names = {
+            "breakfast": "Café", "morning_snack": "Lanche manhã",
+            "lunch": "Almoço", "afternoon_snack": "Lanche tarde",
+            "dinner": "Jantar", "snack": "Lanche", "other": "Refeição",
+        }
         lines = "\n".join(
             f"• {meal_names.get(l.meal_type, 'Refeição')}: {l.total_calories_kcal:.0f} kcal"
             for l in logs
@@ -952,8 +971,11 @@ class ConversationService:
             local_date = log.logged_at.astimezone(tz).date()
             days_map[local_date].append(log)
 
-        MEAL_NAMES = {"breakfast": "Café", "lunch": "Almoço", "dinner": "Jantar",
-                      "snack": "Lanche", "other": "Refeição"}
+        MEAL_NAMES = {
+            "breakfast": "Café", "morning_snack": "Lanche manhã",
+            "lunch": "Almoço", "afternoon_snack": "Lanche tarde",
+            "dinner": "Jantar", "snack": "Lanche", "other": "Refeição",
+        }
         WEEKDAYS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
 
         sections = []

@@ -24,7 +24,7 @@ class MealLog(Base):
     logged_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False, index=True
     )
-    meal_type: Mapped[str] = mapped_column(String(20), nullable=False)  # breakfast|lunch|dinner|snack|other
+    meal_type: Mapped[str] = mapped_column(String(20), nullable=False)  # breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other
     raw_input_encrypted: Mapped[str | None] = mapped_column(Text, nullable=True)  # AES-256
     input_type: Mapped[str] = mapped_column(String(10), default="text")  # text|photo|audio
     total_calories_kcal: Mapped[float] = mapped_column(Float, default=0.0)

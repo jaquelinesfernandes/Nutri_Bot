@@ -53,7 +53,7 @@ SCHEMA DE SAÍDA:
       "confidence_score": número de 0.0 a 1.0
     }
   ],
-  "meal_type": "breakfast|lunch|dinner|snack|other",
+  "meal_type": "breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other",
   "meal_time_hint": "hora mencionada ou null (ex: '12:30', 'manhã', null)",
   "unrecognized_terms": ["termos que não conseguiu identificar"]
 }
@@ -126,7 +126,7 @@ SCHEMA DE SAÍDA:
       "position_description": "descrição breve da posição no prato (opcional)"
     }
   ],
-  "meal_type": "breakfast|lunch|dinner|snack|other",
+  "meal_type": "breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other",
   "overall_confidence": número de 0.0 a 1.0
 }
 ```
