@@ -134,21 +134,33 @@ Usuário       Telegram      FastAPI       ConvService    AIService        DB
 
 ### 2.3 Fluxo de Alerta (APScheduler)
 
+Jobs de alerta — horários fixos em BRT (America/Sao_Paulo):
+
+| Job | Horário BRT | meal_type |
+|-----|-------------|-----------|
+| `job_alert_breakfast` | 09:30 | `breakfast` |
+| `job_alert_morning_snack` | 10:30 | `morning_snack` |
+| `job_alert_lunch` | 12:30 | `lunch` |
+| `job_alert_afternoon_snack` | 16:00 | `afternoon_snack` |
+| `job_alert_dinner` | 19:30 | `dinner` |
+
+Cada job verifica se o usuário já registrou aquela refeição no dia e, se não, envia o alerta:
+
 ```
 APScheduler     DB              NotificationSvc    Telegram/WA
      │            │                    │                │
-     │─ (a cada hora)                  │                │
-     │─ get_pending_alerts() ─────────▶│                │
-     │◀─ alerts[]             ─────────│                │
+     │─ (horário fixo BRT)             │                │
+     │─ busca users (onboarding OK,    │                │
+     │   alertas ativos, não deletados)│                │
+     │◀─ users[]              ─────────│                │
      │                                 │                │
-     │ para cada alert:                │                │
-     │─ check if user registered       │                │
-     │  meal in window ───────────────▶│                │
-     │◀─ not_registered ───────────────│                │
+     │ para cada user:                 │                │
+     │─ verifica se já registrou       │                │
+     │  meal_type do job hoje ────────▶│                │
+     │◀─ não_registrou ────────────────│                │
      │─ send_alert(user) ─────────────▶│                │
      │                                 │─ send_msg() ──▶│
      │                                 │◀─ ok ──────────│
-     │─ log_alert_sent() ─────────────▶│                │
 ```
 
 ### 2.4 Geração do Relatório Semanal

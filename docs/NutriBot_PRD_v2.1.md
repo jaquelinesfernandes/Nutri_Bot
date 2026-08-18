@@ -159,6 +159,18 @@ Salvo ✅    "O que precisa ajustar?
 
 ### 4.3 Fluxo de Alerta
 
+O bot envia um alerta para cada janela de refeição que passou sem registro. Horários padrão (BRT):
+
+| Refeição | Horário do alerta |
+|----------|------------------|
+| ☀️ Café da manhã | 09:30 |
+| 🍌 Lanche da manhã | 10:30 |
+| 🍽️ Almoço | 12:30 |
+| 🍊 Lanche da tarde | 16:00 |
+| 🌙 Jantar | 19:30 |
+
+Exemplo de alerta de almoço:
+
 ```
 [12:30 — janela do almoço passou sem registro]
          │
@@ -204,7 +216,7 @@ Bot envia PDF + resumo no chat:
 | F06 | Persistência de histórico de registros por usuário |
 | F07 | Onboarding conversacional em ≤ 3 perguntas |
 | F08 | Bot Telegram funcional (webhook + respostas) |
-| F09 | Alertas de refeição via Telegram (horários configuráveis) |
+| F09 | Alertas de refeição via Telegram — 5 janelas: café da manhã (09:30), lanche da manhã (10:30), almoço (12:30), lanche da tarde (16:00), jantar (19:30) |
 | F10 | Relatório semanal PDF enviado aos domingos |
 | F11 | Autenticação por ID de chat (sem login explícito no MVP) |
 | F12 | Comandos LGPD: `/deletar_dados` e `/exportar_dados` |
@@ -488,10 +500,14 @@ mensagem que já retomamos de onde paramos! 💚"
 
 ### 10.1 Tipos de Notificação
 
-| Tipo | Gatilho | Prioridade |
-|------|---------|------------|
-| Alerta de refeição | Janela de refeição configurada passou sem registro | Alta |
-| Lembrete de registro | Usuário não registrou nenhuma refeição até 14h | Média |
+| Tipo | Gatilho | Horário padrão BRT | Prioridade |
+|------|---------|-------------------|------------|
+| Alerta — café da manhã | Usuário não registrou o café até 09:30 | 09:30 | Alta |
+| Alerta — lanche da manhã | Usuário não registrou lanche da manhã até 10:30 | 10:30 | Alta |
+| Alerta — almoço | Usuário não registrou o almoço até 12:30 | 12:30 | Alta |
+| Alerta — lanche da tarde | Usuário não registrou lanche da tarde até 16:00 | 16:00 | Alta |
+| Alerta — jantar | Usuário não registrou o jantar até 19:30 | 19:30 | Alta |
+| Lembrete de registro | Usuário não registrou nenhuma refeição até 14h | 14:00 | Média |
 | Relatório semanal | Todo domingo às 20h no fuso do usuário | Alta |
 | Re-engajamento D3 | 3 dias sem nenhum registro | Baixa |
 | Re-engajamento D7 | 7 dias sem registro | Baixa |
@@ -503,7 +519,7 @@ mensagem que já retomamos de onde paramos! 💚"
 
 | Regra | Valor |
 |-------|-------|
-| Máximo de notificações por dia | 4 (alertas de refeição) + 1 (outros tipos) = 5 total |
+| Máximo de notificações por dia | 5 (alertas de refeição) + 1 (outros tipos) = 6 total |
 | Janela proibida (sem envio) | 22h00 – 07h00 no fuso do usuário |
 | Alerta de refeição: tolerância antes de disparar | +30 min após o fim da janela configurada |
 | Mínimo de intervalo entre notificações | 45 minutos |
@@ -660,7 +676,7 @@ MealLog
 ├── id (UUID)
 ├── user_id
 ├── logged_at           (timestamp com fuso)
-├── meal_type           (breakfast | lunch | dinner | snack | other)
+├── meal_type           (breakfast | morning_snack | lunch | afternoon_snack | dinner | snack | other)
 ├── raw_input           (texto/transcrição original — criptografado)
 ├── items[]             → FoodItem[]
 ├── total_calories_kcal
@@ -782,10 +798,13 @@ O Brasil tem 4 fusos horários oficiais. Alertas e o relatório semanal enviados
         └─ fallback: GPT-4o estima (registrado como source="gpt_estimated")
 
 [APScheduler — jobs periódicos]
-        ├─ a cada hora: verifica MealWindows vencidas → dispara alertas
-        ├─ diário 09h: envia lembrete se nenhum registro até então
-        ├─ domingo 20h: gera PDF via WeasyPrint → envia no chat
-        └─ diário 03h: job de re-engajamento (D3/D7/D14)
+        ├─ 09:30 BRT: alerta café da manhã
+        ├─ 10:30 BRT: alerta lanche da manhã
+        ├─ 12:30 BRT: alerta almoço
+        ├─ 16:00 BRT: alerta lanche da tarde
+        ├─ 19:30 BRT: alerta jantar
+        ├─ domingo 20h BRT: gera PDF semanal via WeasyPrint → envia no chat
+        └─ segunda 10h BRT: job de re-engajamento (D3/D7/D14)
 
 [Mercado Pago Webhooks]
         └─ /webhook/payment → atualiza plano do usuário no DB
@@ -1025,6 +1044,9 @@ Cobrir obrigatoriamente:
 - Comidas rápidas ("x-burguer", "coxinha", "esfiha")
 - Ambiguidades ("comi uma saladinha", "bebi um suco")
 - Erros de digitação comuns ("arros", "frangho", "leiti")
+- **Lanche da manhã** com `meal_type = morning_snack` (ex: "comi uma fruta às 10h", "lanche da manhã: iogurte com granola")
+- **Lanche da tarde** com `meal_type = afternoon_snack` (ex: "lanche da tarde foi uma barrinha", "comi biscoito às 16h")
+- **Snack genérico** com `meal_type = snack` quando horário é ambíguo (ex: "comi um lanche")
 
 ### 19.2 Execução Automatizada
 
