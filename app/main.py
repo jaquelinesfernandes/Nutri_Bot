@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI):
 
     from app.services.scheduler import start_scheduler
     scheduler = await start_scheduler()
+    app.state.scheduler = scheduler  # expõe para o /health e /scheduler/status
     logger.info("Scheduler iniciado")
 
     yield
