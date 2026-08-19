@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import date, datetime
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Form, Request
@@ -19,7 +20,10 @@ from app.models.weekly_report import WeeklyReport
 from app.utils.jwt import create_access_token, decode_token, get_current_user_optional
 
 router = APIRouter(tags=["dashboard"])
-templates = Jinja2Templates(directory="app/templates")
+
+# Caminho absoluto — funciona em qualquer working directory (local e Docker)
+_TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
+templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 _MEAL_LABELS = {
@@ -59,7 +63,7 @@ async def root():
 
 @router.get("/login", response_class=HTMLResponse)
 async def login_page(request: Request):
-    return templates.TemplateResponse("login.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="login.html")
 
 
 @router.post("/auth/login-form", response_class=HTMLResponse)
@@ -74,8 +78,8 @@ async def login_form(
     user = result.scalar_one_or_none()
     if not user or not user.password_hash or not pwd_context.verify(password, user.password_hash):
         return templates.TemplateResponse(
-            "login.html",
-            {"request": request, "error": "E-mail ou senha incorretos"},
+            request=request, name="login.html",
+            context={"error": "E-mail ou senha incorretos"},
             status_code=401,
         )
     token = create_access_token(user.id)
@@ -84,7 +88,7 @@ async def login_form(
 
 @router.get("/cadastro", response_class=HTMLResponse)
 async def register_page(request: Request):
-    return templates.TemplateResponse("register.html", {"request": request})
+    return templates.TemplateResponse(request=request, name="register.html")
 
 
 @router.post("/auth/register-form", response_class=HTMLResponse)
@@ -99,15 +103,15 @@ async def register_form(
     from app.config import settings as cfg
     if len(password) < 6:
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "Senha deve ter ao menos 6 caracteres"},
+            request=request, name="register.html",
+            context={"error": "Senha deve ter ao menos 6 caracteres"},
             status_code=422,
         )
     existing = await db.execute(select(User).where(User.email == email))
     if existing.scalar_one_or_none():
         return templates.TemplateResponse(
-            "register.html",
-            {"request": request, "error": "E-mail já cadastrado"},
+            request=request, name="register.html",
+            context={"error": "E-mail já cadastrado"},
             status_code=400,
         )
     user = User(
@@ -199,16 +203,19 @@ async def dashboard(
     months_pt = ["","jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
     today_label = f"{today.day} de {months_pt[today.month]} de {today.year}"
 
-    return templates.TemplateResponse("dashboard.html", {
-        "request": request, "user": user, "active": "dashboard",
-        "meals": meals, "meal_labels": _MEAL_LABELS,
-        "total_kcal": total_kcal, "total_prot": total_prot,
-        "total_carb": total_carb, "total_fat": total_fat,
-        "goal_kcal": goal_kcal, "pct_kcal": pct_kcal, "pct_prot": pct_prot,
-        "week_labels": week_labels,
-        "week_kcal": [w["kcal"] for w in week_data],
-        "now_hour": now.hour, "today_label": today_label,
-    })
+    return templates.TemplateResponse(
+        request=request, name="dashboard.html",
+        context={
+            "user": user, "active": "dashboard",
+            "meals": meals, "meal_labels": _MEAL_LABELS,
+            "total_kcal": total_kcal, "total_prot": total_prot,
+            "total_carb": total_carb, "total_fat": total_fat,
+            "goal_kcal": goal_kcal, "pct_kcal": pct_kcal, "pct_prot": pct_prot,
+            "week_labels": week_labels,
+            "week_kcal": [w["kcal"] for w in week_data],
+            "now_hour": now.hour, "today_label": today_label,
+        }
+    )
 
 
 @router.get("/historico", response_class=HTMLResponse)
@@ -253,11 +260,14 @@ async def historico(
             meals=[MealLogRead.model_validate(m) for m in meals],
         )
 
-    return templates.TemplateResponse("historico.html", {
-        "request": request, "user": user, "active": "historico",
-        "selected_date": target.isoformat(),
-        "balance": balance, "meal_labels": _MEAL_LABELS,
-    })
+    return templates.TemplateResponse(
+        request=request, name="historico.html",
+        context={
+            "user": user, "active": "historico",
+            "selected_date": target.isoformat(),
+            "balance": balance, "meal_labels": _MEAL_LABELS,
+        }
+    )
 
 
 @router.get("/relatorios", response_class=HTMLResponse)
@@ -286,9 +296,10 @@ async def relatorios(
         }
         for r in reports_raw
     ]
-    return templates.TemplateResponse("relatorios.html", {
-        "request": request, "user": user, "active": "relatorios", "reports": reports,
-    })
+    return templates.TemplateResponse(
+        request=request, name="relatorios.html",
+        context={"user": user, "active": "relatorios", "reports": reports},
+    )
 
 
 @router.get("/configuracoes", response_class=HTMLResponse)
@@ -300,10 +311,10 @@ async def configuracoes(
 ):
     if user is None:
         return RedirectResponse(url="/login", status_code=302)
-    return templates.TemplateResponse("configuracoes.html", {
-        "request": request, "user": user, "active": "configuracoes",
-        "success": success, "error": error,
-    })
+    return templates.TemplateResponse(
+        request=request, name="configuracoes.html",
+        context={"user": user, "active": "configuracoes", "success": success, "error": error},
+    )
 
 
 @router.post("/configuracoes/salvar")
