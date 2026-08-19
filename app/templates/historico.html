@@ -1,0 +1,92 @@
+{% extends "layout.html" %}
+{% block title %}Histórico — NutriBot{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-8">
+  <h1 class="text-2xl font-bold text-slate-800">📅 Histórico de refeições</h1>
+  <div class="flex items-center gap-2">
+    <input type="date" id="datePicker" value="{{ selected_date }}"
+      class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"/>
+    <button onclick="loadDate()"
+      class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors">
+      Ver
+    </button>
+  </div>
+</div>
+
+<!-- Resumo do dia -->
+{% if balance %}
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+  <div class="bg-white rounded-xl shadow-sm p-4">
+    <p class="text-xs text-slate-400 mb-1">Calorias</p>
+    <p class="text-xl font-bold text-slate-800">{{ balance.total_calories_kcal | int }}
+      {% if balance.goal_calories %}<span class="text-xs font-normal text-slate-400">/ {{ balance.goal_calories }}</span>{% endif %}
+    </p>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-4">
+    <p class="text-xs text-slate-400 mb-1">Proteína</p>
+    <p class="text-xl font-bold text-blue-500">{{ balance.total_protein_g | int }}g</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-4">
+    <p class="text-xs text-slate-400 mb-1">Carboidratos</p>
+    <p class="text-xl font-bold text-amber-500">{{ balance.total_carb_g | int }}g</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-4">
+    <p class="text-xs text-slate-400 mb-1">Gordura</p>
+    <p class="text-xl font-bold text-rose-400">{{ balance.total_fat_g | int }}g</p>
+  </div>
+</div>
+
+<!-- Refeições -->
+<div class="space-y-4">
+  {% for meal in balance.meals %}
+  <div class="bg-white rounded-xl shadow-sm p-5">
+    <div class="flex items-center justify-between mb-3">
+      <div>
+        <span class="text-sm font-semibold text-slate-700">{{ meal_labels[meal.meal_type] }}</span>
+        <span class="ml-2 text-xs text-slate-400">{{ meal.logged_at[:16].replace('T',' ') }}</span>
+      </div>
+      <span class="font-bold text-brand-600">{{ meal.total_calories_kcal | int }} kcal</span>
+    </div>
+    {% if meal.food_items %}
+    <table class="w-full text-xs text-slate-500">
+      <thead><tr class="text-left border-b border-gray-100">
+        <th class="pb-1 font-medium">Alimento</th>
+        <th class="pb-1 font-medium text-right">Qtd (g)</th>
+        <th class="pb-1 font-medium text-right">kcal</th>
+        <th class="pb-1 font-medium text-right">Prot.</th>
+        <th class="pb-1 font-medium text-right">Carb.</th>
+      </tr></thead>
+      <tbody>
+        {% for fi in meal.food_items %}
+        <tr class="border-b border-gray-50 last:border-0">
+          <td class="py-1">{{ fi.name }}</td>
+          <td class="py-1 text-right">{{ fi.quantity_g | int }}</td>
+          <td class="py-1 text-right">{{ fi.calories_kcal | int }}</td>
+          <td class="py-1 text-right">{{ fi.protein_g | round(1) }}g</td>
+          <td class="py-1 text-right">{{ fi.carb_g | round(1) }}g</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="bg-white rounded-xl shadow-sm p-12 text-center text-slate-400">
+  <div class="text-5xl mb-3">📭</div>
+  <p>Nenhuma refeição registrada em {{ selected_date }}.</p>
+</div>
+{% endif %}
+
+<script>
+  function loadDate() {
+    const d = document.getElementById('datePicker').value;
+    if (d) window.location.href = '/historico?date=' + d;
+  }
+  document.getElementById('datePicker').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadDate();
+  });
+</script>
+{% endblock %}

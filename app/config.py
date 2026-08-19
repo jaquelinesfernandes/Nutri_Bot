@@ -68,6 +68,10 @@ class Settings(BaseSettings):
     mercadopago_monthly_plan_id: str = ""
     mercadopago_annual_plan_id: str = ""
 
+    # JWT / autenticação web
+    jwt_secret: str = "change-me-in-production-use-32-chars-min"
+    jwt_expire_days: int = 7
+
     # Segurança
     raw_input_encryption_key: str = "0" * 64  # placeholder — substituir em produção
 

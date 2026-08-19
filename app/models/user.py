@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, UniqueConstraint
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -22,7 +22,10 @@ class User(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     channel_id: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
-    channel_type: Mapped[str] = mapped_column(String(20), nullable=False)  # telegram | whatsapp
+    channel_type: Mapped[str] = mapped_column(String(20), nullable=False)  # telegram | whatsapp | web
+    # Campos de autenticação web (nullable — usuários bot não têm senha)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True, index=True)
+    password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     timezone: Mapped[str] = mapped_column(String(50), default="America/Sao_Paulo")
     daily_calorie_goal: Mapped[int | None] = mapped_column(Integer, nullable=True)
     goal_type: Mapped[str | None] = mapped_column(String(30), nullable=True)

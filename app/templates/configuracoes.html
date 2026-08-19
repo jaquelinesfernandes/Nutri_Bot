@@ -1,0 +1,71 @@
+{% extends "layout.html" %}
+{% block title %}Configurações — NutriBot{% endblock %}
+{% block content %}
+
+<h1 class="text-2xl font-bold text-slate-800 mb-8">⚙️ Configurações</h1>
+
+{% if success %}
+<div class="mb-6 px-4 py-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+  ✅ {{ success }}
+</div>
+{% endif %}
+{% if error %}
+<div class="mb-6 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+  ❌ {{ error }}
+</div>
+{% endif %}
+
+<div class="bg-white rounded-xl shadow-sm p-6 max-w-lg">
+  <form method="post" action="/configuracoes/salvar" class="space-y-5">
+    <div>
+      <label class="block text-sm font-medium text-slate-600 mb-1">Nome</label>
+      <input type="text" name="name" value="{{ user.first_name or '' }}"
+        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-600 mb-1">Meta calórica diária (kcal)</label>
+      <input type="number" name="daily_calorie_goal" min="800" max="5000"
+        value="{{ user.daily_calorie_goal or '' }}" placeholder="ex: 2000"
+        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-600 mb-1">Objetivo</label>
+      <select name="goal_type"
+        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white">
+        <option value="">Não definido</option>
+        <option value="emagrecer" {% if user.goal_type == 'emagrecer' %}selected{% endif %}>Emagrecer</option>
+        <option value="manter"    {% if user.goal_type == 'manter'    %}selected{% endif %}>Manter peso</option>
+        <option value="ganhar"    {% if user.goal_type == 'ganhar'    %}selected{% endif %}>Ganhar massa</option>
+      </select>
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-slate-600 mb-1">Fuso horário</label>
+      <select name="timezone"
+        class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm bg-white">
+        <option value="America/Sao_Paulo"   {% if user.timezone == 'America/Sao_Paulo'   %}selected{% endif %}>Brasília (UTC-3)</option>
+        <option value="America/Manaus"      {% if user.timezone == 'America/Manaus'      %}selected{% endif %}>Manaus (UTC-4)</option>
+        <option value="America/Rio_Branco"  {% if user.timezone == 'America/Rio_Branco'  %}selected{% endif %}>Rio Branco (UTC-5)</option>
+        <option value="America/Noronha"     {% if user.timezone == 'America/Noronha'     %}selected{% endif %}>Fernando de Noronha (UTC-2)</option>
+      </select>
+    </div>
+
+    <button type="submit"
+      class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
+      Salvar alterações
+    </button>
+  </form>
+</div>
+
+<div class="mt-6 bg-white rounded-xl shadow-sm p-6 max-w-lg border border-red-100">
+  <h2 class="font-semibold text-red-600 mb-2">Zona de perigo</h2>
+  <p class="text-sm text-slate-500 mb-4">A exclusão de conta remove permanentemente todos os seus dados nutricionais (LGPD Art. 18).</p>
+  <a href="/configuracoes/excluir-conta"
+    class="inline-block px-4 py-2 border border-red-300 text-red-600 hover:bg-red-50 rounded-lg text-sm font-medium transition-colors">
+    Excluir minha conta
+  </a>
+</div>
+
+{% endblock %}

@@ -1,0 +1,159 @@
+{% extends "layout.html" %}
+{% block title %}Dashboard — NutriBot{% endblock %}
+{% block content %}
+
+<!-- Header -->
+<div class="mb-8">
+  <h1 class="text-2xl font-bold text-slate-800">
+    {% set hora = now_hour %}
+    {% if hora < 12 %}☀️ Bom dia{% elif hora < 18 %}🌤️ Boa tarde{% else %}🌙 Boa noite{% endif %},
+    {{ user.first_name or 'usuário' }}!
+  </h1>
+  <p class="text-slate-500 text-sm mt-1">{{ today_label }}</p>
+</div>
+
+<!-- Cards de macros -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+
+  <!-- Calorias -->
+  <div class="bg-white rounded-xl shadow-sm p-5 col-span-2 md:col-span-1">
+    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Calorias</p>
+    <p class="text-3xl font-bold text-slate-800">{{ total_kcal | int }}</p>
+    {% if goal_kcal %}
+    <p class="text-sm text-slate-400 mt-0.5">/ {{ goal_kcal }} kcal</p>
+    <div class="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
+      <div class="h-2 rounded-full {% if pct_kcal > 100 %}bg-red-400{% elif pct_kcal > 80 %}bg-yellow-400{% else %}bg-brand-500{% endif %}"
+           style="width: {{ [pct_kcal, 100] | min }}%"></div>
+    </div>
+    <p class="text-xs text-slate-400 mt-1">{{ pct_kcal | int }}% da meta</p>
+    {% else %}
+    <p class="text-xs text-slate-400 mt-1">Meta não definida</p>
+    {% endif %}
+  </div>
+
+  <!-- Proteína -->
+  <div class="bg-white rounded-xl shadow-sm p-5">
+    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Proteína</p>
+    <p class="text-2xl font-bold text-blue-600">{{ total_prot | int }}<span class="text-sm font-normal text-slate-400">g</span></p>
+    <p class="text-xs text-slate-400 mt-1">{{ pct_prot | int }}% da meta</p>
+  </div>
+
+  <!-- Carboidratos -->
+  <div class="bg-white rounded-xl shadow-sm p-5">
+    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Carboidratos</p>
+    <p class="text-2xl font-bold text-amber-500">{{ total_carb | int }}<span class="text-sm font-normal text-slate-400">g</span></p>
+  </div>
+
+  <!-- Gordura -->
+  <div class="bg-white rounded-xl shadow-sm p-5">
+    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Gordura</p>
+    <p class="text-2xl font-bold text-rose-400">{{ total_fat | int }}<span class="text-sm font-normal text-slate-400">g</span></p>
+  </div>
+
+</div>
+
+<!-- Gráfico semanal + Refeições de hoje -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+  <!-- Gráfico semanal -->
+  <div class="md:col-span-2 bg-white rounded-xl shadow-sm p-5">
+    <h2 class="font-semibold text-slate-700 mb-4">Calorias — últimos 7 dias</h2>
+    <canvas id="weekChart" height="120"></canvas>
+  </div>
+
+  <!-- Macros donut -->
+  <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col items-center">
+    <h2 class="font-semibold text-slate-700 mb-4 self-start">Macros hoje</h2>
+    <canvas id="macroChart" width="180" height="180"></canvas>
+    <div class="mt-3 space-y-1 text-xs w-full">
+      <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>Proteína</span><span>{{ total_prot | int }}g</span></div>
+      <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>Carboidratos</span><span>{{ total_carb | int }}g</span></div>
+      <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>Gordura</span><span>{{ total_fat | int }}g</span></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Refeições de hoje -->
+<div class="mt-6 bg-white rounded-xl shadow-sm p-5">
+  <h2 class="font-semibold text-slate-700 mb-4">Refeições de hoje</h2>
+  {% if meals %}
+  <div class="space-y-3">
+    {% for meal in meals %}
+    <div class="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
+      <div>
+        <span class="text-sm font-medium text-slate-700">{{ meal_labels[meal.meal_type] }}</span>
+        <p class="text-xs text-slate-400 mt-0.5">
+          {% for fi in meal.food_items[:3] %}{{ fi.name }}{% if not loop.last %}, {% endif %}{% endfor %}
+          {% if meal.food_items | length > 3 %}…{% endif %}
+        </p>
+      </div>
+      <span class="text-sm font-semibold text-slate-600">{{ meal.total_calories_kcal | int }} kcal</span>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-8 text-slate-400">
+    <div class="text-4xl mb-2">🍽️</div>
+    <p class="text-sm">Nenhuma refeição registrada hoje.</p>
+    <p class="text-xs mt-1">Use o bot no Telegram para registrar suas refeições.</p>
+  </div>
+  {% endif %}
+</div>
+
+<script>
+  // Gráfico semanal
+  const weekLabels = {{ week_labels | tojson }};
+  const weekKcal   = {{ week_kcal   | tojson }};
+  const goalLine   = {{ goal_kcal or 0 }};
+
+  new Chart(document.getElementById('weekChart'), {
+    type: 'bar',
+    data: {
+      labels: weekLabels,
+      datasets: [
+        {
+          label: 'Calorias',
+          data: weekKcal,
+          backgroundColor: 'rgba(22,163,74,0.7)',
+          borderRadius: 6,
+        },
+        {
+          label: 'Meta',
+          data: weekLabels.map(() => goalLine),
+          type: 'line',
+          borderColor: '#94a3b8',
+          borderDash: [5,4],
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+        }
+      ]
+    },
+    options: {
+      plugins: { legend: { display: false } },
+      scales: {
+        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
+        x: { grid: { display: false } }
+      }
+    }
+  });
+
+  // Donut macros
+  new Chart(document.getElementById('macroChart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Proteína', 'Carboidratos', 'Gordura'],
+      datasets: [{
+        data: [{{ total_prot | int }}, {{ total_carb | int }}, {{ total_fat | int }}],
+        backgroundColor: ['#60a5fa','#fbbf24','#f87171'],
+        borderWidth: 0,
+      }]
+    },
+    options: {
+      cutout: '70%',
+      plugins: { legend: { display: false } }
+    }
+  });
+</script>
+{% endblock %}

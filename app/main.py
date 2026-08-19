@@ -44,9 +44,29 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
-from app.routers import health, webhook_payment, webhook_telegram, webhook_whatsapp  # noqa: E402
+from app.routers import (  # noqa: E402
+    auth,
+    dashboard,
+    health,
+    meals,
+    reports,
+    users,
+    webhook_payment,
+    webhook_telegram,
+    webhook_whatsapp,
+)
 
+# ── Webhooks + saúde ──
 app.include_router(health.router)
 app.include_router(webhook_telegram.router)
 app.include_router(webhook_whatsapp.router)
 app.include_router(webhook_payment.router)
+
+# ── API REST ──
+app.include_router(auth.router)
+app.include_router(users.router)
+app.include_router(meals.router)
+app.include_router(reports.router)
+
+# ── Plataforma web (Jinja2) ──
+app.include_router(dashboard.router)
