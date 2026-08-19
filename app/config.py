@@ -84,7 +84,8 @@ class Settings(BaseSettings):
 
     # Aplicação
     app_env: str = "development"
-    app_url: str = "https://nutribot.onrender.com"  # URL pública — usada em links do bot
+    app_url: str = ""                 # URL pública — usada em links do bot (ex: https://nutri-bot-ot0p.onrender.com)
+    webhook_base_url: str = ""        # fallback: mesmo valor de WEBHOOK_BASE_URL já configurado no Render
     log_level: str = "INFO"
     maintenance_mode: bool = False
     default_timezone: str = "America/Sao_Paulo"

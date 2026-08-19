@@ -772,7 +772,8 @@ class ConversationService:
     def _dashboard_cta(self, user: User) -> str:
         """Retorna rodapé com link do dashboard (se vinculado) ou convite para cadastro."""
         from app.config import settings
-        base = settings.app_url.rstrip("/")
+        # Usa APP_URL se configurado; caso contrário, aproveita WEBHOOK_BASE_URL já definido no Render
+        base = (settings.app_url or settings.webhook_base_url).rstrip("/")
         if user.email:
             # Conta já vinculada ao painel web — link direto para o dashboard
             return f"\n\n🌐 [Ver no dashboard]({base}/dashboard)"
