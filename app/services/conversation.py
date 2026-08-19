@@ -155,6 +155,7 @@ class ConversationService:
             "exportar_dados": self._cmd_exportar_dados,
             "privacidade":    self._cmd_privacidade,
             "feedback":       self._cmd_feedback,
+            "vincular":       self._cmd_vincular,
         }
 
         handler = handlers.get(cmd)
@@ -1205,6 +1206,35 @@ class ConversationService:
             "• /exportar\\_dados — baixar seus dados\n"
             "• /deletar\\_dados — apagar tudo em até 72h\n\n"
             "📄 [Política de Privacidade completa](https://nutri.bot/privacidade)"
+        )
+
+    async def _cmd_vincular(self, user: User, args, db: AsyncSession) -> str:
+        """Gera um código temporário para vincular a conta Telegram ao painel web."""
+        import random
+        import string
+
+        if user.channel_type != "telegram":
+            return "Este comando só funciona no Telegram. 😊"
+
+        # Código de 6 caracteres alfanumérico maiúsculo, sem ambíguos (0/O, I/1)
+        alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        code = "".join(random.choices(alphabet, k=6))
+
+        user.web_link_token = code
+        user.web_link_token_expires_at = datetime.now(ZoneInfo("UTC")) + timedelta(minutes=10)
+        if db:
+            await db.commit()
+
+        return (
+            "🔗 *Vincular conta Telegram ao painel web*\n\n"
+            f"Seu código de vinculação:\n\n"
+            f"```\n{code}\n```\n\n"
+            "📋 *Como usar:*\n"
+            "1. Acesse o painel web e faça login\n"
+            "2. Vá em *Configurações* → seção *Vincular Telegram*\n"
+            "3. Digite o código acima e clique em *Vincular*\n\n"
+            "⏱️ Válido por *10 minutos*.\n"
+            "Após a vinculação, seu histórico do Telegram ficará visível no painel!"
         )
 
     async def _cmd_relatorios(self, user: User, args, db: AsyncSession) -> str:

@@ -59,6 +59,42 @@
   </form>
 </div>
 
+{% if not user.channel_type or user.channel_type != 'telegram' %}
+<div class="mt-6 bg-white rounded-xl shadow-sm p-6 max-w-lg border border-violet-100">
+  <h2 class="font-semibold text-violet-700 mb-1">🔗 Vincular conta Telegram</h2>
+  <p class="text-sm text-slate-500 mb-4">
+    Registrou refeições pelo Telegram? Vincule sua conta para ver todo o histórico aqui no painel.
+  </p>
+
+  <ol class="text-sm text-slate-600 mb-5 space-y-1 list-decimal list-inside">
+    <li>Abra o bot no Telegram e envie <code class="bg-slate-100 px-1.5 py-0.5 rounded font-mono text-xs">/vincular</code></li>
+    <li>Copie o código de 6 letras que o bot enviar</li>
+    <li>Cole o código abaixo e clique em <strong>Vincular</strong></li>
+  </ol>
+
+  <form method="post" action="/configuracoes/vincular-telegram" class="flex gap-3">
+    <input type="text" name="link_code" placeholder="Ex: AB12CD"
+      maxlength="6" autocomplete="off" autocapitalize="characters"
+      class="flex-1 px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-400 text-sm font-mono tracking-widest uppercase text-center"/>
+    <button type="submit"
+      class="px-5 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-semibold rounded-lg transition-colors whitespace-nowrap">
+      Vincular
+    </button>
+  </form>
+
+  <p class="text-xs text-slate-400 mt-3">
+    ⚠️ Após vincular, esta conta web será fundida com sua conta Telegram. Ação irreversível.
+  </p>
+</div>
+{% else %}
+<div class="mt-6 bg-white rounded-xl shadow-sm p-6 max-w-lg border border-green-100">
+  <h2 class="font-semibold text-green-700 mb-1">✅ Telegram vinculado</h2>
+  <p class="text-sm text-slate-500">
+    Sua conta Telegram já está vinculada ao painel web. Todo o histórico de refeições está unificado.
+  </p>
+</div>
+{% endif %}
+
 <div class="mt-6 bg-white rounded-xl shadow-sm p-6 max-w-lg border border-red-100">
   <h2 class="font-semibold text-red-600 mb-2">Zona de perigo</h2>
   <p class="text-sm text-slate-500 mb-4">A exclusão de conta remove permanentemente todos os seus dados nutricionais (LGPD Art. 18).</p>

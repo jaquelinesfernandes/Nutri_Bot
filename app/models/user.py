@@ -46,6 +46,9 @@ class User(Base):
     )
     deleted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     last_active_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # Token temporário para vincular conta Telegram ao login web (expira em 10 min)
+    web_link_token: Mapped[str | None] = mapped_column(String(8), nullable=True, index=True)
+    web_link_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     meal_logs: Mapped[list["MealLog"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"

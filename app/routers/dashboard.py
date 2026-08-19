@@ -340,5 +340,104 @@ async def configuracoes_salvar(
     return RedirectResponse(url="/configuracoes?success=Configurações+salvas", status_code=302)
 
 
+@router.post("/configuracoes/vincular-telegram")
+async def vincular_telegram(
+    request: Request,
+    link_code: str = Form(...),
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Vincula a conta web ao usuário Telegram via código temporário.
+
+    Fluxo:
+    1. Usuário Telegram envia /vincular → recebe código de 6 chars
+    2. Usuário web vai a Configurações → digita o código
+    3. Este endpoint:
+       a. Acha o usuário Telegram pelo código
+       b. Copia email + password_hash para o usuário Telegram
+       c. Remapeia as refeições do usuário web para o Telegram
+       d. Deleta o usuário web duplicado
+       e. Emite novo JWT apontando para o usuário Telegram
+    """
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+
+    from sqlalchemy import update as sa_update
+
+    from app.config import settings as cfg
+
+    if user is None:
+        return RedirectResponse(url="/login", status_code=302)
+
+    code = link_code.strip().upper()
+    if not code:
+        return RedirectResponse(url="/configuracoes?error=Código+inválido", status_code=302)
+
+    # Busca usuário Telegram com esse token ainda válido
+    now_utc = _dt.now(ZoneInfo("UTC"))
+    result = await db.execute(
+        select(User).where(
+            User.web_link_token == code,
+            User.web_link_token_expires_at > now_utc,
+            User.channel_type == "telegram",
+        )
+    )
+    tg_user = result.scalar_one_or_none()
+
+    if tg_user is None:
+        return RedirectResponse(
+            url="/configuracoes?error=Código+inválido+ou+expirado.+Use+/vincular+no+Telegram+para+gerar+um+novo.",
+            status_code=302,
+        )
+
+    if tg_user.id == user.id:
+        return RedirectResponse(
+            url="/configuracoes?error=Esta+conta+Telegram+já+está+vinculada.",
+            status_code=302,
+        )
+
+    # --- Fusão: copia credenciais web → usuário Telegram ----
+    tg_user.email = user.email
+    tg_user.password_hash = user.password_hash
+    # Preserva configurações web se o Telegram não tiver
+    if not tg_user.daily_calorie_goal and user.daily_calorie_goal:
+        tg_user.daily_calorie_goal = user.daily_calorie_goal
+    if not tg_user.goal_type and user.goal_type:
+        tg_user.goal_type = user.goal_type
+    # Limpa token após uso
+    tg_user.web_link_token = None
+    tg_user.web_link_token_expires_at = None
+
+    # Remapeia refeições, relatórios e outros registros do usuário web para o Telegram
+    from app.models.meal_log import MealLog
+    from app.models.weekly_report import WeeklyReport
+
+    web_user_id = user.id
+    tg_user_id = tg_user.id
+
+    await db.execute(
+        sa_update(MealLog)
+        .where(MealLog.user_id == web_user_id)
+        .values(user_id=tg_user_id)
+    )
+    await db.execute(
+        sa_update(WeeklyReport)
+        .where(WeeklyReport.user_id == web_user_id)
+        .values(user_id=tg_user_id)
+    )
+
+    # Remove usuário web (agora sem filhos após remapeamento)
+    await db.delete(user)
+    await db.commit()
+
+    # Emite novo JWT para o usuário Telegram e redireciona
+    token = create_access_token(tg_user.id)
+    return _cookie_response(
+        "/configuracoes?success=Conta+Telegram+vinculada+com+sucesso!+Seu+histórico+está+agora+unificado.",
+        token,
+        cfg.app_env == "production",
+    )
+
+
 # fix import name conflict
 from datetime import date as date_module_date  # noqa: E402
