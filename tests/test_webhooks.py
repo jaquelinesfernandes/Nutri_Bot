@@ -71,22 +71,82 @@ class TestTelegramWebhook:
 
 
 class TestWhatsAppWebhook:
-    def _valid_payload(self):
+    """Testes para o webhook da Evolution API."""
+
+    def _valid_payload(self, text: str = "almocei arroz", from_me: bool = False) -> dict:
+        """Payload padrão no formato Evolution API (messages.upsert)."""
         return {
-            "phone": "5511999999999",
-            "fromMe": False,
-            "type": "ReceivedCallback",
-            "text": {"message": "almocei arroz"},
+            "event": "messages.upsert",
+            "instance": "nutribot",
+            "data": {
+                "key": {
+                    "remoteJid": "5511999999999@s.whatsapp.net",
+                    "fromMe": from_me,
+                    "id": "AABBCCDD",
+                },
+                "message": {"conversation": text},
+                "messageType": "conversation",
+                "pushName": "Teste",
+            },
         }
 
-    def test_accepts_payload(self, client: TestClient):
+    def test_accepts_valid_payload(self, client: TestClient):
         r = client.post("/webhook/whatsapp", json=self._valid_payload())
         assert r.status_code == 200
 
     def test_ignores_from_me(self, client: TestClient):
-        payload = {**self._valid_payload(), "fromMe": True}
+        r = client.post("/webhook/whatsapp", json=self._valid_payload(from_me=True))
+        assert r.status_code == 200
+
+    def test_ignores_non_message_event(self, client: TestClient):
+        payload = self._valid_payload()
+        payload["event"] = "connection.update"
         r = client.post("/webhook/whatsapp", json=payload)
         assert r.status_code == 200
+
+    def test_ignores_payload_sem_texto(self, client: TestClient):
+        payload = self._valid_payload()
+        payload["data"]["message"] = None
+        r = client.post("/webhook/whatsapp", json=payload)
+        assert r.status_code == 200
+
+    def test_extended_text_message(self, client: TestClient):
+        """Aceita mensagem com extendedTextMessage (texto com link/preview)."""
+        payload = self._valid_payload()
+        payload["data"]["message"] = {
+            "extendedTextMessage": {"text": "tomei café da manhã"}
+        }
+        payload["data"]["messageType"] = "extendedTextMessage"
+        r = client.post("/webhook/whatsapp", json=payload)
+        assert r.status_code == 200
+
+    def test_rejeita_apikey_invalida(self, client: TestClient):
+        from app.config import settings
+        original = settings.evolution_webhook_secret
+        try:
+            settings.evolution_webhook_secret = "secret-valido"
+            r = client.post(
+                "/webhook/whatsapp",
+                json=self._valid_payload(),
+                headers={"apikey": "chave-errada"},
+            )
+            assert r.status_code == 403
+        finally:
+            settings.evolution_webhook_secret = original
+
+    def test_aceita_com_apikey_correta(self, client: TestClient):
+        from app.config import settings
+        original = settings.evolution_webhook_secret
+        try:
+            settings.evolution_webhook_secret = "secret-valido"
+            r = client.post(
+                "/webhook/whatsapp",
+                json=self._valid_payload(),
+                headers={"apikey": "secret-valido"},
+            )
+            assert r.status_code == 200
+        finally:
+            settings.evolution_webhook_secret = original
 
 
 class TestPaymentWebhook:

@@ -56,10 +56,11 @@ class Settings(BaseSettings):
     telegram_bot_token: str = ""
     telegram_webhook_secret: str = ""
 
-    # WhatsApp (Z-API)
-    zapi_instance_id: str = ""
-    zapi_token: str = ""
-    zapi_webhook_secret: str = ""
+    # WhatsApp (Evolution API)
+    evolution_api_url: str = ""        # ex: https://evolution-api.onrender.com
+    evolution_api_instance: str = ""   # nome da instância criada no Evolution
+    evolution_api_key: str = ""        # API key global configurada no Evolution
+    evolution_webhook_secret: str = "" # secret para validar webhooks recebidos
 
     # Mercado Pago
     mercadopago_access_token: str = ""

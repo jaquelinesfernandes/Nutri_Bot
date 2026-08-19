@@ -1,28 +1,31 @@
+"""Schemas Pydantic para webhook da Evolution API (WhatsApp)."""
+from __future__ import annotations
+
 from pydantic import BaseModel
 
 
-class ZApiTextMessage(BaseModel):
-    message: str = ""
-
-
-class ZApiImageMessage(BaseModel):
-    imageUrl: str = ""
-    caption: str | None = None
-
-
-class ZApiAudioMessage(BaseModel):
-    audioUrl: str = ""
-
-
-class ZApiWebhookPayload(BaseModel):
-    instanceId: str = ""
-    messageId: str = ""
-    phone: str  # E.164 sem +
+class EvolutionMessageKey(BaseModel):
+    remoteJid: str          # ex: "5511999999999@s.whatsapp.net"
     fromMe: bool = False
-    momment: int = 0
-    type: str = "ReceivedCallback"
-    chatName: str = ""
-    senderName: str = ""
-    text: ZApiTextMessage | None = None
-    image: ZApiImageMessage | None = None
-    audio: ZApiAudioMessage | None = None
+    id: str = ""
+
+
+class EvolutionMessageContent(BaseModel):
+    """Conteúdo da mensagem — apenas os tipos que o NutriBot processa."""
+    conversation: str | None = None           # texto simples
+    extendedTextMessage: dict | None = None   # texto com link/preview
+    imageMessage: dict | None = None          # foto
+    audioMessage: dict | None = None          # áudio (PTT ou gravado)
+
+
+class EvolutionMessageData(BaseModel):
+    key: EvolutionMessageKey
+    message: EvolutionMessageContent | None = None
+    messageType: str = ""       # "conversation" | "imageMessage" | etc.
+    pushName: str | None = None # nome exibido do remetente
+
+
+class EvolutionWebhookPayload(BaseModel):
+    event: str = ""             # "messages.upsert" | "connection.update" | etc.
+    instance: str = ""
+    data: EvolutionMessageData
