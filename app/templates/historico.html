@@ -1,6 +1,26 @@
 {% extends "layout.html" %}
 {% block title %}Histórico — NutriBot{% endblock %}
 {% block content %}
+<style>
+  /* Harmoniza com paleta do dashboard */
+  .bg-white          { background: var(--card) !important; }
+  .shadow-sm         { box-shadow: var(--shadow-sm) !important; }
+  .text-slate-800,
+  .text-slate-700    { color: var(--text-1) !important; }
+  .text-slate-600,
+  .text-slate-500,
+  .text-slate-400    { color: var(--text-2) !important; }
+  .border-gray-200,
+  .border-gray-100,
+  .border-gray-50    { border-color: var(--card-b) !important; }
+  #datePicker {
+    background: var(--surface);
+    color: var(--text-1);
+    border-color: var(--card-b);
+  }
+  table thead tr { border-color: var(--card-b) !important; }
+  table tbody tr { border-color: var(--card-b) !important; }
+</style>
 
 <div class="flex items-center justify-between mb-8">
   <h1 class="text-2xl font-bold text-slate-800">📅 Histórico de refeições</h1>

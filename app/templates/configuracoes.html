@@ -1,6 +1,28 @@
 {% extends "layout.html" %}
 {% block title %}Configurações — NutriBot{% endblock %}
 {% block content %}
+<style>
+  /* Harmoniza com paleta do dashboard */
+  .bg-white          { background: var(--card) !important; }
+  .shadow-sm         { box-shadow: var(--shadow-sm) !important; }
+  .text-slate-800,
+  .text-slate-700    { color: var(--text-1) !important; }
+  .text-slate-600,
+  .text-slate-500,
+  .text-slate-400    { color: var(--text-2) !important; }
+  .border-gray-200   { border-color: var(--card-b) !important; }
+  input[type="text"],
+  input[type="number"],
+  select {
+    background: var(--surface) !important;
+    color:      var(--text-1)  !important;
+    border-color: var(--card-b) !important;
+  }
+  /* Zona de perigo — borda vermelha permanece semântica */
+  .border-red-100    { border-color: rgba(239,68,68,.2) !important; }
+  .border-violet-100 { border-color: rgba(124,58,237,.2) !important; }
+  .border-green-100  { border-color: rgba(16,185,129,.2) !important; }
+</style>
 
 <h1 class="text-2xl font-bold text-slate-800 mb-8">⚙️ Configurações</h1>
 
