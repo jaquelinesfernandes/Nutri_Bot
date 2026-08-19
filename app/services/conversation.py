@@ -86,19 +86,26 @@ class ConversationService:
         if state not in ("IDLE", "ONBOARDING"):
             now_utc = datetime.now(ZoneInfo("UTC"))
             expires = user.state_expires_at
-            if expires is not None:
+
+            # Bug fix: expires=None em estado não-IDLE = prazo nunca foi definido
+            # (estado inconsistente). Trata como expirado imediatamente.
+            if expires is None:
+                expired = True
+            else:
                 if expires.tzinfo is None:
                     expires = expires.replace(tzinfo=ZoneInfo("UTC"))
-                if now_utc > expires:
-                    user.conversation_state = "IDLE"
-                    user.state_data = None
-                    user.state_expires_at = None
-                    if db:
-                        await db.commit()
-                    return (
-                        "⏱️ Sua ação anterior expirou por inatividade.\n"
-                        "Me conta o que você comeu, ou use /ajuda para ver os comandos."
-                    )
+                expired = now_utc > expires
+
+            if expired:
+                user.conversation_state = "IDLE"
+                user.state_data = None
+                user.state_expires_at = None
+                if db:
+                    await db.commit()
+                return (
+                    "⏱️ Sua ação anterior expirou por inatividade.\n"
+                    "Me conta o que você comeu, ou use /ajuda para ver os comandos."
+                )
             state = user.conversation_state
 
         if state == "ONBOARDING":
@@ -710,6 +717,9 @@ class ConversationService:
 
     async def _save_confirmed_meal(self, user: User, db: AsyncSession) -> str:
         pending = user.state_data or {}
+        # Captura atributos necessários ANTES do commit (evita lazy-load expirado)
+        user_email = user.email
+        user_goal = user.daily_calorie_goal
 
         meal_log = MealLog(
             user_id=user.id,
@@ -727,23 +737,29 @@ class ConversationService:
         await db.flush()
 
         for fi in pending.get("food_items", []):
-            db.add(FoodItem(
-                meal_log_id=meal_log.id,
-                name=fi["name"],
-                original_term=fi.get("original_term"),
-                quantity_g=fi["quantity_g"],
-                calories_kcal=fi.get("calories_kcal", 0.0),
-                protein_g=fi.get("protein_g", 0.0),
-                carb_g=fi.get("carb_g", 0.0),
-                fat_g=fi.get("fat_g", 0.0),
-                fiber_g=fi.get("fiber_g", 0.0),
-                source=fi.get("source", "taco"),
-                confidence_score=fi.get("confidence_score", 1.0),
-                taco_code=fi.get("taco_code"),
-            ))
+            try:
+                db.add(FoodItem(
+                    meal_log_id=meal_log.id,
+                    name=fi.get("name", "Alimento"),
+                    original_term=fi.get("original_term"),
+                    quantity_g=float(fi.get("quantity_g") or 0),
+                    calories_kcal=float(fi.get("calories_kcal") or 0),
+                    protein_g=float(fi.get("protein_g") or 0),
+                    carb_g=float(fi.get("carb_g") or 0),
+                    fat_g=float(fi.get("fat_g") or 0),
+                    fiber_g=float(fi.get("fiber_g") or 0),
+                    source=fi.get("source", "taco"),
+                    confidence_score=float(fi.get("confidence_score") or 1.0),
+                    taco_code=fi.get("taco_code"),
+                ))
+            except Exception as e:
+                logger.warning(f"[MEAL] FoodItem ignorado por dado inválido: {e} — {fi}")
 
+        # Reseta estado ANTES do commit: garante que qualquer falha no flush
+        # não deixe o usuário preso em CONFIRMING
         user.conversation_state = "IDLE"
         user.state_data = None
+        user.state_expires_at = None
         await db.commit()
 
         kcal = pending.get("total_calories_kcal", 0)
@@ -753,18 +769,18 @@ class ConversationService:
 
         msg = f"✅ *Refeição registrada!* {kcal:.0f} kcal\n"
 
-        if user.daily_calorie_goal:
+        if user_goal:
             today_total = await self._get_today_total_kcal(user, db)
-            remaining = user.daily_calorie_goal - today_total
-            pct = min(100, int(today_total / user.daily_calorie_goal * 100))
+            remaining = user_goal - today_total
+            pct = min(100, int(today_total / user_goal * 100))
             bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
             msg += (
-                f"\n📊 Hoje: {today_total:.0f} / {user.daily_calorie_goal} kcal\n"
+                f"\n📊 Hoje: {today_total:.0f} / {user_goal} kcal\n"
                 f"`{bar}` {pct}%\n"
                 f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
             )
 
-        msg += self._dashboard_cta(user)
+        msg += self._dashboard_cta_from(user_email)
         return msg
 
     # ── Helper: CTA de acesso ao dashboard ────────────────────────────────────
@@ -772,20 +788,24 @@ class ConversationService:
     # URL canônica do painel web — usada nos CTAs do bot
     _APP_URL = "https://nutri-bot-ot0p.onrender.com"
 
-    def _dashboard_cta(self, user: User) -> str:
-        """Retorna rodapé com link do dashboard (se vinculado) ou convite para cadastro."""
+    def _get_base_url(self) -> str:
         from app.config import settings
-        # Prioridade: APP_URL env var → WEBHOOK_BASE_URL → constante hardcoded
-        base = (settings.app_url or settings.webhook_base_url or self._APP_URL).rstrip("/")
-        if user.email:
-            # Conta já vinculada ao painel web — link direto para o dashboard
+        return (settings.app_url or settings.webhook_base_url or self._APP_URL).rstrip("/")
+
+    def _dashboard_cta_from(self, email: str | None) -> str:
+        """Retorna rodapé com link do dashboard — recebe email pré-carregado (safe pós-commit)."""
+        base = self._get_base_url()
+        if email:
             return f"\n\n🌐 [Ver no dashboard]({base}/dashboard)"
         else:
-            # Não vinculado — convida a criar conta e usar /vincular
             return (
                 f"\n\n📊 *Acesse pelo painel web:*\n"
                 f"[Criar conta]({base}/cadastro) e envie /vincular para conectar 🔗"
             )
+
+    def _dashboard_cta(self, user: User) -> str:
+        """Retorna rodapé com link do dashboard — usa atributos do user diretamente."""
+        return self._dashboard_cta_from(user.email)
 
     # ── Helpers de banco de dados ──────────────────────────────────────────────
 
@@ -827,6 +847,13 @@ class ConversationService:
     # ── Comandos ──────────────────────────────────────────────────────────────
 
     async def _cmd_start(self, user: User, args, db: AsyncSession) -> str:
+        # Sempre libera estado preso — /start funciona como escape de emergência
+        if user.conversation_state not in ("IDLE", "ONBOARDING"):
+            user.conversation_state = "IDLE"
+            user.state_data = None
+            user.state_expires_at = None
+            await db.commit()
+
         if user.onboarding_complete:
             name = user.first_name or "você"
             logs = await self._get_today_logs(user, db)
