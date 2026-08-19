@@ -1,0 +1,254 @@
+{% extends "base.html" %}
+{% block title %}Vincular Telegram — NutriBot{% endblock %}
+{% block body %}
+<style>
+  .vt-wrap {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--surface);
+  }
+  .vt-card {
+    width: 100%;
+    max-width: 480px;
+    background: var(--card);
+    border: 1px solid var(--card-b);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    padding: 40px 36px;
+  }
+  .vt-logo {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .vt-logo .icon { font-size: 2.8rem; line-height: 1; }
+  .vt-logo h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    color: var(--text-1);
+    margin: 8px 0 4px;
+  }
+  .vt-logo p { font-size: .875rem; color: var(--text-2); margin: 0; }
+
+  .vt-steps {
+    background: var(--primary-lt);
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+  }
+  .vt-steps h2 {
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--primary);
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    margin: 0 0 10px;
+  }
+  .vt-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: .875rem;
+    color: var(--text-1);
+    line-height: 1.4;
+  }
+  .vt-step:last-child { margin-bottom: 0; }
+  .vt-num {
+    flex-shrink: 0;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #fff;
+    font-size: .7rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+  }
+  .vt-cmd {
+    display: inline-block;
+    background: var(--sidebar-bg);
+    color: #a5b4fc;
+    font-family: 'DM Mono', monospace;
+    font-size: .8rem;
+    padding: 1px 7px;
+    border-radius: 6px;
+  }
+
+  .vt-error {
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #b91c1c;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: .85rem;
+    margin-bottom: 18px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .vt-error {
+      background: rgba(239,68,68,.12);
+      border-color: rgba(239,68,68,.3);
+      color: #fca5a5;
+    }
+  }
+  :root[data-theme="dark"] .vt-error {
+    background: rgba(239,68,68,.12);
+    border-color: rgba(239,68,68,.3);
+    color: #fca5a5;
+  }
+
+  .vt-form label {
+    display: block;
+    font-size: .8rem;
+    font-weight: 600;
+    color: var(--text-2);
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .vt-code-input {
+    width: 100%;
+    padding: 14px 16px;
+    font-family: 'DM Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 500;
+    letter-spacing: .3em;
+    text-align: center;
+    text-transform: uppercase;
+    background: var(--surface);
+    color: var(--text-1);
+    border: 2px solid var(--card-b);
+    border-radius: 12px;
+    outline: none;
+    transition: border-color .15s;
+    box-sizing: border-box;
+  }
+  .vt-code-input:focus { border-color: var(--primary); }
+  .vt-code-input::placeholder { color: var(--text-3); letter-spacing: .1em; }
+
+  .vt-btn-primary {
+    width: 100%;
+    margin-top: 14px;
+    padding: 13px;
+    background: var(--primary);
+    color: #fff;
+    font-size: .9rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+  }
+  .vt-btn-primary:hover { background: var(--primary-d); }
+  .vt-btn-primary:active { transform: scale(.98); }
+
+  .vt-skip {
+    display: block;
+    text-align: center;
+    margin-top: 16px;
+    font-size: .85rem;
+    color: var(--text-2);
+    text-decoration: none;
+    transition: color .15s;
+  }
+  .vt-skip:hover { color: var(--text-1); }
+  .vt-skip-icon { margin-right: 4px; }
+
+  .vt-tg-link {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--card-b);
+    font-size: .8rem;
+    color: var(--text-2);
+  }
+  .vt-tg-link a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+  }
+  .vt-tg-link a:hover { text-decoration: underline; }
+</style>
+
+<div class="vt-wrap">
+  <div class="vt-card">
+
+    <div class="vt-logo">
+      <div class="icon">🌿</div>
+      <h1>NutriBot</h1>
+      <p>Vincule seu Telegram para ver tudo em um só lugar</p>
+    </div>
+
+    <!-- Passos -->
+    <div class="vt-steps">
+      <h2>Como vincular</h2>
+      <div class="vt-step">
+        <div class="vt-num">1</div>
+        <span>Abra o NutriBot no Telegram e envie <span class="vt-cmd">/vincular</span></span>
+      </div>
+      <div class="vt-step">
+        <div class="vt-num">2</div>
+        <span>O bot enviará um código de 6 letras válido por 10 minutos</span>
+      </div>
+      <div class="vt-step">
+        <div class="vt-num">3</div>
+        <span>Cole o código abaixo e clique em <strong>Vincular conta</strong></span>
+      </div>
+    </div>
+
+    <!-- Erro -->
+    {% if error %}
+    <div class="vt-error">❌ {{ error }}</div>
+    {% endif %}
+
+    <!-- Formulário -->
+    <form method="post" action="/vincular-telegram/submit" class="vt-form">
+      <label for="link_code">Código do Telegram</label>
+      <input
+        id="link_code"
+        type="text"
+        name="link_code"
+        maxlength="6"
+        autocomplete="off"
+        autocapitalize="characters"
+        spellcheck="false"
+        placeholder="AB12CD"
+        class="vt-code-input"
+        autofocus
+      />
+      <button type="submit" class="vt-btn-primary">🔗 Vincular conta</button>
+    </form>
+
+    <!-- Pular -->
+    <a href="/dashboard" class="vt-skip">
+      <span class="vt-skip-icon">⏭</span>Pular por agora — ir para o Dashboard
+    </a>
+
+    <div class="vt-tg-link">
+      <span>📱 Ainda não tem o bot?</span>
+      <a href="https://t.me/NutriBotOficialBot" target="_blank" rel="noopener">Abrir Telegram</a>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Formata automaticamente: maiúsculas, remove espaços
+  const inp = document.getElementById('link_code');
+  inp.addEventListener('input', () => {
+    let v = inp.value.replace(/[^A-Za-z0-9]/g, '').toUpperCase().slice(0, 6);
+    inp.value = v;
+  });
+  // Enter → submit
+  inp.addEventListener('keydown', e => {
+    if (e.key === 'Enter') inp.closest('form').submit();
+  });
+</script>
+{% endblock %}

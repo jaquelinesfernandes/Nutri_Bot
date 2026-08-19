@@ -83,7 +83,9 @@ async def login_form(
             status_code=401,
         )
     token = create_access_token(user.id)
-    return _cookie_response("/dashboard", token, cfg.app_env == "production")
+    # Se usuário web puro (não vinculou Telegram), passa pelo onboarding de vinculação
+    next_url = "/dashboard" if user.channel_type == "telegram" else "/vincular-telegram"
+    return _cookie_response(next_url, token, cfg.app_env == "production")
 
 
 @router.get("/cadastro", response_class=HTMLResponse)
@@ -127,7 +129,8 @@ async def register_form(
     await db.commit()
     await db.refresh(user)
     token = create_access_token(user.id)
-    return _cookie_response("/dashboard", token, cfg.app_env == "production")
+    # Novo cadastro: sempre passa pelo onboarding de vinculação Telegram
+    return _cookie_response("/vincular-telegram", token, cfg.app_env == "production")
 
 
 @router.post("/api/auth/logout")
@@ -452,6 +455,103 @@ async def vincular_telegram(
         token,
         cfg.app_env == "production",
     )
+
+
+@router.get("/vincular-telegram", response_class=HTMLResponse)
+async def vincular_telegram_page(
+    request: Request,
+    error: str | None = None,
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Tela de onboarding pós-login: vincular conta Telegram ao painel web."""
+    if user is None:
+        return RedirectResponse(url="/login", status_code=302)
+    # Se já é conta Telegram vinculada, vai direto ao dashboard
+    if user.channel_type == "telegram":
+        return RedirectResponse(url="/dashboard", status_code=302)
+    return templates.TemplateResponse(
+        request=request, name="vincular_telegram.html",
+        context={"user": user, "error": error},
+    )
+
+
+@router.post("/vincular-telegram/submit", response_class=HTMLResponse)
+async def vincular_telegram_submit(
+    request: Request,
+    link_code: str = Form(...),
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Processa o código de vinculação na tela de onboarding; redireciona para /dashboard."""
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo
+    from sqlalchemy import delete as sa_delete, update as sa_update
+    from app.config import settings as cfg
+    from app.models.meal_log import MealLog as _ML
+    from app.models.meal_window import MealWindow as _MW
+    from app.models.water_log import WaterLog as _WL
+    from app.models.weekly_report import WeeklyReport as _WR
+
+    if user is None:
+        return RedirectResponse(url="/login", status_code=302)
+
+    code = (link_code or "").strip().upper()
+    if not code:
+        return RedirectResponse(url="/vincular-telegram?error=Código+inválido", status_code=302)
+
+    now_utc = _dt.now(ZoneInfo("UTC"))
+    result = await db.execute(
+        select(User).where(
+            User.web_link_token == code,
+            User.web_link_token_expires_at > now_utc,
+            User.channel_type == "telegram",
+        )
+    )
+    tg_user = result.scalar_one_or_none()
+
+    if tg_user is None:
+        return RedirectResponse(
+            url="/vincular-telegram?error=Código+inválido+ou+expirado.+Use+/vincular+no+Telegram+para+gerar+novo.",
+            status_code=302,
+        )
+
+    web_user_id = user.id
+    tg_user_id = tg_user.id
+    old_email = user.email
+    old_password_hash = user.password_hash
+    old_calorie_goal = user.daily_calorie_goal
+    old_goal_type = user.goal_type
+
+    # Libera constraints UNIQUE no usuário web
+    user.email = None
+    user.password_hash = None
+    user.channel_id = f"merged:{web_user_id}"
+    user.deleted_at = now_utc
+    await db.flush()
+
+    # Transfere credenciais para o usuário Telegram
+    tg_user.email = old_email
+    tg_user.password_hash = old_password_hash
+    if not tg_user.daily_calorie_goal and old_calorie_goal:
+        tg_user.daily_calorie_goal = old_calorie_goal
+    if not tg_user.goal_type and old_goal_type:
+        tg_user.goal_type = old_goal_type
+    tg_user.web_link_token = None
+    tg_user.web_link_token_expires_at = None
+    await db.flush()
+
+    for Model in (_ML, _WR, _MW, _WL):
+        await db.execute(
+            sa_update(Model)
+            .where(Model.user_id == web_user_id)
+            .values(user_id=tg_user_id)
+            .execution_options(synchronize_session=False)
+        )
+    await db.execute(sa_delete(User).where(User.id == web_user_id))
+    await db.commit()
+
+    token = create_access_token(tg_user_id)
+    return _cookie_response("/dashboard", token, cfg.app_env == "production")
 
 
 # fix import name conflict

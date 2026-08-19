@@ -84,6 +84,7 @@ class Settings(BaseSettings):
 
     # Aplicação
     app_env: str = "development"
+    app_url: str = "https://nutribot.onrender.com"  # URL pública — usada em links do bot
     log_level: str = "INFO"
     maintenance_mode: bool = False
     default_timezone: str = "America/Sao_Paulo"

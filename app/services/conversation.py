@@ -764,7 +764,26 @@ class ConversationService:
                 f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
             )
 
+        msg += self._dashboard_cta(user)
         return msg
+
+    # ── Helper: CTA de acesso ao dashboard ────────────────────────────────────
+
+    def _dashboard_cta(self, user: User) -> str:
+        """Retorna rodapé com link do dashboard (se vinculado) ou convite para cadastro."""
+        from app.config import settings
+        base = settings.app_url.rstrip("/")
+        if user.email:
+            # Conta já vinculada ao painel web — link direto para o dashboard
+            return f"\n\n🌐 [Ver no dashboard]({base}/dashboard)"
+        else:
+            # Não vinculado — convida a criar conta e usar /vincular
+            return (
+                f"\n\n📊 *Acompanhe pelo painel web!*\n"
+                f"1. Acesse {base}/cadastro e crie sua conta\n"
+                f"2. Envie /vincular aqui para obter seu código\n"
+                f"3. Cole o código em Configurações para unificar tudo 🔗"
+            )
 
     # ── Helpers de banco de dados ──────────────────────────────────────────────
 
@@ -929,6 +948,7 @@ class ConversationService:
                 f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
             )
 
+        msg += self._dashboard_cta(user)
         analytics.daily_summary_viewed(user.channel_id, total_kcal, pct_goal)
         return msg
 
