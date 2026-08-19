@@ -44,7 +44,7 @@
     <div class="flex items-center justify-between mb-3">
       <div>
         <span class="text-sm font-semibold text-slate-700">{{ meal_labels[meal.meal_type] }}</span>
-        <span class="ml-2 text-xs text-slate-400">{{ meal.logged_at[:16].replace('T',' ') }}</span>
+        <span class="ml-2 text-xs text-slate-400">{{ meal.logged_at.strftime('%d/%m %H:%M') }}</span>
       </div>
       <span class="font-bold text-brand-600">{{ meal.total_calories_kcal | int }} kcal</span>
     </div>
