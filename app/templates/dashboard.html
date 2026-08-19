@@ -2,158 +2,465 @@
 {% block title %}Dashboard — NutriBot{% endblock %}
 {% block content %}
 
-<!-- Header -->
-<div class="mb-8">
-  <h1 class="text-2xl font-bold text-slate-800">
-    {% set hora = now_hour %}
-    {% if hora < 12 %}☀️ Bom dia{% elif hora < 18 %}🌤️ Boa tarde{% else %}🌙 Boa noite{% endif %},
-    {{ user.first_name or 'usuário' }}!
-  </h1>
-  <p class="text-slate-500 text-sm mt-1">{{ today_label }}</p>
+{# ── Computed values ─────────────────────────────────── #}
+{% set goal_prot_g = (goal_kcal * 0.25 / 4) | int if goal_kcal else 0 %}
+{% set goal_carb_g = (goal_kcal * 0.50 / 4) | int if goal_kcal else 0 %}
+{% set goal_fat_g  = (goal_kcal * 0.25 / 9) | int if goal_kcal else 0 %}
+{% set pct_prot2   = (total_prot / goal_prot_g * 100) | int if goal_prot_g else 0 %}
+{% set pct_carb    = (total_carb / goal_carb_g * 100) | int if goal_carb_g else 0 %}
+{% set pct_fat     = (total_fat  / goal_fat_g  * 100) | int if goal_fat_g  else 0 %}
+{% set ring_pct    = [pct_kcal, 100] | min %}
+{% set dashoffset  = (414.69 * (1 - ring_pct / 100)) | round(2) %}
+{% set ring_cls    = 'r-fill-over' if pct_kcal > 110 else ('r-fill-warn' if pct_kcal > 100 else 'r-fill-ok') %}
+{% set remain_kcal = (goal_kcal - total_kcal) | int if goal_kcal and goal_kcal > total_kcal else 0 %}
+
+{# 7-day adherence stats #}
+{% set ns = namespace(days_ok=0, days_over=0, sum_pct=0.0) %}
+{% for v in week_kcal %}
+  {% if goal_kcal and goal_kcal > 0 %}
+    {% set pct_d = v / goal_kcal * 100 %}
+    {% set ns.sum_pct = ns.sum_pct + pct_d %}
+    {% if pct_d > 100 %}{% set ns.days_over = ns.days_over + 1 %}
+    {% elif v > 0 %}{% set ns.days_ok = ns.days_ok + 1 %}{% endif %}
+  {% endif %}
+{% endfor %}
+{% set avg_pct_7   = (ns.sum_pct / 7) | round | int if goal_kcal else 0 %}
+{% set max_kcal_7  = week_kcal | max | int %}
+
+{# Meal bar colors (ciclic 3 cores) #}
+{% set bar_colors = [
+  'linear-gradient(to bottom,#6366F1,#818CF8)',
+  'linear-gradient(to bottom,#0EA5E9,#38BDF8)',
+  'linear-gradient(to bottom,#A855F7,#C084FC)'
+] %}
+
+<!-- ── Header ─────────────────────────────────────────── -->
+<div class="pg-header">
+  <div>
+    <div class="greeting">
+      {% if now_hour < 12 %}☀️ Bom dia{% elif now_hour < 18 %}🌤️ Boa tarde{% else %}🌙 Boa noite{% endif %},
+      <em>{{ user.first_name or 'usuário' }}</em>!
+    </div>
+    <div class="today-date">{{ today_label }}</div>
+  </div>
+  <div class="status-pill">
+    <div class="dot-live"></div>
+    {% if user.channel_type == 'telegram' %}Telegram conectado{% else %}Painel web{% endif %}
+  </div>
 </div>
 
-<!-- Cards de macros -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+<!-- ── S1: Resumo de hoje ─────────────────────────────── -->
+<div class="sect-label">Resumo de hoje</div>
+<div class="today-grid">
 
-  <!-- Calorias -->
-  <div class="bg-white rounded-xl shadow-sm p-5 col-span-2 md:col-span-1">
-    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Calorias</p>
-    <p class="text-3xl font-bold text-slate-800">{{ total_kcal | int }}</p>
-    {% if goal_kcal %}
-    <p class="text-sm text-slate-400 mt-0.5">/ {{ goal_kcal }} kcal</p>
-    <div class="mt-3 h-2 bg-gray-100 rounded-full overflow-hidden">
-      <div class="h-2 rounded-full {% if pct_kcal > 100 %}bg-red-400{% elif pct_kcal > 80 %}bg-yellow-400{% else %}bg-brand-500{% endif %}"
-           style="width: {{ [pct_kcal, 100] | min }}%"></div>
+  <!-- Calorie ring -->
+  <div class="card ring-card">
+    <div class="ring-eyebrow">Calorias hoje</div>
+    <div class="ring-wrap">
+      <svg width="156" height="156" viewBox="0 0 156 156">
+        <defs>
+          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%"   stop-color="#6366F1"/>
+            <stop offset="100%" stop-color="#0EA5E9"/>
+          </linearGradient>
+        </defs>
+        <circle class="r-track" cx="78" cy="78" r="66"/>
+        <circle class="r-fill {{ ring_cls }}" cx="78" cy="78" r="66"
+          stroke-dasharray="414.69" stroke-dashoffset="{{ dashoffset }}"/>
+      </svg>
+      <div class="ring-center">
+        <div class="ring-big">{{ total_kcal | int }}</div>
+        {% if goal_kcal %}
+        <div class="ring-of">de {{ goal_kcal }} kcal</div>
+        <div class="ring-pct">{{ pct_kcal | int }}%</div>
+        {% else %}
+        <div class="ring-of">kcal hoje</div>
+        {% endif %}
+      </div>
     </div>
-    <p class="text-xs text-slate-400 mt-1">{{ pct_kcal | int }}% da meta</p>
-    {% else %}
-    <p class="text-xs text-slate-400 mt-1">Meta não definida</p>
+    <div class="ring-info">
+      <div class="ring-remain">
+        {% if goal_kcal %}
+          {% if remain_kcal > 0 %}
+          Restam <span class="remain-chip">{{ remain_kcal }} kcal</span>
+          {% else %}
+          <span class="remain-chip">Meta atingida 🎯</span>
+          {% endif %}
+        {% else %}
+        <span class="remain-chip">Defina sua meta</span>
+        {% endif %}
+      </div>
+      <p class="ring-tip">
+        {% if pct_kcal < 40 %}Bom começo! Registre mais refeições 📝
+        {% elif pct_kcal < 80 %}Ótimo ritmo! Continue assim 💪
+        {% elif pct_kcal <= 100 %}Quase lá! Atenção nas próximas 🎯
+        {% else %}Meta atingida! Cuidado com o excesso 🚦
+        {% endif %}
+      </p>
+    </div>
+  </div>
+
+  <!-- Macro cards -->
+  <div class="macro-stack">
+
+    <div class="card macro-card prot">
+      <div class="macro-icon prot">🫀</div>
+      <div class="macro-body">
+        <div class="macro-lbl">Proteína</div>
+        <div class="macro-num">{{ total_prot | int }}<small>g</small></div>
+        <div class="macro-sub">
+          {% if goal_prot_g %}Meta {{ goal_prot_g }}g · {{ pct_prot2 }}% atingido
+          {% else %}Meta não definida{% endif %}
+        </div>
+        {% if goal_prot_g %}
+        <div class="macro-mini-track">
+          <div class="macro-mini-fill" style="width:{{ [pct_prot2, 100]|min }}%;background:linear-gradient(90deg,#6366F1,#818CF8)"></div>
+        </div>
+        {% endif %}
+      </div>
+      <svg class="macro-spark" id="spProt"></svg>
+    </div>
+
+    <div class="card macro-card carb">
+      <div class="macro-icon carb">🌾</div>
+      <div class="macro-body">
+        <div class="macro-lbl">Carboidratos</div>
+        <div class="macro-num">{{ total_carb | int }}<small>g</small></div>
+        <div class="macro-sub">
+          {% if goal_carb_g %}Meta {{ goal_carb_g }}g · {{ pct_carb }}% atingido
+          {% else %}Meta não definida{% endif %}
+        </div>
+        {% if goal_carb_g %}
+        <div class="macro-mini-track">
+          <div class="macro-mini-fill" style="width:{{ [pct_carb, 100]|min }}%;background:linear-gradient(90deg,#0EA5E9,#38BDF8)"></div>
+        </div>
+        {% endif %}
+      </div>
+      <svg class="macro-spark" id="spCarb"></svg>
+    </div>
+
+    <div class="card macro-card fat">
+      <div class="macro-icon fat">🫒</div>
+      <div class="macro-body">
+        <div class="macro-lbl">Gordura</div>
+        <div class="macro-num">{{ total_fat | int }}<small>g</small></div>
+        <div class="macro-sub">
+          {% if goal_fat_g %}Meta {{ goal_fat_g }}g · {{ pct_fat }}% atingido
+          {% else %}Meta não definida{% endif %}
+        </div>
+        {% if goal_fat_g %}
+        <div class="macro-mini-track">
+          <div class="macro-mini-fill" style="width:{{ [pct_fat, 100]|min }}%;background:linear-gradient(90deg,#A855F7,#C084FC)"></div>
+        </div>
+        {% endif %}
+      </div>
+      <svg class="macro-spark" id="spFat"></svg>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── S2: 7-day % kcal vs goal ───────────────────────── -->
+<div class="sect-label">Últimos 7 dias — % da meta calórica atingida</div>
+<div class="card card-pad">
+  <div class="card-title">
+    Kcal consumidas vs meta diária
+    {% if goal_kcal %}
+    <span class="chip chip-sage">Meta: {{ goal_kcal }} kcal/dia</span>
     {% endif %}
   </div>
-
-  <!-- Proteína -->
-  <div class="bg-white rounded-xl shadow-sm p-5">
-    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Proteína</p>
-    <p class="text-2xl font-bold text-blue-600">{{ total_prot | int }}<span class="text-sm font-normal text-slate-400">g</span></p>
-    <p class="text-xs text-slate-400 mt-1">{{ pct_prot | int }}% da meta</p>
-  </div>
-
-  <!-- Carboidratos -->
-  <div class="bg-white rounded-xl shadow-sm p-5">
-    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Carboidratos</p>
-    <p class="text-2xl font-bold text-amber-500">{{ total_carb | int }}<span class="text-sm font-normal text-slate-400">g</span></p>
-  </div>
-
-  <!-- Gordura -->
-  <div class="bg-white rounded-xl shadow-sm p-5">
-    <p class="text-xs font-medium text-slate-400 uppercase tracking-wide mb-1">Gordura</p>
-    <p class="text-2xl font-bold text-rose-400">{{ total_fat | int }}<span class="text-sm font-normal text-slate-400">g</span></p>
-  </div>
-
+  <canvas id="weekPctChart" class="week-pct-canvas"></canvas>
 </div>
 
-<!-- Gráfico semanal + Refeições de hoje -->
-<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- ── S3: Análise geral ──────────────────────────────── -->
+<div class="sect-label">Análise geral do histórico</div>
+<div class="insights-grid">
 
-  <!-- Gráfico semanal -->
-  <div class="md:col-span-2 bg-white rounded-xl shadow-sm p-5">
-    <h2 class="font-semibold text-slate-700 mb-4">Calorias — últimos 7 dias</h2>
-    <canvas id="weekChart" height="120"></canvas>
+  <!-- Aderência 7 dias -->
+  <div class="card card-pad">
+    <div class="card-title">
+      Aderência calórica
+      <span class="chip chip-amber">últimos 7 dias</span>
+    </div>
+    <div class="hist-stats">
+      <div class="stat-box good">
+        <div class="stat-top">
+          <div class="stat-val">{{ avg_pct_7 }}<span style="font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-3)">%</span></div>
+        </div>
+        <div class="stat-lbl">Média atingida</div>
+      </div>
+      <div class="stat-box amber">
+        <div class="stat-top">
+          <div class="stat-val">{{ ns.days_ok }}</div>
+        </div>
+        <div class="stat-lbl">Dias na meta</div>
+      </div>
+      <div class="stat-box warn">
+        <div class="stat-top">
+          <div class="stat-val" style="color:var(--over-c)">{{ ns.days_over }}</div>
+        </div>
+        <div class="stat-lbl">Dias acima</div>
+      </div>
+      <div class="stat-box best">
+        <div class="stat-top">
+          <div class="stat-val">{{ max_kcal_7 }}</div>
+        </div>
+        <div class="stat-lbl">Maior dia (kcal)</div>
+      </div>
+    </div>
+    <div class="hist-chart-wrap">
+      <div class="mini-hist-label">Tendência semanal</div>
+      <canvas class="mini-hist" id="histChart"></canvas>
+    </div>
   </div>
 
-  <!-- Macros donut -->
-  <div class="bg-white rounded-xl shadow-sm p-5 flex flex-col items-center">
-    <h2 class="font-semibold text-slate-700 mb-4 self-start">Macros hoje</h2>
-    <canvas id="macroChart" width="180" height="180"></canvas>
-    <div class="mt-3 space-y-1 text-xs w-full">
-      <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-400 inline-block"></span>Proteína</span><span>{{ total_prot | int }}g</span></div>
-      <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-amber-400 inline-block"></span>Carboidratos</span><span>{{ total_carb | int }}g</span></div>
-      <div class="flex justify-between"><span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-rose-400 inline-block"></span>Gordura</span><span>{{ total_fat | int }}g</span></div>
+  <!-- Macros vs meta -->
+  <div class="card card-pad">
+    <div class="card-title">
+      Macros vs meta diária
+      <span class="chip chip-sage">hoje</span>
+    </div>
+    <div class="mprog-compare">
+
+      <div class="mprog-item">
+        <div class="mprog-head">
+          <span class="mprog-name"><span class="mprog-dot" style="background:#6366F1"></span>Proteína</span>
+          {% if goal_prot_g %}<span class="mprog-meta">{{ total_prot | int }}g / {{ goal_prot_g }}g</span>{% endif %}
+        </div>
+        <div class="mprog-tracks">
+          <div class="mprog-row">
+            <span class="mprog-row-label">Hoje</span>
+            <div class="mprog-track today">
+              <div class="mprog-fill" style="width:{{ [pct_prot2,100]|min }}%;background:linear-gradient(90deg,#6366F1,#818CF8)"></div>
+            </div>
+            <span class="mprog-pct">{{ pct_prot2 }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mprog-item">
+        <div class="mprog-head">
+          <span class="mprog-name"><span class="mprog-dot" style="background:#0EA5E9"></span>Carboidratos</span>
+          {% if goal_carb_g %}<span class="mprog-meta">{{ total_carb | int }}g / {{ goal_carb_g }}g</span>{% endif %}
+        </div>
+        <div class="mprog-tracks">
+          <div class="mprog-row">
+            <span class="mprog-row-label">Hoje</span>
+            <div class="mprog-track today">
+              <div class="mprog-fill" style="width:{{ [pct_carb,100]|min }}%;background:linear-gradient(90deg,#0EA5E9,#38BDF8)"></div>
+            </div>
+            <span class="mprog-pct">{{ pct_carb }}%</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="mprog-item">
+        <div class="mprog-head">
+          <span class="mprog-name"><span class="mprog-dot" style="background:#A855F7"></span>Gordura</span>
+          {% if goal_fat_g %}<span class="mprog-meta">{{ total_fat | int }}g / {{ goal_fat_g }}g</span>{% endif %}
+        </div>
+        <div class="mprog-tracks">
+          <div class="mprog-row">
+            <span class="mprog-row-label">Hoje</span>
+            <div class="mprog-track today">
+              <div class="mprog-fill" style="width:{{ [pct_fat,100]|min }}%;background:linear-gradient(90deg,#A855F7,#C084FC)"></div>
+            </div>
+            <span class="mprog-pct">{{ pct_fat }}%</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+    <div class="mprog-legend">
+      <span class="mprog-legend-item" style="font-size:11px;color:var(--text-3)">
+        📊 Comparativo 30 dias disponível em breve
+      </span>
     </div>
   </div>
 
 </div>
 
-<!-- Refeições de hoje -->
-<div class="mt-6 bg-white rounded-xl shadow-sm p-5">
-  <h2 class="font-semibold text-slate-700 mb-4">Refeições de hoje</h2>
+<!-- ── S4: Refeições de hoje ──────────────────────────── -->
+<div class="sect-label">Refeições de hoje</div>
+<div class="card card-pad">
   {% if meals %}
-  <div class="space-y-3">
+  <div class="meals-list">
     {% for meal in meals %}
-    <div class="flex items-center justify-between border-b border-gray-50 pb-3 last:border-0 last:pb-0">
-      <div>
-        <span class="text-sm font-medium text-slate-700">{{ meal_labels[meal.meal_type] }}</span>
-        <p class="text-xs text-slate-400 mt-0.5">
-          {% for fi in meal.food_items[:3] %}{{ fi.name }}{% if not loop.last %}, {% endif %}{% endfor %}
-          {% if meal.food_items | length > 3 %}…{% endif %}
-        </p>
+    {% if not loop.first %}<div class="meal-sep"></div>{% endif %}
+    <div class="meal-row">
+      <div class="meal-color-bar" style="background:{{ bar_colors[loop.index0 % 3] }}"></div>
+      <div class="meal-inf">
+        <div class="meal-name">{{ meal_labels.get(meal.meal_type, '🍴 Refeição') }}</div>
+        <div class="meal-foods">
+          {% for fi in meal.food_items[:4] %}{{ fi.name }}{% if not loop.last %}, {% endif %}{% endfor %}{% if meal.food_items | length > 4 %}…{% endif %}
+        </div>
       </div>
-      <span class="text-sm font-semibold text-slate-600">{{ meal.total_calories_kcal | int }} kcal</span>
+      <div class="meal-time">{{ meal.logged_at.strftime('%H:%M') }}</div>
+      <div class="meal-kcal">{{ meal.total_calories_kcal | int }} kcal</div>
     </div>
     {% endfor %}
   </div>
   {% else %}
-  <div class="text-center py-8 text-slate-400">
-    <div class="text-4xl mb-2">🍽️</div>
-    <p class="text-sm">Nenhuma refeição registrada hoje.</p>
-    <p class="text-xs mt-1">Use o bot no Telegram para registrar suas refeições.</p>
+  <div class="no-meals">
+    <div class="icon">🍽️</div>
+    <p>Nenhuma refeição registrada hoje.</p>
+    <small>Use o bot no Telegram para registrar suas refeições.</small>
   </div>
   {% endif %}
 </div>
 
 <script>
-  // Gráfico semanal
-  const weekLabels = {{ week_labels | tojson }};
-  const weekKcal   = {{ week_kcal   | tojson }};
-  const goalLine   = {{ goal_kcal or 0 }};
+/* ── helpers ─────────────────────────────────────────── */
+function isDark() {
+  const t = document.documentElement.getAttribute('data-theme');
+  return t === 'dark' || (!t && window.matchMedia('(prefers-color-scheme: dark)').matches);
+}
 
-  new Chart(document.getElementById('weekChart'), {
-    type: 'bar',
-    data: {
-      labels: weekLabels,
-      datasets: [
-        {
-          label: 'Calorias',
-          data: weekKcal,
-          backgroundColor: 'rgba(22,163,74,0.7)',
-          borderRadius: 6,
-        },
-        {
-          label: 'Meta',
-          data: weekLabels.map(() => goalLine),
-          type: 'line',
-          borderColor: '#94a3b8',
-          borderDash: [5,4],
-          borderWidth: 1.5,
-          pointRadius: 0,
-          fill: false,
-        }
-      ]
-    },
-    options: {
-      plugins: { legend: { display: false } },
-      scales: {
-        y: { beginAtZero: true, grid: { color: '#f1f5f9' } },
-        x: { grid: { display: false } }
-      }
-    }
-  });
+/* ── Dados do servidor ───────────────────────────────── */
+const weekKcal   = {{ week_kcal | tojson }};
+const weekGoal   = {{ goal_kcal or 0 }};
+const weekLabels = {{ week_labels | tojson }};
+const weekPct    = weekGoal > 0
+  ? weekKcal.map(v => Math.round(v / weekGoal * 100))
+  : weekKcal.map(() => 0);
 
-  // Donut macros
-  new Chart(document.getElementById('macroChart'), {
-    type: 'doughnut',
-    data: {
-      labels: ['Proteína', 'Carboidratos', 'Gordura'],
-      datasets: [{
-        data: [{{ total_prot | int }}, {{ total_carb | int }}, {{ total_fat | int }}],
-        backgroundColor: ['#60a5fa','#fbbf24','#f87171'],
-        borderWidth: 0,
-      }]
-    },
-    options: {
-      cutout: '70%',
-      plugins: { legend: { display: false } }
-    }
+/* ── Sparklines (SVG) ───────────────────────────────── */
+function sparkline(id, data, color) {
+  const el = document.getElementById(id);
+  if (!el || !data.length) return;
+  const W = 56, H = 28;
+  const mn = Math.min(...data), mx = Math.max(...data);
+  const rng = (mx - mn) || 1;
+  const x = i => (i / (data.length - 1)) * W;
+  const y = v => H - 2 - ((v - mn) / rng) * (H - 6);
+  const pts = data.map((v, i) => `${x(i).toFixed(1)},${y(v).toFixed(1)}`).join(' ');
+  const lx = x(data.length - 1), ly = y(data[data.length - 1]);
+  el.setAttribute('viewBox', `0 0 ${W} ${H}`);
+  el.innerHTML = `
+    <polyline points="${pts}" fill="none" stroke="${color}" stroke-width="2"
+      stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
+    <circle cx="${lx}" cy="${ly}" r="2.8" fill="${color}"/>`;
+}
+sparkline('spProt', weekKcal, '#6366F1');
+sparkline('spCarb', weekKcal, '#0EA5E9');
+sparkline('spFat',  weekKcal, '#A855F7');
+
+/* ── Canvas helper ──────────────────────────────────── */
+function setupCanvas(id) {
+  const canvas = document.getElementById(id);
+  if (!canvas) return null;
+  const dpr = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  if (!rect.width || !rect.height) return null;
+  canvas.width  = rect.width  * dpr;
+  canvas.height = rect.height * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  return { canvas, ctx, W: rect.width, H: rect.height };
+}
+
+/* ── 7-day % chart ──────────────────────────────────── */
+function drawWeekPct() {
+  const r = setupCanvas('weekPctChart');
+  if (!r) return;
+  const { ctx, W, H } = r;
+  const dk = isDark();
+  const gridC = dk ? 'rgba(255,255,255,.05)' : 'rgba(99,102,241,.07)';
+  const textC = dk ? '#4A487A' : '#9096C0';
+  const okC   = '#6366F1', warnC = '#F59E0B', overC = '#EF4444';
+  const refC  = dk ? 'rgba(14,165,233,.55)' : 'rgba(14,165,233,.7)';
+
+  const pL=44, pR=28, pT=12, pB=44;
+  const cW=W-pL-pR, cH=H-pT-pB;
+  const maxPct=130;
+  const sy = v => pT + cH - (v/maxPct)*cH;
+  const n = weekPct.length, step=cW/n, bW=Math.min(36, step*.55);
+
+  ctx.clearRect(0,0,W,H);
+
+  [0,25,50,75,100,125].forEach(v => {
+    const yy=sy(v);
+    ctx.beginPath(); ctx.moveTo(pL,yy); ctx.lineTo(W-pR,yy);
+    ctx.strokeStyle = v===100 ? refC : gridC;
+    ctx.setLineDash(v===100 ? [6,4] : []);
+    ctx.lineWidth = v===100 ? 1.5 : 1;
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle=textC; ctx.font='10px DM Sans,sans-serif';
+    ctx.textAlign='right'; ctx.fillText(v+'%', pL-6, yy+3.5);
   });
+  ctx.fillStyle = dk ? 'rgba(14,165,233,.85)' : '#0369A1';
+  ctx.font='9.5px DM Sans,sans-serif'; ctx.textAlign='left';
+  ctx.fillText('meta', W-pR+4, sy(100)+3.5);
+
+  weekPct.forEach((v,i) => {
+    const xc=pL+step*i+step/2, bx=xc-bW/2;
+    const by=sy(Math.min(v,maxPct)), bh=H-pB-by;
+    const isToday=i===n-1;
+    const clr=v>110?overC:v>100?warnC:okC;
+    const rad=5;
+    ctx.beginPath();
+    ctx.moveTo(bx+rad,by); ctx.lineTo(bx+bW-rad,by);
+    ctx.quadraticCurveTo(bx+bW,by,bx+bW,by+rad);
+    ctx.lineTo(bx+bW,by+bh); ctx.lineTo(bx,by+bh);
+    ctx.lineTo(bx,by+rad); ctx.quadraticCurveTo(bx,by,bx+rad,by);
+    ctx.closePath();
+    ctx.fillStyle=clr; ctx.globalAlpha=isToday?.45:.82; ctx.fill(); ctx.globalAlpha=1;
+    if (isToday) { ctx.strokeStyle=clr; ctx.lineWidth=1.5; ctx.stroke(); }
+    if (v>12) {
+      ctx.fillStyle=isToday?clr:'#fff'; ctx.globalAlpha=isToday?1:.9;
+      ctx.font='bold 10px DM Sans,sans-serif'; ctx.textAlign='center';
+      ctx.fillText(v+'%', xc, by+(isToday?-5:14)); ctx.globalAlpha=1;
+    }
+    const parts=(weekLabels[i]||'').split(' ');
+    ctx.fillStyle=isToday?(dk?'#E0DEFF':'#1E1B4B'):textC;
+    ctx.font=(isToday?'600 ':'')+`10px DM Sans,sans-serif`;
+    ctx.textAlign='center';
+    ctx.fillText(parts[0]||'', xc, H-pB+13);
+    ctx.fillText(parts[1]||'', xc, H-pB+25);
+  });
+}
+
+/* ── Mini history bar chart ─────────────────────────── */
+function drawHistChart() {
+  const r = setupCanvas('histChart');
+  if (!r) return;
+  const { ctx, W, H } = r;
+  const dk = isDark();
+  const textC = dk ? '#4A487A' : '#9096C0';
+
+  const pL=30, pR=8, pT=6, pB=22;
+  const cW=W-pL-pR, cH=H-pT-pB;
+  const n=weekKcal.length, step=cW/n, bW=Math.min(28,step*.6);
+  const maxV=Math.max(...weekKcal,1);
+  const sy=v=>pT+cH-(v/maxV)*cH;
+
+  ctx.clearRect(0,0,W,H);
+
+  if (weekGoal>0) {
+    const gy=sy(weekGoal); ctx.beginPath();
+    ctx.moveTo(pL,gy); ctx.lineTo(W-pR,gy);
+    ctx.strokeStyle='rgba(14,165,233,.45)';
+    ctx.setLineDash([4,3]); ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
+  }
+
+  weekKcal.forEach((v,i) => {
+    const xc=pL+step*i+step/2, bx=xc-bW/2, by=sy(v), bh=cH+pT-by;
+    const r2=3;
+    ctx.fillStyle='#6366F1'; ctx.globalAlpha=i===n-1?.5:.72;
+    ctx.beginPath();
+    ctx.moveTo(bx+r2,by); ctx.lineTo(bx+bW-r2,by);
+    ctx.quadraticCurveTo(bx+bW,by,bx+bW,by+r2);
+    ctx.lineTo(bx+bW,by+bh); ctx.lineTo(bx,by+bh);
+    ctx.lineTo(bx,by+r2); ctx.quadraticCurveTo(bx,by,bx+r2,by);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
+
+    ctx.fillStyle=textC; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillText((weekLabels[i]||'').split(' ')[0]||'', xc, H-2);
+  });
+}
+
+/* Aguarda o layout estabilizar antes de desenhar */
+requestAnimationFrame(() => { drawWeekPct(); drawHistChart(); });
+window.addEventListener('resize', () => { drawWeekPct(); drawHistChart(); });
 </script>
 {% endblock %}
