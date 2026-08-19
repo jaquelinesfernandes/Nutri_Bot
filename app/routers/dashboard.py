@@ -349,22 +349,24 @@ async def vincular_telegram(
 ):
     """Vincula a conta web ao usuário Telegram via código temporário.
 
-    Fluxo:
-    1. Usuário Telegram envia /vincular → recebe código de 6 chars
-    2. Usuário web vai a Configurações → digita o código
-    3. Este endpoint:
-       a. Acha o usuário Telegram pelo código
-       b. Copia email + password_hash para o usuário Telegram
-       c. Remapeia as refeições do usuário web para o Telegram
-       d. Deleta o usuário web duplicado
-       e. Emite novo JWT apontando para o usuário Telegram
+    Estratégia segura para async SQLAlchemy:
+    - Limpa email/channel_id do usuário web ANTES de copiá-los para o Telegram
+      (evita violação da constraint UNIQUE em memória na mesma transação)
+    - Usa bulk UPDATE via Core (synchronize_session=False) para remapear refeições
+    - Soft-delete no usuário web (evita cascade lazy-load que quebra em async)
+    - Emite novo JWT apontando para a conta Telegram unificada
     """
     from datetime import datetime as _dt
     from zoneinfo import ZoneInfo
 
+    from sqlalchemy import delete as sa_delete
     from sqlalchemy import update as sa_update
 
     from app.config import settings as cfg
+    from app.models.meal_log import MealLog
+    from app.models.meal_window import MealWindow
+    from app.models.water_log import WaterLog
+    from app.models.weekly_report import WeeklyReport
 
     if user is None:
         return RedirectResponse(url="/login", status_code=302)
@@ -396,44 +398,57 @@ async def vincular_telegram(
             status_code=302,
         )
 
-    # --- Fusão: copia credenciais web → usuário Telegram ----
-    tg_user.email = user.email
-    tg_user.password_hash = user.password_hash
-    # Preserva configurações web se o Telegram não tiver
-    if not tg_user.daily_calorie_goal and user.daily_calorie_goal:
-        tg_user.daily_calorie_goal = user.daily_calorie_goal
-    if not tg_user.goal_type and user.goal_type:
-        tg_user.goal_type = user.goal_type
-    # Limpa token após uso
-    tg_user.web_link_token = None
-    tg_user.web_link_token_expires_at = None
-
-    # Remapeia refeições, relatórios e outros registros do usuário web para o Telegram
-    from app.models.meal_log import MealLog
-    from app.models.weekly_report import WeeklyReport
-
     web_user_id = user.id
     tg_user_id = tg_user.id
 
+    # Guarda os valores antes de limpar
+    old_email = user.email
+    old_password_hash = user.password_hash
+    old_calorie_goal = user.daily_calorie_goal
+    old_goal_type = user.goal_type
+
+    # ── Passo 1: libera constraints UNIQUE no usuário web ──────────────────────
+    # (email e channel_id são UNIQUE — precisam ser limpos ANTES de serem
+    #  atribuídos ao tg_user na mesma transação)
+    user.email = None
+    user.password_hash = None
+    user.channel_id = f"merged:{web_user_id}"  # libera "web:{email}" para reutilização
+    user.deleted_at = now_utc
+    await db.flush()  # aplica só esses UPDATEs; não commita ainda
+
+    # ── Passo 2: transfere credenciais e config para o usuário Telegram ────────
+    tg_user.email = old_email
+    tg_user.password_hash = old_password_hash
+    if not tg_user.daily_calorie_goal and old_calorie_goal:
+        tg_user.daily_calorie_goal = old_calorie_goal
+    if not tg_user.goal_type and old_goal_type:
+        tg_user.goal_type = old_goal_type
+    tg_user.web_link_token = None
+    tg_user.web_link_token_expires_at = None
+    await db.flush()
+
+    # ── Passo 3: remapeia registros do usuário web → Telegram (bulk SQL) ──────
+    # synchronize_session=False → não tenta atualizar objetos em memória
+    for Model in (MealLog, WeeklyReport, MealWindow, WaterLog):
+        await db.execute(
+            sa_update(Model)
+            .where(Model.user_id == web_user_id)
+            .values(user_id=tg_user_id)
+            .execution_options(synchronize_session=False)
+        )
+
+    # ── Passo 4: hard-delete via SQL (evita lazy-load de cascade em async) ─────
+    # PaymentSubscription não é remapeada — cancela junto com a conta web
     await db.execute(
-        sa_update(MealLog)
-        .where(MealLog.user_id == web_user_id)
-        .values(user_id=tg_user_id)
-    )
-    await db.execute(
-        sa_update(WeeklyReport)
-        .where(WeeklyReport.user_id == web_user_id)
-        .values(user_id=tg_user_id)
+        sa_delete(User).where(User.id == web_user_id)
     )
 
-    # Remove usuário web (agora sem filhos após remapeamento)
-    await db.delete(user)
     await db.commit()
 
-    # Emite novo JWT para o usuário Telegram e redireciona
-    token = create_access_token(tg_user.id)
+    # ── Passo 5: novo JWT apontando para a conta Telegram unificada ───────────
+    token = create_access_token(tg_user_id)
     return _cookie_response(
-        "/configuracoes?success=Conta+Telegram+vinculada+com+sucesso!+Seu+histórico+está+agora+unificado.",
+        "/configuracoes?success=Telegram+vinculado+com+sucesso!+Historico+unificado.",
         token,
         cfg.app_env == "production",
     )
