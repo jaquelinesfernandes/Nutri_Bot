@@ -769,21 +769,22 @@ class ConversationService:
 
     # ── Helper: CTA de acesso ao dashboard ────────────────────────────────────
 
+    # URL canônica do painel web — usada nos CTAs do bot
+    _APP_URL = "https://nutri-bot-ot0p.onrender.com"
+
     def _dashboard_cta(self, user: User) -> str:
         """Retorna rodapé com link do dashboard (se vinculado) ou convite para cadastro."""
         from app.config import settings
-        # Usa APP_URL se configurado; caso contrário, aproveita WEBHOOK_BASE_URL já definido no Render
-        base = (settings.app_url or settings.webhook_base_url).rstrip("/")
+        # Prioridade: APP_URL env var → WEBHOOK_BASE_URL → constante hardcoded
+        base = (settings.app_url or settings.webhook_base_url or self._APP_URL).rstrip("/")
         if user.email:
             # Conta já vinculada ao painel web — link direto para o dashboard
             return f"\n\n🌐 [Ver no dashboard]({base}/dashboard)"
         else:
             # Não vinculado — convida a criar conta e usar /vincular
             return (
-                f"\n\n📊 *Acompanhe pelo painel web!*\n"
-                f"1. Acesse {base}/cadastro e crie sua conta\n"
-                f"2. Envie /vincular aqui para obter seu código\n"
-                f"3. Cole o código em Configurações para unificar tudo 🔗"
+                f"\n\n📊 *Acesse pelo painel web:*\n"
+                f"[Criar conta]({base}/cadastro) e envie /vincular para conectar 🔗"
             )
 
     # ── Helpers de banco de dados ──────────────────────────────────────────────
@@ -860,7 +861,7 @@ class ConversationService:
 
     async def _cmd_ajuda(self, user: User, args, db) -> str:
         from app.config import settings
-        base = (settings.app_url or settings.webhook_base_url).rstrip("/")
+        base = (settings.app_url or settings.webhook_base_url or self._APP_URL).rstrip("/")
         dashboard_url = f"{base}/dashboard"
 
         if user.is_premium:

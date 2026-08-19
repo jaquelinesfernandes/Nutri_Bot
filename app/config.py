@@ -84,8 +84,8 @@ class Settings(BaseSettings):
 
     # Aplicação
     app_env: str = "development"
-    app_url: str = "https://nutri-bot-ot0p.onrender.com"  # URL pública — sobrescreva com APP_URL no Render
-    webhook_base_url: str = ""        # fallback legado (WEBHOOK_BASE_URL)
+    app_url: str = ""          # APP_URL no Render (opcional — bot usa fallback hardcoded se vazio)
+    webhook_base_url: str = ""  # WEBHOOK_BASE_URL (legado)
     log_level: str = "INFO"
     maintenance_mode: bool = False
     default_timezone: str = "America/Sao_Paulo"
