@@ -109,7 +109,7 @@ class AIService:
         async def _call():
             response = await self._client.messages.create(
                 model=settings.anthropic_model,
-                max_tokens=800,
+                max_tokens=1500,  # 800 era insuficiente para refeições com 7+ itens
                 system=SYSTEM_PROMPT_TEXT,
                 messages=[{"role": "user", "content": truncated}],
             )
@@ -120,7 +120,17 @@ class AIService:
                 if raw.startswith("json"):
                     raw = raw[4:]
                 raw = raw.strip()
-            return FoodExtractionResponse.model_validate_json(raw)
+            try:
+                return FoodExtractionResponse.model_validate_json(raw)
+            except Exception as parse_err:
+                # Loga o raw para diagnóstico — ajuda a entender truncamento ou schema inválido
+                logger.error(
+                    f"[AI] Falha ao parsear resposta da extração de texto. "
+                    f"stop_reason={response.stop_reason!r} "
+                    f"raw_preview={raw[:200]!r} "
+                    f"erro={parse_err}"
+                )
+                raise
 
         return await self._call_with_retry(_call)
 
