@@ -6,8 +6,10 @@
 ![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Anthropic](https://img.shields.io/badge/Claude-Haiku%204.5-D4A017?logo=anthropic&logoColor=white)
-![Status](https://img.shields.io/badge/status-em%20produção-brightgreen)
-![Cobertura](https://img.shields.io/badge/cobertura-77%25-brightgreen)
+![Status](https://img.shields.io/badge/status-beta%20aberto-brightgreen)
+![Cobertura](https://img.shields.io/badge/cobertura-71%25-brightgreen)
+![Testes](https://img.shields.io/badge/testes-238%20passing-brightgreen)
+![Security](https://img.shields.io/badge/security-auditado-blue)
 
 ---
 
@@ -20,7 +22,7 @@ O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de f
 - 📱 Funciona **dentro do WhatsApp e Telegram** — sem instalação
 - 🇧🇷 Base nutricional **TACO** (alimentos brasileiros com prioridade)
 - 🗣️ Entende **português coloquial** — "tomei um caldinho de feijão" funciona
-- 📸 Identifica alimentos por **foto** (GPT-4 Vision)
+- 📸 Identifica alimentos por **foto** (Claude Vision)
 - 🎙️ Transcreve **áudios** de voz (Whisper)
 - ⏰ Envia **alertas proativos** por janela de refeição
 - 📊 Gera **relatório PDF semanal** com sugestões personalizadas de IA
@@ -73,16 +75,16 @@ Usuário
 |---|---|
 | **Backend** | Python 3.13 · FastAPI · uvicorn |
 | **Banco de dados** | PostgreSQL 16 · SQLAlchemy (asyncio) · asyncpg · Alembic |
-| **AI primária** | Anthropic Claude Haiku 4.5 — NLP + Vision (texto e foto) |
+| **AI primária** | Anthropic Claude — Haiku 4.5 (NLP) · Sonnet 4.6 (Vision) |
 | **AI secundária** | OpenAI Whisper — transcrição de áudio |
 | **Busca nutricional** | RapidFuzz (fuzzy matching) · TACO JSON · USDA JSON |
-| **Canais** | Telegram Bot API · WhatsApp Business API (Z-API) |
+| **Canais** | Telegram Bot API · WhatsApp via Evolution API |
 | **Alertas** | APScheduler AsyncIOScheduler · UptimeRobot (keep-alive) |
 | **PDF** | WeasyPrint · Jinja2 |
-| **Auth** | JWT · bcrypt (cryptography) |
-| **Pagamentos** | MercadoPago SDK |
+| **Auth** | JWT httpOnly cookie · bcrypt · rate limiting por IP |
+| **Pagamentos** | MercadoPago SDK (HMAC webhook validation) |
 | **Monitoramento** | Sentry SDK · PostHog (analytics) |
-| **Rate limiting** | Middleware customizado |
+| **Segurança** | Security headers · startup validation · secrets.choice |
 | **Testes** | pytest · pytest-asyncio · pytest-cov |
 
 ---
@@ -201,10 +203,13 @@ DATABASE_URL=postgresql://user:pass@host.neon.tech/neondb?sslmode=require
 ANTHROPIC_API_KEY=sk-ant-...   # Claude — NLP + Vision (obrigatória)
 OPENAI_API_KEY=sk-proj-...     # Whisper — transcrição de áudio
 TELEGRAM_BOT_TOKEN=1234567890:ABCdef...
-JWT_SECRET=        # gerar: python -c "import secrets; print(secrets.token_hex(32))"
-RAW_INPUT_ENCRYPTION_KEY=      # gerar: mesmo comando acima
+TELEGRAM_WEBHOOK_SECRET=       # gerar: python -c "import secrets; print(secrets.token_hex(32))"
+JWT_SECRET=                    # gerar: mesmo comando acima
+RAW_INPUT_ENCRYPTION_KEY=      # gerar: mesmo comando acima (LGPD — criptografia dos dados)
 APP_ENV=development
 ```
+
+> ⚠️ Em `APP_ENV=production` a aplicação **não sobe** se `JWT_SECRET`, `RAW_INPUT_ENCRYPTION_KEY` ou `TELEGRAM_WEBHOOK_SECRET` usarem os valores padrão/vazios. Isso é intencional — impede deploy acidental com configuração insegura.
 
 ### 3. Aplicar migrations
 
@@ -256,11 +261,12 @@ Resumo dos passos:
 | Sprint | Foco | Status |
 |---|---|---|
 | **Sprint 1** | Infra · bots · registro de refeições por texto · TACO lookup | ✅ Concluído |
-| **Sprint 2** | GPT-4 Vision · Whisper · fluxo de confirmação | ✅ Concluído |
+| **Sprint 2** | Claude Vision (foto) · Whisper · fluxo de confirmação | ✅ Concluído |
 | **Sprint 3** | Alertas por janela de refeição · meta de calorias | ✅ Concluído |
 | **Sprint 4** | Relatório PDF semanal · sugestões IA · histórico | ✅ Concluído |
-| **Sprint 5** | Onboarding · UX polish · beta fechado | ✅ Concluído |
-| **Fase 2** | Painel B2B para nutricionistas | 🗓️ Planejado |
+| **Sprint 5** | Onboarding · UX polish · dashboard web · beta fechado | ✅ Concluído |
+| **Sprint 6** | Deploy Render + Neon · UptimeRobot · auditoria de segurança · beta aberto | ✅ Concluído |
+| **Fase 2** | Painel B2B para nutricionistas (R$ 79,90/mês) | 🗓️ Próxima |
 | **Fase 3** | App nativo / Web | 🗓️ Planejado |
 
 ---
@@ -268,7 +274,7 @@ Resumo dos passos:
 ## 🧪 Testes
 
 ```powershell
-# Suite completa (190 testes, cobertura 77%)
+# Suite completa (238 testes, cobertura 71%)
 pytest
 
 # Com cobertura detalhada
@@ -286,7 +292,7 @@ pytest tests/test_sprint5.py -v
 - ✅ > 80% de acurácia no reconhecimento textual — top 500 alimentos TACO
 - ✅ > 75% de acurácia no reconhecimento por foto
 - ✅ Alertas entregues em < 2 min em 99% dos casos
-- ✅ Cobertura de testes ≥ 55% (atual: 77%)
+- ✅ Cobertura de testes ≥ 55% (atual: 71% · 238 testes)
 
 ---
 
@@ -333,6 +339,24 @@ python scripts/expand_taco.py
 
 ---
 
+## 🛡️ Segurança
+
+Auditoria realizada em 2026-08-20. Controles implementados:
+
+| Controle | Implementação |
+|---|---|
+| Startup validation | App não sobe em produção com secrets padrão/vazios |
+| JWT storage | Cookie httpOnly apenas — nunca no response body |
+| Brute force | Rate limit: 5 tentativas/5 min por IP no login |
+| Timing attack | `dummy_verify()` no login quando e-mail não existe |
+| Webhook Telegram | `X-Telegram-Bot-Api-Secret-Token` validado (obrigatório em prod) |
+| Webhook MercadoPago | HMAC SHA-256 obrigatório em produção |
+| Endpoints admin | `/scheduler/trigger` e `/scheduler/status` exigem `X-Admin-Key` |
+| Security headers | `X-Frame-Options`, `HSTS`, `X-Content-Type-Options`, `Referrer-Policy` |
+| Link token | Gerado com `secrets.choice()` (criptograficamente seguro) |
+
+---
+
 ## 🔐 LGPD e privacidade
 
 O NutriBot lida com **dados sensíveis de saúde** (LGPD Art. 11 — comportamento alimentar, metas e histórico).
@@ -370,4 +394,4 @@ O NutriBot lida com **dados sensíveis de saúde** (LGPD Art. 11 — comportamen
 
 ---
 
-*NutriBot · Agosto 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude*
+*NutriBot · Agosto 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude · Sprint 6 ✅ · Beta aberto*
