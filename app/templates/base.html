@@ -2,8 +2,17 @@
 <html lang="pt-BR" class="h-full">
 <head>
   <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
   <title>{% block title %}NutriBot{% endblock %}</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="/static/manifest.json"/>
+  <meta name="theme-color" content="#6366F1"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="NutriBot"/>
+  <link rel="apple-touch-icon" href="/static/icon-192.png"/>
 
   <!-- Tailwind CDN — mantido para páginas legadas (historico, configuracoes, etc.) -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -495,5 +504,16 @@
 </head>
 <body>
 {% block body %}{% endblock %}
+
+<!-- PWA Service Worker -->
+<script>
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('/static/sw.js')
+        .catch(err => console.warn('SW registration failed:', err));
+    });
+  }
+</script>
+{% block scripts %}{% endblock %}
 </body>
 </html>

@@ -16,10 +16,39 @@ ALGORITHM = "HS256"
 
 
 def create_access_token(user_id: uuid.UUID) -> str:
-    """Cria JWT com expiração configurada em jwt_expire_days."""
+    """Cria JWT de sessão com expiração configurada em jwt_expire_days."""
     expire = datetime.now(timezone.utc) + timedelta(days=settings.jwt_expire_days)
     payload = {"sub": str(user_id), "exp": expire}
     return jwt.encode(payload, settings.jwt_secret, algorithm=ALGORITHM)
+
+
+def create_magic_token(user_id: uuid.UUID, minutes: int = 10) -> str:
+    """Cria JWT de uso único para acesso direto via link (magic link).
+
+    O token expira em `minutes` minutos e carrega type='magic' para
+    distinguir de tokens de sessão normais na rota /auth/magic.
+    """
+    expire = datetime.now(timezone.utc) + timedelta(minutes=minutes)
+    jti = str(uuid.uuid4())  # ID único para futura invalidação por uso único
+    payload = {
+        "sub": str(user_id),
+        "exp": expire,
+        "type": "magic",
+        "jti": jti,
+    }
+    return jwt.encode(payload, settings.jwt_secret, algorithm=ALGORITHM)
+
+
+def decode_magic_token(token: str) -> uuid.UUID | None:
+    """Decodifica magic link token. Retorna user_id ou None se inválido."""
+    try:
+        payload = jwt.decode(token, settings.jwt_secret, algorithms=[ALGORITHM])
+        if payload.get("type") != "magic":
+            return None
+        sub = payload.get("sub")
+        return uuid.UUID(sub) if sub else None
+    except (JWTError, ValueError):
+        return None
 
 
 def decode_token(token: str) -> uuid.UUID | None:

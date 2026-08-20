@@ -1,8 +1,10 @@
 import logging
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import sentry_sdk
 from fastapi import FastAPI, Request, Response
+from fastapi.staticfiles import StaticFiles
 from sentry_sdk.integrations.fastapi import FastApiIntegration
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -62,6 +64,11 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.add_middleware(SecurityHeadersMiddleware)
+
+# ── Arquivos estáticos (PWA: manifest, icons, sw.js) ──────────────────────
+_STATIC_DIR = Path(__file__).parent / "static"
+if _STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 from app.routers import (  # noqa: E402
     auth,

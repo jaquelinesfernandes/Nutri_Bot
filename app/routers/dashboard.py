@@ -17,7 +17,12 @@ from app.db.session import get_db
 from app.models.meal_log import MealLog
 from app.models.user import User
 from app.models.weekly_report import WeeklyReport
-from app.utils.jwt import create_access_token, decode_token, get_current_user_optional
+from app.utils.jwt import (
+    create_access_token,
+    decode_magic_token,
+    decode_token,
+    get_current_user_optional,
+)
 
 router = APIRouter(tags=["dashboard"])
 
@@ -25,6 +30,35 @@ router = APIRouter(tags=["dashboard"])
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+@router.get("/auth/magic", response_class=HTMLResponse)
+async def magic_link(
+    t: str | None = None,
+    db: AsyncSession = Depends(get_db),
+):
+    """Autentica o usuário via magic link enviado pelo bot.
+
+    O token JWT carrega type='magic' e expira em 10 minutos.
+    Após validação, seta o cookie de sessão e redireciona para /dashboard.
+    """
+    from app.config import settings
+
+    if not t:
+        return RedirectResponse(url="/login?error=link_invalido", status_code=302)
+
+    user_id = decode_magic_token(t)
+    if user_id is None:
+        return RedirectResponse(url="/login?error=link_expirado", status_code=302)
+
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user or user.deleted_at is not None:
+        return RedirectResponse(url="/login?error=usuario_nao_encontrado", status_code=302)
+
+    # Gera sessão de longa duração e redireciona
+    session_token = create_access_token(user.id)
+    return _cookie_response("/dashboard", session_token, settings.app_env == "production")
+
 
 _MEAL_LABELS = {
     "breakfast": "☀️ Café da manhã",

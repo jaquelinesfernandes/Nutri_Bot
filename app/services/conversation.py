@@ -163,6 +163,8 @@ class ConversationService:
             "privacidade":    self._cmd_privacidade,
             "feedback":       self._cmd_feedback,
             "vincular":       self._cmd_vincular,
+            "painel":         self._cmd_painel,
+            "dashboard":      self._cmd_painel,  # alias
         }
 
         handler = handlers.get(cmd)
@@ -265,6 +267,13 @@ class ConversationService:
             await db.commit()
             analytics.onboarding_completed(user.channel_id, user.channel_type, kcal_goal)
 
+            # Gera magic link para acesso imediato ao dashboard (sem vincular)
+            from app.config import settings as _cfg
+            from app.utils.jwt import create_magic_token
+            _magic = create_magic_token(user.id, minutes=1440)  # 24h no onboarding
+            _base = (_cfg.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+            _link = f"{_base}/auth/magic?t={_magic}"
+
             name = data.get("name", "")
             return (
                 f"🎊 *Tudo certo, {name}! Bem-vindo(a) ao NutriBot!*\n\n"
@@ -275,6 +284,8 @@ class ConversationService:
                 "💬 Texto: _'almocei arroz com feijão e frango grelhado'_\n"
                 "📸 Foto do prato (Premium)\n"
                 "🎤 Áudio descrevendo a refeição (Premium)\n\n"
+                f"📊 *Seu painel web:* [Abrir agora]({_link})\n"
+                "_Toque em 'Adicionar à tela inicial' para instalar como app!_ 📲\n\n"
                 "Use /ajuda para ver todos os comandos. 🥗"
             )
 
@@ -1292,6 +1303,24 @@ class ConversationService:
             "3. Digite o código acima e clique em *Vincular*\n\n"
             "⏱️ Válido por *10 minutos*.\n"
             "Após a vinculação, seu histórico do Telegram ficará visível no painel!"
+        )
+
+    async def _cmd_painel(self, user: User, args, db: AsyncSession) -> str:
+        """Gera um magic link de acesso direto ao dashboard web (válido 10 min)."""
+        from app.config import settings
+        from app.utils.jwt import create_magic_token
+
+        token = create_magic_token(user.id, minutes=10)
+        base = (settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+        link = f"{base}/auth/magic?t={token}"
+
+        name = user.first_name or "você"
+        return (
+            f"🌐 *Painel do NutriBot*\n\n"
+            f"Olá, {name}! Seu painel está pronto:\n\n"
+            f"👉 [Abrir agora]({link})\n\n"
+            "⏱️ Link válido por *10 minutos*.\n"
+            "📲 No celular, toque em *'Adicionar à tela inicial'* para instalar como app!"
         )
 
     async def _cmd_relatorios(self, user: User, args, db: AsyncSession) -> str:
