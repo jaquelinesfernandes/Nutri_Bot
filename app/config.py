@@ -90,6 +90,11 @@ class Settings(BaseSettings):
     maintenance_mode: bool = False
     default_timezone: str = "America/Sao_Paulo"
 
+    # Feature flags
+    # True = todos os usuários podem gerar/ver relatórios (beta aberto).
+    # Setar REPORTS_OPEN_BETA=false no Render quando ativar cobrança.
+    reports_open_beta: bool = True
+
     # Rate limiting
     rate_limit_messages_per_minute: int = 10
     rate_limit_photos_per_hour: int = 10

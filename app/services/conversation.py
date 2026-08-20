@@ -1295,9 +1295,10 @@ class ConversationService:
         )
 
     async def _cmd_relatorios(self, user: User, args, db: AsyncSession) -> str:
+        from app.config import settings
         from app.models.weekly_report import WeeklyReport
 
-        if not user.is_premium:
+        if not user.is_premium and not settings.reports_open_beta:
             return (
                 "📊 *Relatórios — Premium*\n\n"
                 "Você recebe relatórios automáticos conforme a periodicidade configurada.\n"
@@ -1359,10 +1360,11 @@ class ConversationService:
         from datetime import date as _date
         import calendar
 
+        from app.config import settings
         from app.services.notification import notification_service
         from app.services.report import report_service
 
-        if not user.is_premium:
+        if not user.is_premium and not settings.reports_open_beta:
             return (
                 "📊 *Relatórios sob demanda — Premium*\n\n"
                 "Assine o Premium para solicitar relatórios a qualquer momento:\n"

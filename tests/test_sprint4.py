@@ -64,10 +64,31 @@ def svc() -> ConversationService:
 
 class TestCmdRelatorios:
     @pytest.mark.asyncio
-    async def test_free_user_recebe_cta_premium(self, svc):
+    async def test_free_user_open_beta_acessa_relatorios(self, svc):
+        """Com reports_open_beta=True (padrão beta), usuário free vê a tela de relatórios."""
         user = _make_user(plan="free")
         db = _make_db()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        db.execute.return_value = mock_result
+
         result = await svc._cmd_relatorios(user, None, db)
+        # Não deve mais retornar o bloqueio de premium
+        assert "/premium para assinar" not in result
+        # Deve orientar como solicitar relatórios
+        assert "/relatorio" in result
+
+    @pytest.mark.asyncio
+    async def test_free_user_com_beta_fechado_recebe_cta(self, svc):
+        """Com reports_open_beta=False, usuário free recebe CTA de premium."""
+        from app.config import settings as _cfg
+
+        user = _make_user(plan="free")
+        db = _make_db()
+
+        with patch.object(_cfg, "reports_open_beta", False):
+            result = await svc._cmd_relatorios(user, None, db)
+
         assert "Premium" in result or "premium" in result.lower()
         assert "/premium" in result
 

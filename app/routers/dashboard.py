@@ -282,6 +282,7 @@ async def relatorios(
     if user is None:
         return RedirectResponse(url="/login", status_code=302)
 
+    from app.config import settings
     from datetime import timedelta as _td
 
     result = await db.execute(
@@ -331,7 +332,7 @@ async def relatorios(
         request=request, name="relatorios.html",
         context={
             "user": user, "active": "relatorios",
-            "reports": reports, "is_premium": user.is_premium,
+            "reports": reports, "is_premium": user.is_premium or settings.reports_open_beta,
         },
     )
 
