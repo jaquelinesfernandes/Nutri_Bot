@@ -87,10 +87,10 @@ class ConversationService:
             now_utc = datetime.now(ZoneInfo("UTC"))
             expires = user.state_expires_at
 
-            # Bug fix: expires=None em estado não-IDLE = prazo nunca foi definido
-            # (estado inconsistente). Trata como expirado imediatamente.
+            # expires=None significa "sem prazo definido" — estado válido indefinidamente.
+            # Só expira quando um datetime explícito no passado for atribuído.
             if expires is None:
-                expired = True
+                expired = False
             else:
                 if expires.tzinfo is None:
                     expires = expires.replace(tzinfo=ZoneInfo("UTC"))
