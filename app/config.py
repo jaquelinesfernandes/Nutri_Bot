@@ -1,5 +1,8 @@
-from pydantic import field_validator
+from pydantic import field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_JWT_INSECURE_DEFAULT = "change-me-in-production-use-32-chars-min"
+_ENC_INSECURE_DEFAULT = "0" * 64
 
 
 class Settings(BaseSettings):
@@ -69,11 +72,15 @@ class Settings(BaseSettings):
     mercadopago_annual_plan_id: str = ""
 
     # JWT / autenticação web
-    jwt_secret: str = "change-me-in-production-use-32-chars-min"
+    jwt_secret: str = _JWT_INSECURE_DEFAULT
     jwt_expire_days: int = 7
 
     # Segurança
-    raw_input_encryption_key: str = "0" * 64  # placeholder — substituir em produção
+    raw_input_encryption_key: str = _ENC_INSECURE_DEFAULT  # placeholder — substituir em produção
+
+    # Admin — protege /scheduler/trigger e /scheduler/status
+    # Gere com: python -c "import secrets; print(secrets.token_hex(32))"
+    admin_api_key: str = ""
 
     # Analytics
     posthog_api_key: str = ""
@@ -100,6 +107,28 @@ class Settings(BaseSettings):
     rate_limit_photos_per_hour: int = 10
     free_tier_max_logs_per_day: int = 3
     free_tier_history_days: int = 3
+
+
+    @model_validator(mode="after")
+    def _check_production_secrets(self) -> "Settings":
+        """Falha no startup se valores inseguros forem usados em produção."""
+        if self.app_env != "production":
+            return self
+        errors: list[str] = []
+        if self.jwt_secret == _JWT_INSECURE_DEFAULT:
+            errors.append("JWT_SECRET não configurado (usar valor padrão em produção é proibido)")
+        if self.raw_input_encryption_key == _ENC_INSECURE_DEFAULT:
+            errors.append("RAW_INPUT_ENCRYPTION_KEY não configurado (chave de criptografia padrão é insegura)")
+        if not self.telegram_bot_token:
+            errors.append("TELEGRAM_BOT_TOKEN obrigatório em produção")
+        if not self.telegram_webhook_secret:
+            errors.append("TELEGRAM_WEBHOOK_SECRET obrigatório em produção (evita webhooks falsos)")
+        if errors:
+            raise ValueError(
+                "Configuração insegura detectada em produção:\n  - "
+                + "\n  - ".join(errors)
+            )
+        return self
 
 
 settings = Settings()

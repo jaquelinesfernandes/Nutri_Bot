@@ -48,7 +48,16 @@ async def webhook_payment(
 ):
     body = await request.body()
 
-    if x_signature and not _validate_mp_signature(body, x_signature, x_request_id or ""):
+    if settings.app_env == "production":
+        # Em produção, assinatura é OBRIGATÓRIA — impede criação de premium falso
+        if not x_signature:
+            logger.warning("[PAYMENT] Webhook sem assinatura rejeitado em produção")
+            raise HTTPException(status_code=403, detail="Signature required")
+        if not _validate_mp_signature(body, x_signature, x_request_id or ""):
+            logger.warning("[PAYMENT] Assinatura inválida no webhook")
+            raise HTTPException(status_code=403, detail="Invalid signature")
+    elif x_signature and not _validate_mp_signature(body, x_signature, x_request_id or ""):
+        # Em dev/staging, valida se vier mas não exige
         raise HTTPException(status_code=403, detail="Invalid signature")
 
     import json

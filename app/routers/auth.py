@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from passlib.context import CryptContext
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,8 +11,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse
+from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest
 from app.utils.jwt import create_access_token
+from app.utils.rate_limiter import rate_limiter
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -32,12 +33,18 @@ def _set_auth_cookie(response: Response, token: str) -> None:
     )
 
 
-@router.post("/register", response_model=TokenResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/register", response_model=AuthResponse, status_code=status.HTTP_201_CREATED)
 async def register(
     body: RegisterRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
-) -> TokenResponse:
+) -> AuthResponse:
+    # Rate limit: 5 registros por IP por hora (evita criação em massa)
+    client_ip = request.client.host if request.client else "unknown"
+    if not await rate_limiter.is_allowed(f"register:{client_ip}", max_requests=5, window_seconds=3600):
+        raise HTTPException(status_code=429, detail="Muitas tentativas. Tente em 1 hora.")
+
     # Verifica e-mail duplicado
     existing = await db.execute(select(User).where(User.email == body.email))
     if existing.scalar_one_or_none():
@@ -58,19 +65,29 @@ async def register(
 
     token = create_access_token(user.id)
     _set_auth_cookie(response, token)
-    return TokenResponse(access_token=token, user_name=user.first_name or body.name)
+    # Token NÃO é retornado no body — apenas no cookie httpOnly (evita leitura por JS)
+    return AuthResponse(user_name=user.first_name or body.name)
 
 
-@router.post("/login", response_model=TokenResponse)
+@router.post("/login", response_model=AuthResponse)
 async def login(
     body: LoginRequest,
+    request: Request,
     response: Response,
     db: AsyncSession = Depends(get_db),
-) -> TokenResponse:
+) -> AuthResponse:
+    # Rate limit: 5 tentativas por IP por 5 minutos (anti-brute-force)
+    client_ip = request.client.host if request.client else "unknown"
+    if not await rate_limiter.is_allowed(f"login:{client_ip}", max_requests=5, window_seconds=300):
+        raise HTTPException(status_code=429, detail="Muitas tentativas. Tente em 5 minutos.")
+
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()
 
+    # Anti-timing-attack: faz dummy_verify mesmo quando o usuário não existe,
+    # para que o tempo de resposta seja igual quer o e-mail exista ou não.
     if not user or not user.password_hash:
+        pwd_context.dummy_verify()
         raise HTTPException(status_code=401, detail="E-mail ou senha incorretos")
     if not pwd_context.verify(body.password, user.password_hash):
         raise HTTPException(status_code=401, detail="E-mail ou senha incorretos")
@@ -79,7 +96,7 @@ async def login(
 
     token = create_access_token(user.id)
     _set_auth_cookie(response, token)
-    return TokenResponse(access_token=token, user_name=user.first_name or body.email)
+    return AuthResponse(user_name=user.first_name or body.email)
 
 
 @router.post("/logout")

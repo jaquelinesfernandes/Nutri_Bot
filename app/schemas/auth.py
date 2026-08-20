@@ -27,7 +27,14 @@ class LoginRequest(BaseModel):
     password: str
 
 
-class TokenResponse(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
+class AuthResponse(BaseModel):
+    """Resposta de login/registro — o JWT é enviado APENAS via cookie httpOnly.
+    Não incluímos o token no corpo da resposta para evitar que JS o leia e
+    armazene em localStorage (vetor de ataque XSS)."""
+
     user_name: str
+    ok: bool = True
+
+
+# Alias retrocompatível — remover após atualizar todos os callers
+TokenResponse = AuthResponse

@@ -1,13 +1,19 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Request
 from sqlalchemy import text
 
 from app.config import settings
 from app.db.session import AsyncSessionLocal
 
 router = APIRouter(tags=["health"])
+
+
+def _require_admin(x_admin_key: str | None) -> None:
+    """Verifica ADMIN_API_KEY. Noop se a chave não foi configurada (dev/staging)."""
+    if settings.admin_api_key and x_admin_key != settings.admin_api_key:
+        raise HTTPException(status_code=403, detail="Não autorizado")
 
 
 @router.get("/health")
@@ -40,11 +46,15 @@ async def ping():
 
 
 @router.get("/scheduler/status")
-async def scheduler_status(request: Request):
+async def scheduler_status(
+    request: Request,
+    x_admin_key: str | None = Header(default=None),
+):
     """
     Mostra o próximo disparo de cada job agendado (horário de Brasília).
-    Útil para confirmar que o timezone está correto após deploy.
+    Requer header X-Admin-Key se ADMIN_API_KEY estiver configurado.
     """
+    _require_admin(x_admin_key)
     scheduler = getattr(request.app.state, "scheduler", None)
     if not scheduler or not scheduler.running:
         return {"running": False, "jobs": []}
@@ -75,14 +85,20 @@ async def scheduler_status(request: Request):
 
 
 @router.post("/scheduler/trigger/{job_id}")
-async def trigger_job(job_id: str, request: Request):
+async def trigger_job(
+    job_id: str,
+    request: Request,
+    x_admin_key: str | None = Header(default=None),
+):
     """
     Dispara um job do scheduler manualmente (útil para testes e reenvio manual).
 
     IDs válidos: alert_breakfast, alert_morning_snack, alert_lunch,
                  alert_afternoon_snack, alert_dinner, report_weekly,
                  report_monthly, report_quarterly, reengagement
+    Requer header X-Admin-Key se ADMIN_API_KEY estiver configurado.
     """
+    _require_admin(x_admin_key)
     scheduler = getattr(request.app.state, "scheduler", None)
     if not scheduler or not scheduler.running:
         raise HTTPException(status_code=503, detail="Scheduler não está rodando")

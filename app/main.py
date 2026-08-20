@@ -2,13 +2,30 @@ import logging
 from contextlib import asynccontextmanager
 
 import sentry_sdk
-from fastapi import FastAPI
+from fastapi import FastAPI, Request, Response
 from sentry_sdk.integrations.fastapi import FastApiIntegration
+from starlette.middleware.base import BaseHTTPMiddleware
 
 from app.config import settings
 
 logging.basicConfig(level=settings.log_level)
 logger = logging.getLogger(__name__)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Adiciona headers de segurança HTTP em todas as respostas."""
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+        response.headers.setdefault("X-Content-Type-Options", "nosniff")
+        response.headers.setdefault("X-Frame-Options", "DENY")
+        response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
+        response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        if settings.app_env == "production":
+            response.headers.setdefault(
+                "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
+            )
+        return response
 
 
 @asynccontextmanager
@@ -41,8 +58,10 @@ app = FastAPI(
     title="NutriBot API",
     version="1.0.0",
     docs_url="/docs" if settings.app_env != "production" else None,
+    redoc_url="/redoc" if settings.app_env != "production" else None,
     lifespan=lifespan,
 )
+app.add_middleware(SecurityHeadersMiddleware)
 
 from app.routers import (  # noqa: E402
     auth,

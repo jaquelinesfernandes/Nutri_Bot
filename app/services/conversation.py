@@ -1267,15 +1267,15 @@ class ConversationService:
 
     async def _cmd_vincular(self, user: User, args, db: AsyncSession) -> str:
         """Gera um código temporário para vincular a conta Telegram ao painel web."""
-        import random
-        import string
+        import secrets
 
         if user.channel_type != "telegram":
             return "Este comando só funciona no Telegram. 😊"
 
         # Código de 6 caracteres alfanumérico maiúsculo, sem ambíguos (0/O, I/1)
+        # secrets.choice é criptograficamente seguro (ao contrário de random.choices)
         alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
-        code = "".join(random.choices(alphabet, k=6))
+        code = "".join(secrets.choice(alphabet) for _ in range(6))
 
         user.web_link_token = code
         user.web_link_token_expires_at = datetime.now(ZoneInfo("UTC")) + timedelta(minutes=10)
