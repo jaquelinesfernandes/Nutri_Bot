@@ -459,9 +459,18 @@
     .ring-card { flex-direction: row; gap: 20px; padding: 18px; align-items: center; }
     .ring-card::after { display: none; }
     .ring-eyebrow { display: none; }
-    .ring-wrap { width: 120px; height: 120px; flex-shrink: 0; margin-bottom: 0; }
+    .ring-wrap { width: 120px; height: 120px; flex-shrink: 0; margin-bottom: 0; overflow: hidden; }
     .ring-big { font-size: 24px; }
     .ring-remain { flex-direction: column; align-items: flex-start; gap: 4px; }
+  }
+  @media (max-width: 420px) {
+    .ring-card { gap: 14px; padding: 14px; }
+    .ring-wrap { width: 96px; height: 96px; }
+    .ring-big { font-size: 20px; }
+    .ring-of { font-size: 10px; }
+    .ring-pct { font-size: 11px; }
+    .ring-tip { font-size: 10.5px; }
+    .remain-chip { font-size: 11px; padding: 2px 8px; }
   }
   @media (max-width: 640px) {
     .sidebar { display: none; }
