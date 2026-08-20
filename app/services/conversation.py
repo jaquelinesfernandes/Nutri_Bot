@@ -68,7 +68,37 @@ UNRECOGNIZED_RESPONSE = (
 
 class ConversationService:
 
+    # ── "Ver painel" footer ────────────────────────────────────────────────────
+
+    def _panel_link(self, user: User) -> str:
+        """Rodapé com magic link de 30 min para o painel web."""
+        from app.config import settings
+        from app.utils.jwt import create_magic_token
+
+        token = create_magic_token(user.id, minutes=30)
+        base = (settings.app_url or self._APP_URL).rstrip("/")
+        return f"\n\n🌐 [Ver painel]({base}/auth/magic?t={token})"
+
+    def _append_panel_link(self, reply: str, user: User) -> str:
+        """Adiciona o link do painel no final, evitando duplicação."""
+        if reply and "auth/magic" not in reply:
+            return reply + self._panel_link(user)
+        return reply
+
+    # ── Handlers públicos ──────────────────────────────────────────────────────
+
     async def handle_message(
+        self,
+        user: User,
+        message_type: Literal["text", "photo", "audio"],
+        content: str | bytes,
+        caption: str | None = None,
+        db: AsyncSession | None = None,
+    ) -> str:
+        reply = await self._dispatch_message(user, message_type, content, caption, db)
+        return self._append_panel_link(reply, user)
+
+    async def _dispatch_message(
         self,
         user: User,
         message_type: Literal["text", "photo", "audio"],
@@ -168,10 +198,12 @@ class ConversationService:
         }
 
         handler = handlers.get(cmd)
-        if handler:
-            return await handler(user, args, db)
-
-        return f"Comando /{cmd} não reconhecido. Use /ajuda para ver os disponíveis."
+        reply = (
+            await handler(user, args, db)
+            if handler
+            else f"Comando /{cmd} não reconhecido. Use /ajuda para ver os disponíveis."
+        )
+        return self._append_panel_link(reply, user)
 
     # ── Helpers de estado ──────────────────────────────────────────────────────
 
@@ -791,7 +823,6 @@ class ConversationService:
                 f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
             )
 
-        msg += self._dashboard_cta_from(user_email)
         return msg
 
     # ── Helper: CTA de acesso ao dashboard ────────────────────────────────────
@@ -898,10 +929,6 @@ class ConversationService:
         )
 
     async def _cmd_ajuda(self, user: User, args, db) -> str:
-        from app.config import settings
-        base = (settings.app_url or settings.webhook_base_url or self._APP_URL).rstrip("/")
-        dashboard_url = f"{base}/dashboard"
-
         if user.is_premium:
             return (
                 "📋 *NutriBot Premium — Comandos:*\n\n"
@@ -920,15 +947,14 @@ class ConversationService:
                 "• /meta [kcal] — meta calórica diária\n"
                 "• /alertas on|off — lembretes de refeição\n"
                 "• /silenciar [horas] — pausar alertas\n"
-                "• /vincular — vincular ao painel web\n"
+                "• /painel — abrir painel web\n"
                 "• /plano — seu plano atual\n\n"
                 "🔒 *Privacidade & Conta*\n"
                 "• /privacidade — política LGPD\n"
                 "• /exportar\\_dados — exportar dados\n"
                 "• /deletar\\_dados — apagar tudo (72h)\n"
                 "• /feedback [texto] — enviar feedback\n"
-                "• /cancelar — cancelar ação em curso\n\n"
-                f"🌐 *Painel web:* [Dashboard]({dashboard_url})"
+                "• /cancelar — cancelar ação em curso"
             )
         return (
             "📋 *NutriBot — Comandos:*\n\n"
@@ -943,15 +969,14 @@ class ConversationService:
             "• /meta [kcal] — meta calórica diária\n"
             "• /alertas on|off — lembretes de refeição\n"
             "• /silenciar [horas] — pausar alertas temporariamente\n"
-            "• /vincular — vincular ao painel web\n\n"
+            "• /painel — abrir painel web\n\n"
             "🔒 *Privacidade & Conta*\n"
             "• /privacidade — política LGPD\n"
             "• /exportar\\_dados — exportar dados\n"
             "• /deletar\\_dados — apagar tudo (72h)\n"
             "• /feedback [texto] — enviar feedback\n"
             "• /cancelar — cancelar ação em curso\n\n"
-            "🔓 */premium* — desbloquear foto, áudio e relatórios completos\n\n"
-            f"🌐 *Painel web:* [Dashboard]({dashboard_url})"
+            "🔓 */premium* — desbloquear foto, áudio e relatórios completos"
         )
 
     async def _cmd_hoje(self, user: User, args, db: AsyncSession) -> str:
@@ -996,7 +1021,6 @@ class ConversationService:
                 f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
             )
 
-        msg += self._dashboard_cta(user)
         analytics.daily_summary_viewed(user.channel_id, total_kcal, pct_goal)
         return msg
 
