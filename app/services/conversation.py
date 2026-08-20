@@ -68,7 +68,37 @@ UNRECOGNIZED_RESPONSE = (
 
 class ConversationService:
 
+    # ── "Ver painel" footer ────────────────────────────────────────────────────
+
+    def _panel_link(self, user: User) -> str:
+        """Retorna o rodapé '🌐 Ver painel' com magic link de 30 min."""
+        from app.config import settings
+        from app.utils.jwt import create_magic_token
+
+        token = create_magic_token(user.id, minutes=30)
+        base = (settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+        return f"\n\n🌐 [Ver painel]({base}/auth/magic?t={token})"
+
+    def _append_panel_link(self, reply: str, user: User) -> str:
+        """Adiciona o link do painel no final da mensagem, se ainda não estiver presente."""
+        if reply and "auth/magic" not in reply:
+            return reply + self._panel_link(user)
+        return reply
+
+    # ── Handlers públicos ──────────────────────────────────────────────────────
+
     async def handle_message(
+        self,
+        user: User,
+        message_type: Literal["text", "photo", "audio"],
+        content: str | bytes,
+        caption: str | None = None,
+        db: AsyncSession | None = None,
+    ) -> str:
+        reply = await self._dispatch_message(user, message_type, content, caption, db)
+        return self._append_panel_link(reply, user)
+
+    async def _dispatch_message(
         self,
         user: User,
         message_type: Literal["text", "photo", "audio"],
@@ -168,10 +198,12 @@ class ConversationService:
         }
 
         handler = handlers.get(cmd)
-        if handler:
-            return await handler(user, args, db)
-
-        return f"Comando /{cmd} não reconhecido. Use /ajuda para ver os disponíveis."
+        reply = (
+            await handler(user, args, db)
+            if handler
+            else f"Comando /{cmd} não reconhecido. Use /ajuda para ver os disponíveis."
+        )
+        return self._append_panel_link(reply, user)
 
     # ── Helpers de estado ──────────────────────────────────────────────────────
 
