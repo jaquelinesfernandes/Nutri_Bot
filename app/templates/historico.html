@@ -2,51 +2,282 @@
 {% block title %}Histórico — NutriBot{% endblock %}
 {% block content %}
 <style>
-  /* Harmoniza com paleta do dashboard */
-  .bg-white          { background: var(--card) !important; }
-  .shadow-sm         { box-shadow: var(--shadow-sm) !important; }
+  /* ── Harmoniza Tailwind com design system ────────────── */
+  .bg-white       { background: var(--card) !important; }
+  .shadow-sm      { box-shadow: var(--shadow-sm) !important; }
   .text-slate-800,
-  .text-slate-700    { color: var(--text-1) !important; }
+  .text-slate-700 { color: var(--text-1) !important; }
   .text-slate-600,
   .text-slate-500,
-  .text-slate-400    { color: var(--text-2) !important; }
+  .text-slate-400 { color: var(--text-2) !important; }
   .border-gray-200,
   .border-gray-100,
-  .border-gray-50    { border-color: var(--card-b) !important; }
-  #datePicker {
-    background: var(--surface);
-    color: var(--text-1);
-    border-color: var(--card-b);
-    cursor: pointer;
-    /* Garante que o input fique acima de qualquer stacking context do sidebar */
-    position: relative;
-    z-index: 10;
-  }
-  /* Wrapper isolado para que o popup não seja clipado pelo overflow-y:auto do .main */
-  .date-picker-wrap {
+  .border-gray-50 { border-color: var(--card-b) !important; }
+  table thead tr  { border-color: var(--card-b) !important; }
+  table tbody tr  { border-color: var(--card-b) !important; }
+
+  /* ── Datepicker — trigger ────────────────────────────── */
+  .nb-datepicker {
     position: relative;
     isolation: isolate;
-    z-index: 10;
   }
-  table thead tr { border-color: var(--card-b) !important; }
-  table tbody tr { border-color: var(--card-b) !important; }
+
+  .nb-dp-trigger {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--card);
+    border: 1px solid var(--card-b);
+    border-radius: 12px;
+    box-shadow: var(--shadow-sm);
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-1);
+    transition: border-color .15s, box-shadow .15s, background .15s;
+    white-space: nowrap;
+  }
+  .nb-dp-trigger:hover,
+  .nb-dp-trigger[aria-expanded="true"] {
+    border-color: rgba(99,102,241,.5);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.1), var(--shadow-sm);
+  }
+  .nb-dp-trigger[aria-expanded="true"] { background: var(--primary-lt); }
+
+  .nb-dp-trigger-icon {
+    width: 15px; height: 15px;
+    color: var(--primary); flex-shrink: 0;
+  }
+  .nb-dp-trigger-chevron {
+    width: 13px; height: 13px;
+    color: var(--text-3); flex-shrink: 0;
+    transition: transform .2s;
+  }
+  .nb-dp-trigger[aria-expanded="true"] .nb-dp-trigger-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* ── Datepicker — popup (fixed, calculado por JS) ────── */
+  .nb-dp-popup {
+    position: fixed;   /* garante que overflow-y:auto do .main não clipa */
+    z-index: 9999;
+    width: 296px;
+    background: var(--card);
+    border: 1px solid var(--card-b);
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(99,102,241,.18), 0 2px 10px rgba(0,0,0,.12);
+    padding: 20px;
+    animation: dpIn .14s cubic-bezier(.16,1,.3,1);
+  }
+  @media (prefers-reduced-motion: reduce) { .nb-dp-popup { animation: none; } }
+  @keyframes dpIn {
+    from { opacity: 0; transform: translateY(-8px) scale(.97); }
+    to   { opacity: 1; transform: translateY(0)    scale(1);   }
+  }
+
+  /* Month navigation */
+  .nb-dp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 18px;
+  }
+  .nb-dp-month-label {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 15px;
+    color: var(--text-1);
+    letter-spacing: -.2px;
+    text-align: center;
+    flex: 1;
+  }
+  .nb-dp-nav {
+    width: 28px; height: 28px;
+    border-radius: 8px;
+    border: 1px solid var(--card-b);
+    background: var(--card);
+    color: var(--text-2);
+    cursor: pointer;
+    display: grid; place-items: center;
+    font-size: 15px; line-height: 1;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .12s, color .12s, border-color .12s;
+    flex-shrink: 0;
+  }
+  .nb-dp-nav:hover {
+    background: var(--primary-lt);
+    color: var(--primary);
+    border-color: rgba(99,102,241,.3);
+  }
+  .nb-dp-nav:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+  }
+
+  /* Weekday headers */
+  .nb-dp-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    text-align: center;
+    margin-bottom: 6px;
+  }
+  .nb-dp-weekdays span {
+    font-size: 9.5px;
+    font-weight: 600;
+    letter-spacing: .07em;
+    text-transform: uppercase;
+    color: var(--text-3);
+    padding: 3px 0;
+  }
+
+  /* Day grid */
+  .nb-dp-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .nb-dp-day {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: none;
+    background: none;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px;
+    color: var(--text-1);
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .1s, color .1s;
+    position: relative;
+    font-variant-numeric: tabular-nums;
+  }
+  .nb-dp-day:hover:not(.nb-dp-day--other):not(.nb-dp-day--selected) {
+    background: var(--primary-lt);
+    color: var(--primary);
+  }
+  .nb-dp-day:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 1px;
+  }
+  .nb-dp-day--other {
+    color: var(--text-3);
+    opacity: .45;
+    cursor: default;
+    pointer-events: none;
+  }
+  /* Today: texto colorido + ponto abaixo */
+  .nb-dp-day--today:not(.nb-dp-day--selected) {
+    color: var(--primary);
+    font-weight: 700;
+  }
+  .nb-dp-day--today:not(.nb-dp-day--selected)::after {
+    content: '';
+    position: absolute;
+    bottom: 4px; left: 50%;
+    transform: translateX(-50%);
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--primary);
+  }
+  /* Selected: gradiente indigo → violet */
+  .nb-dp-day--selected {
+    background: linear-gradient(135deg, #6366F1, #7C3AED);
+    color: #fff !important;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(99,102,241,.45);
+  }
+  .nb-dp-day--selected:hover { opacity: .9; }
+
+  /* Footer */
+  .nb-dp-footer {
+    margin-top: 16px;
+    padding-top: 14px;
+    border-top: 1px solid var(--card-b);
+    display: flex;
+    gap: 8px;
+  }
+  .nb-dp-btn-ghost {
+    flex: 1; padding: 7px 10px;
+    border-radius: 10px;
+    border: 1px solid var(--card-b);
+    background: var(--card);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: background .12s, color .12s, border-color .12s;
+  }
+  .nb-dp-btn-ghost:hover {
+    background: var(--primary-lt);
+    color: var(--primary);
+    border-color: rgba(99,102,241,.3);
+  }
+  .nb-dp-btn-primary {
+    flex: 1.4; padding: 7px 10px;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #6366F1, #7C3AED);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12.5px; font-weight: 600;
+    color: #fff;
+    cursor: pointer;
+    transition: opacity .12s, box-shadow .12s;
+    box-shadow: 0 2px 8px rgba(99,102,241,.35);
+  }
+  .nb-dp-btn-primary:hover { opacity: .88; box-shadow: 0 4px 14px rgba(99,102,241,.45); }
+  .nb-dp-btn-ghost:focus-visible,
+  .nb-dp-btn-primary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 </style>
 
+<!-- ── Header ───────────────────────────────────────────── -->
 <div class="flex items-center justify-between mb-8">
   <h1 class="text-2xl font-bold text-slate-800">📅 Histórico de refeições</h1>
-  <div class="flex items-center gap-2">
-    <div class="date-picker-wrap flex items-center gap-2">
-      <input type="date" id="datePicker" value="{{ selected_date }}"
-        class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"/>
-      <button onclick="loadDate()"
-        class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors">
-        Ver
-      </button>
+
+  <!-- Custom datepicker -->
+  <div class="nb-datepicker" id="nbDatepicker">
+    <button class="nb-dp-trigger" id="dpTrigger" type="button"
+            aria-haspopup="dialog" aria-expanded="false" aria-controls="dpPopup">
+      <!-- Calendar icon -->
+      <svg class="nb-dp-trigger-icon" viewBox="0 0 20 20" fill="none"
+           stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="3" y="4" width="14" height="13" rx="2"/>
+        <path d="M3 8h14M7 2v4M13 2v4"/>
+      </svg>
+      <span id="dpLabel">—</span>
+      <!-- Chevron -->
+      <svg class="nb-dp-trigger-chevron" viewBox="0 0 16 16" fill="none"
+           stroke="currentColor" stroke-width="1.8" stroke-linecap="round">
+        <path d="M4 6l4 4 4-4"/>
+      </svg>
+    </button>
+
+    <!-- Popup (position fixed, posicionado por JS) -->
+    <div class="nb-dp-popup" id="dpPopup" hidden role="dialog" aria-label="Selecionar data">
+      <div class="nb-dp-header">
+        <button class="nb-dp-nav" id="dpPrev" type="button" aria-label="Mês anterior">‹</button>
+        <span class="nb-dp-month-label" id="dpMonthLabel"></span>
+        <button class="nb-dp-nav" id="dpNext" type="button" aria-label="Próximo mês">›</button>
+      </div>
+
+      <div class="nb-dp-weekdays" aria-hidden="true">
+        <span>Dom</span><span>Seg</span><span>Ter</span>
+        <span>Qua</span><span>Qui</span><span>Sex</span><span>Sáb</span>
+      </div>
+
+      <div class="nb-dp-grid" id="dpGrid" role="grid" aria-label="Dias do mês"></div>
+
+      <div class="nb-dp-footer">
+        <button class="nb-dp-btn-ghost" id="dpToday" type="button">Hoje</button>
+        <button class="nb-dp-btn-primary" id="dpVer" type="button">Ver refeições</button>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- Resumo do dia -->
+<!-- Input oculto mantém o valor para loadDate() -->
+<input type="hidden" id="datePicker" value="{{ selected_date }}">
+
+<!-- ── Resumo do dia ────────────────────────────────────── -->
 {% if balance %}
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
   <div class="bg-white rounded-xl shadow-sm p-4">
@@ -69,7 +300,7 @@
   </div>
 </div>
 
-<!-- Refeições -->
+<!-- ── Refeições ────────────────────────────────────────── -->
 <div class="space-y-4">
   {% for meal in balance.meals %}
   <div class="bg-white rounded-xl shadow-sm p-5">
@@ -105,6 +336,7 @@
   </div>
   {% endfor %}
 </div>
+
 {% else %}
 <div class="bg-white rounded-xl shadow-sm p-12 text-center text-slate-400">
   <div class="text-5xl mb-3">📭</div>
@@ -113,26 +345,177 @@
 {% endif %}
 
 <script>
+(function () {
+  /* ── Constantes ──────────────────────────────────────── */
+  const MONTHS = [
+    'Janeiro','Fevereiro','Março','Abril','Maio','Junho',
+    'Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'
+  ];
+
+  /* ── Estado ──────────────────────────────────────────── */
+  const hiddenInput = document.getElementById('datePicker');
+  // Parse da data do servidor (YYYY-MM-DD). Usa meio-dia para evitar
+  // erro de fuso horário ao construir Date a partir de string ISO.
+  const rawVal = hiddenInput.value || '';
+  let selDate = rawVal
+    ? new Date(rawVal + 'T12:00:00')
+    : new Date();
+
+  let viewYear  = selDate.getFullYear();
+  let viewMonth = selDate.getMonth();
+
+  /* ── Utilitários ─────────────────────────────────────── */
+  function toISO(d) {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  }
+
+  function toLabel(d) {
+    return d.toLocaleDateString('pt-BR', {
+      day: '2-digit', month: 'short', year: 'numeric'
+    });
+  }
+
+  function sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth()    === b.getMonth()    &&
+           a.getDate()     === b.getDate();
+  }
+
+  /* ── Navegação ───────────────────────────────────────── */
   function loadDate() {
-    const d = document.getElementById('datePicker').value;
+    const d = hiddenInput.value;
     if (d) window.location.href = '/historico?date=' + d;
   }
 
-  const picker = document.getElementById('datePicker');
+  /* ── Renderização do grid ────────────────────────────── */
+  const monthLabel = document.getElementById('dpMonthLabel');
+  const grid       = document.getElementById('dpGrid');
 
-  // showPicker() força o browser a abrir o calendário como top-layer,
-  // contornando o clipping causado pelo overflow-y:auto do .main no desktop.
-  picker.addEventListener('click', function () {
-    try { this.showPicker(); } catch (_) { /* fallback: comportamento nativo */ }
+  function renderCalendar() {
+    monthLabel.textContent = `${MONTHS[viewMonth]} ${viewYear}`;
+
+    const today    = new Date();
+    const firstDay = new Date(viewYear, viewMonth, 1);
+    const lastDay  = new Date(viewYear, viewMonth + 1, 0);
+    const startDow = firstDay.getDay(); // 0=Dom
+
+    grid.innerHTML = '';
+
+    // Dias do mês anterior (preenchimento)
+    for (let i = 0; i < startDow; i++) {
+      addCell(new Date(viewYear, viewMonth, i - startDow + 1), true, today);
+    }
+    // Dias do mês atual
+    for (let d = 1; d <= lastDay.getDate(); d++) {
+      addCell(new Date(viewYear, viewMonth, d), false, today);
+    }
+    // Dias do mês seguinte (preenchimento para fechar a última semana)
+    const filled = grid.children.length;
+    const tail   = filled % 7 === 0 ? 0 : 7 - (filled % 7);
+    for (let d = 1; d <= tail; d++) {
+      addCell(new Date(viewYear, viewMonth + 1, d), true, today);
+    }
+  }
+
+  function addCell(date, otherMonth, today) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'nb-dp-day';
+    btn.textContent = date.getDate();
+    btn.setAttribute('aria-label',
+      date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }));
+    btn.setAttribute('role', 'gridcell');
+
+    if (otherMonth)          btn.classList.add('nb-dp-day--other');
+    if (sameDay(date, today)) btn.classList.add('nb-dp-day--today');
+    if (sameDay(date, selDate)) {
+      btn.classList.add('nb-dp-day--selected');
+      btn.setAttribute('aria-current', 'date');
+    }
+
+    if (!otherMonth) {
+      btn.addEventListener('click', () => {
+        selDate = date;
+        hiddenInput.value = toISO(date);
+        document.getElementById('dpLabel').textContent = toLabel(date);
+        loadDate(); // navega imediatamente ao selecionar
+      });
+    }
+    grid.appendChild(btn);
+  }
+
+  /* ── Popup: abrir / fechar ───────────────────────────── */
+  const trigger = document.getElementById('dpTrigger');
+  const popup   = document.getElementById('dpPopup');
+
+  function openPopup() {
+    viewYear  = selDate.getFullYear();
+    viewMonth = selDate.getMonth();
+    renderCalendar();
+
+    // Posiciona com position:fixed relativo ao trigger para não ser clipado
+    // pelo overflow-y:auto do container .main
+    const rect = trigger.getBoundingClientRect();
+    const popupW = 296;
+    let left = rect.right - popupW;        // alinha à direita do trigger
+    if (left < 8) left = 8;                // não sai da borda esquerda
+
+    popup.style.top  = (rect.bottom + 8) + 'px';
+    popup.style.left = left + 'px';
+    popup.removeAttribute('hidden');
+    trigger.setAttribute('aria-expanded', 'true');
+  }
+
+  function closePopup() {
+    popup.setAttribute('hidden', '');
+    trigger.setAttribute('aria-expanded', 'false');
+  }
+
+  function isOpen() { return !popup.hasAttribute('hidden'); }
+
+  trigger.addEventListener('click', (e) => {
+    e.stopPropagation();
+    isOpen() ? closePopup() : openPopup();
   });
 
-  // Suporte a teclado: Enter navega, Espaço/F4 abre o calendário
-  picker.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { loadDate(); return; }
-    if (e.key === ' ' || e.key === 'F4') {
-      e.preventDefault();
-      try { this.showPicker(); } catch (_) {}
+  /* ── Botões de navegação ─────────────────────────────── */
+  document.getElementById('dpPrev').addEventListener('click', () => {
+    if (--viewMonth < 0) { viewMonth = 11; viewYear--; }
+    renderCalendar();
+  });
+
+  document.getElementById('dpNext').addEventListener('click', () => {
+    if (++viewMonth > 11) { viewMonth = 0; viewYear++; }
+    renderCalendar();
+  });
+
+  document.getElementById('dpToday').addEventListener('click', () => {
+    selDate = new Date();
+    hiddenInput.value = toISO(selDate);
+    document.getElementById('dpLabel').textContent = toLabel(selDate);
+    loadDate();
+  });
+
+  document.getElementById('dpVer').addEventListener('click', loadDate);
+
+  /* ── Fecha ao clicar fora ou pressionar Esc ─────────── */
+  document.addEventListener('click', (e) => {
+    if (isOpen() && !document.getElementById('nbDatepicker').contains(e.target)) {
+      closePopup();
     }
   });
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && isOpen()) { closePopup(); trigger.focus(); }
+  });
+
+  /* ── Reposiciona ao redimensionar janela ─────────────── */
+  window.addEventListener('resize', () => { if (isOpen()) openPopup(); });
+
+  /* ── Inicializa o label com a data atual ─────────────── */
+  document.getElementById('dpLabel').textContent = toLabel(selDate);
+})();
 </script>
 {% endblock %}
