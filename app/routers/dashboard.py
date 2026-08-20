@@ -282,6 +282,8 @@ async def relatorios(
     if user is None:
         return RedirectResponse(url="/login", status_code=302)
 
+    from datetime import timedelta as _td
+
     result = await db.execute(
         select(WeeklyReport)
         .where(WeeklyReport.user_id == user.id)
@@ -289,19 +291,48 @@ async def relatorios(
         .limit(20)
     )
     reports_raw = result.scalars().all()
+
+    _months_short = ["","jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
+    _months_long  = ["","Janeiro","Fevereiro","Março","Abril","Maio","Junho",
+                     "Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"]
+
+    def _fmt_period(r: WeeklyReport) -> str:
+        s = r.week_start_date
+        if r.period_type == "weekly":
+            e = r.period_end_date or (s + _td(days=6))
+            return f"{s.day:02d}/{_months_short[s.month]} a {e.day:02d}/{_months_short[e.month]}/{e.year}"
+        if r.period_type == "monthly":
+            return f"{_months_long[s.month]} {s.year}"
+        if r.period_type == "quarterly":
+            e = r.period_end_date or (s + _td(days=89))
+            return f"{_months_long[s.month]} – {_months_long[e.month]} {e.year}"
+        return s.strftime("%d/%m/%Y")
+
+    _type_labels = {
+        "weekly": "Semanal", "monthly": "Mensal",
+        "quarterly": "Trimestral", "custom": "Personalizado",
+    }
+
     reports = [
         {
             "id": r.id,
             "week_start_date": r.week_start_date.isoformat(),
+            "period_end_date": r.period_end_date.isoformat() if r.period_end_date else None,
             "period_type": r.period_type,
-            "generated_at": r.generated_at.isoformat(),
+            "period_label": _type_labels.get(r.period_type, r.period_type),
+            "period_range": _fmt_period(r),
+            "generated_at": r.generated_at.strftime("%d/%m/%Y às %H:%M"),
+            "delivered_at": r.delivered_at.strftime("%d/%m/%Y") if r.delivered_at else None,
             "has_pdf": bool(r.pdf_storage_path),
         }
         for r in reports_raw
     ]
     return templates.TemplateResponse(
         request=request, name="relatorios.html",
-        context={"user": user, "active": "relatorios", "reports": reports},
+        context={
+            "user": user, "active": "relatorios",
+            "reports": reports, "is_premium": user.is_premium,
+        },
     )
 
 
