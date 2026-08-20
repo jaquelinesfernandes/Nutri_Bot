@@ -17,6 +17,16 @@
     background: var(--surface);
     color: var(--text-1);
     border-color: var(--card-b);
+    cursor: pointer;
+    /* Garante que o input fique acima de qualquer stacking context do sidebar */
+    position: relative;
+    z-index: 10;
+  }
+  /* Wrapper isolado para que o popup não seja clipado pelo overflow-y:auto do .main */
+  .date-picker-wrap {
+    position: relative;
+    isolation: isolate;
+    z-index: 10;
   }
   table thead tr { border-color: var(--card-b) !important; }
   table tbody tr { border-color: var(--card-b) !important; }
@@ -25,12 +35,14 @@
 <div class="flex items-center justify-between mb-8">
   <h1 class="text-2xl font-bold text-slate-800">📅 Histórico de refeições</h1>
   <div class="flex items-center gap-2">
-    <input type="date" id="datePicker" value="{{ selected_date }}"
-      class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"/>
-    <button onclick="loadDate()"
-      class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors">
-      Ver
-    </button>
+    <div class="date-picker-wrap flex items-center gap-2">
+      <input type="date" id="datePicker" value="{{ selected_date }}"
+        class="px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-brand-500"/>
+      <button onclick="loadDate()"
+        class="px-4 py-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium rounded-lg transition-colors">
+        Ver
+      </button>
+    </div>
   </div>
 </div>
 
@@ -105,8 +117,22 @@
     const d = document.getElementById('datePicker').value;
     if (d) window.location.href = '/historico?date=' + d;
   }
-  document.getElementById('datePicker').addEventListener('keydown', e => {
-    if (e.key === 'Enter') loadDate();
+
+  const picker = document.getElementById('datePicker');
+
+  // showPicker() força o browser a abrir o calendário como top-layer,
+  // contornando o clipping causado pelo overflow-y:auto do .main no desktop.
+  picker.addEventListener('click', function () {
+    try { this.showPicker(); } catch (_) { /* fallback: comportamento nativo */ }
+  });
+
+  // Suporte a teclado: Enter navega, Espaço/F4 abre o calendário
+  picker.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { loadDate(); return; }
+    if (e.key === ' ' || e.key === 'F4') {
+      e.preventDefault();
+      try { this.showPicker(); } catch (_) {}
+    }
   });
 </script>
 {% endblock %}
