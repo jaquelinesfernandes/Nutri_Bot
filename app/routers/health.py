@@ -1,7 +1,7 @@
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, HTTPException, Request
 from sqlalchemy import text
 
 from app.config import settings
@@ -72,3 +72,28 @@ async def scheduler_status(request: Request):
         "now_brt": now_brt.strftime("%Y-%m-%d %H:%M:%S %Z"),
         "jobs": sorted(jobs, key=lambda j: j.get("next_run_brt") or ""),
     }
+
+
+@router.post("/scheduler/trigger/{job_id}")
+async def trigger_job(job_id: str, request: Request):
+    """
+    Dispara um job do scheduler manualmente (útil para testes e reenvio manual).
+
+    IDs válidos: alert_breakfast, alert_morning_snack, alert_lunch,
+                 alert_afternoon_snack, alert_dinner, report_weekly,
+                 report_monthly, report_quarterly, reengagement
+    """
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler or not scheduler.running:
+        raise HTTPException(status_code=503, detail="Scheduler não está rodando")
+
+    job = scheduler.get_job(job_id)
+    if not job:
+        valid = [j.id for j in scheduler.get_jobs()]
+        raise HTTPException(
+            status_code=404,
+            detail=f"Job '{job_id}' não encontrado. Válidos: {valid}",
+        )
+
+    job.modify(next_run_time=datetime.now(ZoneInfo("America/Sao_Paulo")))
+    return {"triggered": job_id, "status": "queued"}

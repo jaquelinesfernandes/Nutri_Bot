@@ -294,27 +294,65 @@ async def start_scheduler() -> AsyncIOScheduler:
     # do scheduler. Passamos "America/Sao_Paulo" explicitamente em cada trigger
     # para garantir que os horários sejam interpretados no fuso correto.
     SP_TZ = "America/Sao_Paulo"
-    scheduler = AsyncIOScheduler(timezone=SP_TZ)
+
+    # job_defaults globais:
+    #   misfire_grace_time=3600 → se o serviço dormiu (Render free tier) e acorda
+    #     com atraso de até 1h, o job ainda dispara ao invés de ser descartado.
+    #   coalesce=True → se o serviço ficou fora por várias horas e múltiplos
+    #     disparos se acumularam, executa apenas uma vez ao acordar (evita spam).
+    scheduler = AsyncIOScheduler(
+        timezone=SP_TZ,
+        job_defaults={"misfire_grace_time": 3600, "coalesce": True},
+    )
 
     # Alertas de refeição — hora fixa por refeição (horário de Brasília)
-    scheduler.add_job(job_alert_breakfast,       CronTrigger(hour=9,  minute=30, timezone=SP_TZ))
-    scheduler.add_job(job_alert_morning_snack,   CronTrigger(hour=10, minute=30, timezone=SP_TZ))
-    scheduler.add_job(job_alert_lunch,           CronTrigger(hour=12, minute=30, timezone=SP_TZ))
-    scheduler.add_job(job_alert_afternoon_snack, CronTrigger(hour=16, minute=0,  timezone=SP_TZ))
-    scheduler.add_job(job_alert_dinner,          CronTrigger(hour=19, minute=30, timezone=SP_TZ))
+    scheduler.add_job(
+        job_alert_breakfast, CronTrigger(hour=9,  minute=30, timezone=SP_TZ),
+        id="alert_breakfast", replace_existing=True,
+    )
+    scheduler.add_job(
+        job_alert_morning_snack, CronTrigger(hour=10, minute=30, timezone=SP_TZ),
+        id="alert_morning_snack", replace_existing=True,
+    )
+    scheduler.add_job(
+        job_alert_lunch, CronTrigger(hour=12, minute=30, timezone=SP_TZ),
+        id="alert_lunch", replace_existing=True,
+    )
+    scheduler.add_job(
+        job_alert_afternoon_snack, CronTrigger(hour=16, minute=0, timezone=SP_TZ),
+        id="alert_afternoon_snack", replace_existing=True,
+    )
+    scheduler.add_job(
+        job_alert_dinner, CronTrigger(hour=19, minute=30, timezone=SP_TZ),
+        id="alert_dinner", replace_existing=True,
+    )
 
     # Relatórios automáticos por frequência (horário de Brasília)
-    scheduler.add_job(job_weekly_report,    CronTrigger(day_of_week="sun", hour=20, minute=0, timezone=SP_TZ))
-    scheduler.add_job(job_monthly_report,   CronTrigger(day=1, hour=20, minute=0, timezone=SP_TZ))
+    scheduler.add_job(
+        job_weekly_report, CronTrigger(day_of_week="sun", hour=20, minute=0, timezone=SP_TZ),
+        id="report_weekly", replace_existing=True,
+    )
+    scheduler.add_job(
+        job_monthly_report, CronTrigger(day=1, hour=20, minute=0, timezone=SP_TZ),
+        id="report_monthly", replace_existing=True,
+    )
     # Trimestral: 1º de jan, abr, jul, out
-    scheduler.add_job(job_quarterly_report, CronTrigger(month="1,4,7,10", day=1, hour=20, minute=0, timezone=SP_TZ))
+    scheduler.add_job(
+        job_quarterly_report,
+        CronTrigger(month="1,4,7,10", day=1, hour=20, minute=0, timezone=SP_TZ),
+        id="report_quarterly", replace_existing=True,
+    )
 
     # Re-engajamento (horário de Brasília)
-    scheduler.add_job(job_reengagement, CronTrigger(day_of_week="mon", hour=10, minute=0, timezone=SP_TZ))
+    scheduler.add_job(
+        job_reengagement, CronTrigger(day_of_week="mon", hour=10, minute=0, timezone=SP_TZ),
+        id="reengagement", replace_existing=True,
+    )
 
     scheduler.start()
     logger.info(
         "Scheduler iniciado (America/Sao_Paulo): alertas 09:30/10:30/12:30/16:00/19:30 | "
-        "relatório dom 20h (semanal) | 1º/mês 20h (mensal) | 1º trimestre 20h (trimestral)"
+        "relatório dom 20h (semanal) | 1º/mês 20h (mensal) | 1º trimestre 20h (trimestral) | "
+        "misfire_grace_time=3600s coalesce=True"
     )
     return scheduler
