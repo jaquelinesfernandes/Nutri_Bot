@@ -73,7 +73,7 @@ class Settings(BaseSettings):
 
     # JWT / autenticação web
     jwt_secret: str = _JWT_INSECURE_DEFAULT
-    jwt_expire_days: int = 7
+    jwt_expire_days: int = 365  # 1 ano — renovado a cada visita (sliding expiration)
 
     # Segurança
     raw_input_encryption_key: str = _ENC_INSECURE_DEFAULT  # placeholder — substituir em produção

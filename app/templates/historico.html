@@ -319,6 +319,7 @@
         <th class="pb-1 font-medium text-right">kcal</th>
         <th class="pb-1 font-medium text-right">Prot.</th>
         <th class="pb-1 font-medium text-right">Carb.</th>
+        <th class="pb-1 font-medium text-right">Gord.</th>
       </tr></thead>
       <tbody>
         {% for fi in meal.food_items %}
@@ -328,6 +329,7 @@
           <td class="py-1 text-right">{{ fi.calories_kcal | int }}</td>
           <td class="py-1 text-right">{{ fi.protein_g | round(1) }}g</td>
           <td class="py-1 text-right">{{ fi.carb_g | round(1) }}g</td>
+          <td class="py-1 text-right">{{ fi.fat_g | round(1) }}g</td>
         </tr>
         {% endfor %}
       </tbody>

@@ -30,6 +30,53 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class SlidingSessionMiddleware(BaseHTTPMiddleware):
+    """Renova o cookie de sessão a cada visita ao painel (sliding expiration).
+
+    Rotas de API, webhook e static são ignoradas — só renova em páginas HTML
+    do dashboard, garantindo que o usuário vinculado nunca seja deslogado
+    enquanto usar o painel pelo menos uma vez no período de jwt_expire_days.
+    """
+
+    # Prefixos que NÃO devem acionar a renovação (não são páginas do painel)
+    _SKIP_PREFIXES = (
+        "/api/", "/webhook/", "/static/",
+        "/health", "/ping", "/scheduler/",
+        "/docs", "/redoc", "/openapi",
+    )
+
+    async def dispatch(self, request: Request, call_next) -> Response:
+        response = await call_next(request)
+
+        # Só renova em rotas de página HTML
+        path = request.url.path
+        if any(path.startswith(p) for p in self._SKIP_PREFIXES):
+            return response
+
+        token = request.cookies.get("access_token")
+        if not token:
+            return response
+
+        from app.utils.jwt import create_access_token, decode_token
+
+        user_id = decode_token(token)
+        if user_id is None:
+            return response  # token inválido/expirado — não renova
+
+        # Emite novo JWT com expiração reiniciada a partir de agora
+        new_token = create_access_token(user_id)
+        response.set_cookie(
+            key="access_token",
+            value=new_token,
+            httponly=True,
+            secure=settings.app_env == "production",
+            samesite="lax",
+            max_age=settings.jwt_expire_days * 86_400,
+            path="/",
+        )
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────
@@ -64,6 +111,7 @@ app = FastAPI(
     lifespan=lifespan,
 )
 app.add_middleware(SecurityHeadersMiddleware)
+app.add_middleware(SlidingSessionMiddleware)
 
 # ── Arquivos estáticos (PWA: manifest, icons, sw.js) ──────────────────────
 _STATIC_DIR = Path(__file__).parent / "static"
