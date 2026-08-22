@@ -278,73 +278,280 @@
 <input type="hidden" id="datePicker" value="{{ selected_date }}">
 
 <!-- ── Resumo do dia ────────────────────────────────────── -->
-{% if balance %}
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+<!-- ── Totais do dia ─────────────────────────────────────── -->
+<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="totalsGrid">
   <div class="bg-white rounded-xl shadow-sm p-4">
     <p class="text-xs text-slate-400 mb-1">Calorias</p>
-    <p class="text-xl font-bold text-slate-800">{{ balance.total_calories_kcal | int }}
-      {% if balance.goal_calories %}<span class="text-xs font-normal text-slate-400">/ {{ balance.goal_calories }}</span>{% endif %}
+    <p class="text-xl font-bold text-slate-800" id="totKcal">
+      {% if balance %}{{ balance.total_calories_kcal | int }}{% else %}0{% endif %}
+      {% if balance and balance.goal_calories %}<span class="text-xs font-normal text-slate-400">/ {{ balance.goal_calories }}</span>{% endif %}
     </p>
   </div>
   <div class="bg-white rounded-xl shadow-sm p-4">
     <p class="text-xs text-slate-400 mb-1">Proteína</p>
-    <p class="text-xl font-bold text-blue-500">{{ balance.total_protein_g | int }}g</p>
+    <p class="text-xl font-bold text-blue-500" id="totProt">{% if balance %}{{ balance.total_protein_g | int }}{% else %}0{% endif %}g</p>
   </div>
   <div class="bg-white rounded-xl shadow-sm p-4">
     <p class="text-xs text-slate-400 mb-1">Carboidratos</p>
-    <p class="text-xl font-bold text-amber-500">{{ balance.total_carb_g | int }}g</p>
+    <p class="text-xl font-bold text-amber-500" id="totCarb">{% if balance %}{{ balance.total_carb_g | int }}{% else %}0{% endif %}g</p>
   </div>
   <div class="bg-white rounded-xl shadow-sm p-4">
     <p class="text-xs text-slate-400 mb-1">Gordura</p>
-    <p class="text-xl font-bold text-rose-400">{{ balance.total_fat_g | int }}g</p>
+    <p class="text-xl font-bold text-rose-400" id="totFat">{% if balance %}{{ balance.total_fat_g | int }}{% else %}0{% endif %}g</p>
   </div>
 </div>
 
-<!-- ── Refeições ────────────────────────────────────────── -->
-<div class="space-y-4">
-  {% for meal in balance.meals %}
-  <div class="bg-white rounded-xl shadow-sm p-5">
-    <div class="flex items-center justify-between mb-3">
-      <div>
-        <span class="text-sm font-semibold text-slate-700">{{ meal_labels[meal.meal_type] }}</span>
-        <span class="ml-2 text-xs text-slate-400">{{ meal.logged_at.strftime('%d/%m %H:%M') }}</span>
+<!-- ── Lista de refeições ────────────────────────────────── -->
+<div class="space-y-4" id="mealsList">
+  {% if balance %}
+    {% for meal in balance.meals %}
+    <div class="bg-white rounded-xl shadow-sm p-5 meal-card" data-meal-id="{{ meal.id }}">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="text-sm font-semibold text-slate-700">{{ meal_labels[meal.meal_type] }}</span>
+          <span class="ml-2 text-xs text-slate-400">{{ meal.logged_at.strftime('%H:%M') }}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-bold text-brand-600">{{ meal.total_calories_kcal | int }} kcal</span>
+          <button type="button" class="btn-delete-meal text-slate-300 hover:text-rose-400 transition-colors"
+                  data-id="{{ meal.id }}" aria-label="Excluir refeição" title="Excluir">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+        </div>
       </div>
-      <span class="font-bold text-brand-600">{{ meal.total_calories_kcal | int }} kcal</span>
+      {% if meal.food_items %}
+      <table class="w-full text-xs text-slate-500">
+        <thead><tr class="text-left border-b border-gray-100">
+          <th class="pb-1 font-medium">Alimento</th>
+          <th class="pb-1 font-medium text-right">Qtd (g)</th>
+          <th class="pb-1 font-medium text-right">kcal</th>
+          <th class="pb-1 font-medium text-right">Prot.</th>
+          <th class="pb-1 font-medium text-right">Carb.</th>
+          <th class="pb-1 font-medium text-right">Gord.</th>
+        </tr></thead>
+        <tbody>
+          {% for fi in meal.food_items %}
+          <tr class="border-b border-gray-50 last:border-0">
+            <td class="py-1">{{ fi.name }}</td>
+            <td class="py-1 text-right">{{ fi.quantity_g | int }}</td>
+            <td class="py-1 text-right">{{ fi.calories_kcal | int }}</td>
+            <td class="py-1 text-right">{{ fi.protein_g | round(1) }}g</td>
+            <td class="py-1 text-right">{{ fi.carb_g | round(1) }}g</td>
+            <td class="py-1 text-right">{{ fi.fat_g | round(1) }}g</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
     </div>
-    {% if meal.food_items %}
-    <table class="w-full text-xs text-slate-500">
-      <thead><tr class="text-left border-b border-gray-100">
-        <th class="pb-1 font-medium">Alimento</th>
-        <th class="pb-1 font-medium text-right">Qtd (g)</th>
-        <th class="pb-1 font-medium text-right">kcal</th>
-        <th class="pb-1 font-medium text-right">Prot.</th>
-        <th class="pb-1 font-medium text-right">Carb.</th>
-        <th class="pb-1 font-medium text-right">Gord.</th>
-      </tr></thead>
-      <tbody>
-        {% for fi in meal.food_items %}
-        <tr class="border-b border-gray-50 last:border-0">
-          <td class="py-1">{{ fi.name }}</td>
-          <td class="py-1 text-right">{{ fi.quantity_g | int }}</td>
-          <td class="py-1 text-right">{{ fi.calories_kcal | int }}</td>
-          <td class="py-1 text-right">{{ fi.protein_g | round(1) }}g</td>
-          <td class="py-1 text-right">{{ fi.carb_g | round(1) }}g</td>
-          <td class="py-1 text-right">{{ fi.fat_g | round(1) }}g</td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-    {% endif %}
+    {% endfor %}
+  {% else %}
+  <div class="bg-white rounded-xl shadow-sm p-12 text-center text-slate-400" id="emptyState">
+    <div class="text-5xl mb-3">📭</div>
+    <p>Nenhuma refeição registrada em {{ selected_date }}.</p>
   </div>
-  {% endfor %}
+  {% endif %}
 </div>
 
-{% else %}
-<div class="bg-white rounded-xl shadow-sm p-12 text-center text-slate-400">
-  <div class="text-5xl mb-3">📭</div>
-  <p>Nenhuma refeição registrada em {{ selected_date }}.</p>
+<!-- ── FAB: + Adicionar refeição ────────────────────────── -->
+<style>
+  .fab-add {
+    position: fixed;
+    bottom: 88px;   /* acima da nav mobile */
+    right: 20px;
+    z-index: 800;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 20px;
+    border-radius: 50px;
+    background: linear-gradient(135deg, #6366F1, #7C3AED);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 20px rgba(99,102,241,.45);
+    transition: opacity .15s, box-shadow .15s, transform .15s;
+  }
+  .fab-add:hover { opacity: .92; box-shadow: 0 6px 28px rgba(99,102,241,.55); transform: translateY(-1px); }
+  .fab-add:active { transform: translateY(0); }
+  @media (min-width: 768px) { .fab-add { bottom: 28px; } }
+
+  /* ── Modal overlay ─────────────────────────────────────── */
+  .nb-modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,.4);
+    backdrop-filter: blur(4px);
+    display: flex; align-items: flex-end; justify-content: center;
+    padding: 0;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s;
+  }
+  .nb-modal-overlay.open { opacity: 1; pointer-events: auto; }
+  @media (min-width: 600px) { .nb-modal-overlay { align-items: center; padding: 20px; } }
+
+  .nb-modal {
+    width: 100%; max-width: 520px;
+    background: var(--card);
+    border-radius: 24px 24px 0 0;
+    padding: 28px 24px 32px;
+    transform: translateY(60px);
+    transition: transform .25s cubic-bezier(.16,1,.3,1);
+    max-height: 92dvh;
+    overflow-y: auto;
+  }
+  .nb-modal-overlay.open .nb-modal { transform: translateY(0); }
+  @media (min-width: 600px) {
+    .nb-modal { border-radius: 24px; transform: scale(.95); max-height: 80vh; }
+    .nb-modal-overlay.open .nb-modal { transform: scale(1); }
+  }
+
+  .nb-modal-title {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 20px;
+    color: var(--text-1);
+    margin-bottom: 6px;
+  }
+  .nb-modal-sub { font-size: 13px; color: var(--text-3); margin-bottom: 24px; }
+
+  .nb-field { margin-bottom: 18px; }
+  .nb-label {
+    display: block;
+    font-size: 12.5px; font-weight: 600;
+    color: var(--text-2);
+    margin-bottom: 7px;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+  .nb-input, .nb-select, .nb-textarea {
+    width: 100%; box-sizing: border-box;
+    padding: 10px 14px;
+    border: 1px solid var(--card-b);
+    border-radius: 12px;
+    background: var(--bg);
+    color: var(--text-1);
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    outline: none;
+    transition: border-color .15s, box-shadow .15s;
+    appearance: none;
+  }
+  .nb-input:focus, .nb-select:focus, .nb-textarea:focus {
+    border-color: rgba(99,102,241,.6);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.12);
+  }
+  .nb-textarea { resize: vertical; min-height: 80px; }
+
+  .nb-modal-actions { display: flex; gap: 10px; margin-top: 6px; }
+  .nb-btn-cancel {
+    flex: 1; padding: 11px;
+    border: 1px solid var(--card-b); border-radius: 14px;
+    background: var(--card); color: var(--text-2);
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 500;
+    cursor: pointer; transition: background .12s, color .12s;
+  }
+  .nb-btn-cancel:hover { background: var(--primary-lt); color: var(--primary); }
+  .nb-btn-submit {
+    flex: 1.6; padding: 11px;
+    border: none; border-radius: 14px;
+    background: linear-gradient(135deg, #6366F1, #7C3AED);
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 14px; font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 2px 10px rgba(99,102,241,.35);
+    transition: opacity .12s;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+  }
+  .nb-btn-submit:hover { opacity: .88; }
+  .nb-btn-submit:disabled { opacity: .55; cursor: not-allowed; }
+
+  .nb-spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(255,255,255,.3);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+    display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .nb-error-msg {
+    padding: 10px 14px; border-radius: 10px;
+    background: rgba(239,68,68,.09); border: 1px solid rgba(239,68,68,.2);
+    color: #b91c1c; font-size: 13px;
+    display: none; margin-bottom: 14px;
+  }
+  .nb-success-toast {
+    position: fixed; bottom: 28px; left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #10b981; color: #fff;
+    padding: 10px 20px; border-radius: 50px;
+    font-family: 'DM Sans', sans-serif; font-size: 14px; font-weight: 600;
+    box-shadow: 0 4px 20px rgba(16,185,129,.4);
+    opacity: 0; pointer-events: none;
+    transition: opacity .25s, transform .25s;
+    z-index: 2000;
+  }
+  .nb-success-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+
+<button class="fab-add" id="fabAdd" type="button">
+  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd"/>
+  </svg>
+  Adicionar refeição
+</button>
+
+<!-- ── Modal ─────────────────────────────────────────────── -->
+<div class="nb-modal-overlay" id="addModal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+  <div class="nb-modal">
+    <h2 class="nb-modal-title" id="modalTitle">🥗 Adicionar refeição</h2>
+    <p class="nb-modal-sub" id="modalSub">Registrando para <strong id="modalDateLabel"></strong></p>
+
+    <div class="nb-error-msg" id="modalError" role="alert"></div>
+
+    <form id="addMealForm" novalidate>
+      <input type="hidden" id="fmDate" name="logged_date" value="{{ selected_date }}">
+
+      <div class="nb-field">
+        <label class="nb-label" for="fmType">Tipo de refeição</label>
+        <select class="nb-select" id="fmType" name="meal_type">
+          <option value="breakfast">☀️ Café da manhã</option>
+          <option value="morning_snack">🍌 Lanche da manhã</option>
+          <option value="lunch" selected>🍽️ Almoço</option>
+          <option value="afternoon_snack">🍊 Lanche da tarde</option>
+          <option value="dinner">🌙 Jantar</option>
+          <option value="snack">🍎 Lanche (horário indefinido)</option>
+          <option value="other">🍴 Outro</option>
+        </select>
+      </div>
+
+      <div class="nb-field">
+        <label class="nb-label" for="fmDesc">O que você comeu?</label>
+        <textarea class="nb-textarea" id="fmDesc" name="description"
+                  placeholder="Ex: arroz com feijão, frango grelhado 150g e salada de tomate"
+                  rows="3" maxlength="500" required></textarea>
+        <p style="font-size:11px;color:var(--text-3);margin-top:5px;">
+          Descreva em linguagem natural — a IA identifica os alimentos e calcula os macros automaticamente.
+        </p>
+      </div>
+
+      <div class="nb-modal-actions">
+        <button type="button" class="nb-btn-cancel" id="modalCancel">Cancelar</button>
+        <button type="submit" class="nb-btn-submit" id="modalSubmit">
+          <span class="nb-spinner" id="submitSpinner"></span>
+          <span id="submitLabel">Registrar</span>
+        </button>
+      </div>
+    </form>
+  </div>
 </div>
-{% endif %}
+
+<div class="nb-success-toast" id="successToast"></div>
 
 <script>
 (function () {
@@ -518,6 +725,301 @@
 
   /* ── Inicializa o label com a data atual ─────────────── */
   document.getElementById('dpLabel').textContent = toLabel(selDate);
+})();
+</script>
+
+<!-- ── JS: modal "Adicionar refeição" + delete ────────────── -->
+<script>
+(function () {
+  'use strict';
+
+  /* ── Constantes ────────────────────────────────────────── */
+  const MEAL_LABELS = {
+    breakfast:       '☀️ Café da manhã',
+    morning_snack:   '🍌 Lanche da manhã',
+    lunch:           '🍽️ Almoço',
+    afternoon_snack: '🍊 Lanche da tarde',
+    dinner:          '🌙 Jantar',
+    snack:           '🍎 Lanche',
+    other:           '🍴 Outro',
+  };
+
+  /* ── Helpers ───────────────────────────────────────────── */
+  function showToast(msg, isError) {
+    const t = document.getElementById('successToast');
+    t.textContent = msg;
+    t.style.background = isError ? '#ef4444' : '#10b981';
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  function setSubmitLoading(on) {
+    const btn = document.getElementById('modalSubmit');
+    const spin = document.getElementById('submitSpinner');
+    const lbl  = document.getElementById('submitLabel');
+    btn.disabled = on;
+    spin.style.display = on ? 'block' : 'none';
+    lbl.textContent = on ? 'Processando…' : 'Registrar';
+  }
+
+  function showModalError(msg) {
+    const el = document.getElementById('modalError');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+
+  function hideModalError() {
+    document.getElementById('modalError').style.display = 'none';
+  }
+
+  /* ── Recalcula totais do dia no DOM ─────────────────────── */
+  function recalcTotals(delta) {
+    // delta = { kcal, prot, carb, fat }  (pode ser negativo para delete)
+    const ids = { kcal:'totKcal', prot:'totProt', carb:'totCarb', fat:'totFat' };
+    for (const [key, id] of Object.entries(ids)) {
+      const el = document.getElementById(id);
+      if (!el) continue;
+      const cur = parseFloat(el.textContent) || 0;
+      const val = cur + (delta[key] || 0);
+      // Preserva o "/ meta" que pode existir dentro de span
+      const span = el.querySelector('span');
+      el.textContent = Math.round(val) + (key === 'kcal' ? '' : 'g');
+      if (span) el.appendChild(span);
+    }
+  }
+
+  /* ── Cria card HTML de refeição ──────────────────────────── */
+  function buildMealCard(meal) {
+    const time = new Date(meal.logged_at).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    const label = MEAL_LABELS[meal.meal_type] || '🍴 Outro';
+
+    let rowsHtml = '';
+    if (meal.food_items && meal.food_items.length) {
+      rowsHtml = `
+        <table class="w-full text-xs text-slate-500" style="margin-top:12px">
+          <thead><tr class="text-left border-b border-gray-100">
+            <th class="pb-1 font-medium">Alimento</th>
+            <th class="pb-1 font-medium text-right">Qtd (g)</th>
+            <th class="pb-1 font-medium text-right">kcal</th>
+            <th class="pb-1 font-medium text-right">Prot.</th>
+            <th class="pb-1 font-medium text-right">Carb.</th>
+            <th class="pb-1 font-medium text-right">Gord.</th>
+          </tr></thead>
+          <tbody>
+            ${meal.food_items.map(fi => `
+              <tr class="border-b border-gray-50 last:border-0">
+                <td class="py-1">${escHtml(fi.name)}</td>
+                <td class="py-1 text-right">${Math.round(fi.quantity_g)}</td>
+                <td class="py-1 text-right">${Math.round(fi.calories_kcal)}</td>
+                <td class="py-1 text-right">${fi.protein_g.toFixed(1)}g</td>
+                <td class="py-1 text-right">${fi.carb_g.toFixed(1)}g</td>
+                <td class="py-1 text-right">${fi.fat_g.toFixed(1)}g</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-xl shadow-sm p-5 meal-card';
+    card.dataset.mealId = meal.id;
+    card.innerHTML = `
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <span class="text-sm font-semibold text-slate-700">${escHtml(label)}</span>
+          <span class="ml-2 text-xs text-slate-400">${time}</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="font-bold text-brand-600">${Math.round(meal.total_calories_kcal)} kcal</span>
+          <button type="button" class="btn-delete-meal text-slate-300 hover:text-rose-400 transition-colors"
+                  data-id="${meal.id}" aria-label="Excluir refeição" title="Excluir">
+            <svg width="15" height="15" viewBox="0 0 20 20" fill="currentColor">
+              <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+      ${rowsHtml}`;
+    return card;
+  }
+
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* ── Remove estado vazio se precisar ────────────────────── */
+  function removeEmptyState() {
+    const empty = document.getElementById('emptyState');
+    if (empty) empty.remove();
+  }
+
+  /* ── Modal: abrir / fechar ──────────────────────────────── */
+  const overlay  = document.getElementById('addModal');
+  const fab      = document.getElementById('fabAdd');
+  const btnCancel = document.getElementById('modalCancel');
+  const form     = document.getElementById('addMealForm');
+
+  function openModal() {
+    // Lê a data selecionada no datepicker (id="datePicker") ou cai no hidden do form
+    const dpInput  = document.getElementById('datePicker');
+    const dateVal  = (dpInput && dpInput.value) ? dpInput.value : document.getElementById('fmDate').value;
+    document.getElementById('fmDate').value = dateVal;
+
+    const [y, m, d] = dateVal.split('-');
+    document.getElementById('modalDateLabel').textContent = `${d}/${m}/${y}`;
+
+    hideModalError();
+    form.reset();
+    document.getElementById('fmDate').value = dateVal; // restaura após reset
+    overlay.classList.add('open');
+    setTimeout(() => document.getElementById('fmDesc').focus(), 120);
+  }
+
+  function closeModal() {
+    overlay.classList.remove('open');
+    fab.focus();
+  }
+
+  fab.addEventListener('click', openModal);
+  btnCancel.addEventListener('click', closeModal);
+  overlay.addEventListener('click', (e) => { if (e.target === overlay) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && overlay.classList.contains('open')) closeModal(); });
+
+  /* ── Submissão do formulário ────────────────────────────── */
+  form.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    hideModalError();
+
+    const desc = document.getElementById('fmDesc').value.trim();
+    if (desc.length < 3) {
+      showModalError('Descreva o que você comeu com pelo menos 3 caracteres.');
+      return;
+    }
+
+    const payload = {
+      logged_date: document.getElementById('fmDate').value,
+      meal_type:   document.getElementById('fmType').value,
+      description: desc,
+    };
+
+    setSubmitLoading(true);
+
+    try {
+      const res = await fetch('/api/meals', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'same-origin',
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        const msg = data?.detail || `Erro ${res.status}. Tente novamente.`;
+        showModalError(msg);
+        return;
+      }
+
+      const meal = await res.json();
+
+      // Injeta card na lista
+      removeEmptyState();
+      const list = document.getElementById('mealsList');
+      const card = buildMealCard(meal);
+      list.appendChild(card);
+
+      // Atualiza totais
+      recalcTotals({
+        kcal: meal.total_calories_kcal,
+        prot: meal.total_protein_g,
+        carb: meal.total_carb_g,
+        fat:  meal.total_fat_g,
+      });
+
+      closeModal();
+      showToast('✅ Refeição adicionada com sucesso!', false);
+
+    } catch (err) {
+      showModalError('Erro de conexão. Verifique sua internet e tente novamente.');
+    } finally {
+      setSubmitLoading(false);
+    }
+  });
+
+  /* ── Delete: delegação de eventos ──────────────────────── */
+  document.getElementById('mealsList').addEventListener('click', async (e) => {
+    const btn = e.target.closest('.btn-delete-meal');
+    if (!btn) return;
+
+    if (!confirm('Deseja excluir esta refeição?')) return;
+
+    const id   = btn.dataset.id;
+    const card = btn.closest('.meal-card');
+
+    // Pega totais antes de remover
+    let kcal = 0, prot = 0, carb = 0, fat = 0;
+    const kcalEl = card.querySelector('.font-bold.text-brand-600');
+    if (kcalEl) kcal = parseFloat(kcalEl.textContent) || 0;
+
+    // Para macros, soma os valores da tabela
+    const rows = card.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      const cells = row.querySelectorAll('td');
+      if (cells.length >= 6) {
+        prot += parseFloat(cells[3].textContent) || 0;
+        carb += parseFloat(cells[4].textContent) || 0;
+        fat  += parseFloat(cells[5].textContent) || 0;
+      }
+    });
+
+    btn.disabled = true;
+    btn.style.opacity = '0.4';
+
+    try {
+      const res = await fetch(`/api/meals/${id}`, {
+        method: 'DELETE',
+        credentials: 'same-origin',
+      });
+
+      if (!res.ok && res.status !== 204) {
+        showToast('Não foi possível excluir a refeição. Tente novamente.', true);
+        btn.disabled = false;
+        btn.style.opacity = '';
+        return;
+      }
+
+      // Animação de saída
+      card.style.transition = 'opacity .3s, max-height .4s';
+      card.style.overflow = 'hidden';
+      card.style.opacity = '0';
+      card.style.maxHeight = card.offsetHeight + 'px';
+      requestAnimationFrame(() => { card.style.maxHeight = '0'; });
+      setTimeout(() => {
+        card.remove();
+        // Se não há mais refeições, mostra estado vazio
+        if (!document.querySelector('.meal-card')) {
+          const list = document.getElementById('mealsList');
+          const empty = document.createElement('div');
+          empty.id = 'emptyState';
+          empty.className = 'bg-white rounded-xl shadow-sm p-12 text-center text-slate-400';
+          empty.innerHTML = '<div class="text-5xl mb-3">📭</div><p>Nenhuma refeição neste dia.</p>';
+          list.appendChild(empty);
+        }
+      }, 420);
+
+      // Subtrai dos totais
+      recalcTotals({ kcal: -kcal, prot: -prot, carb: -carb, fat: -fat });
+      showToast('🗑️ Refeição excluída.', false);
+
+    } catch (err) {
+      showToast('Erro de conexão ao excluir. Tente novamente.', true);
+      btn.disabled = false;
+      btn.style.opacity = '';
+    }
+  });
+
 })();
 </script>
 {% endblock %}
