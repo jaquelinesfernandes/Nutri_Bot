@@ -12,7 +12,7 @@ The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, pri
 
 **All 6 sprints complete — in production on Render + Neon.**
 
-- 238 tests passing · coverage 71% (threshold ≥ 55%)
+- 289 tests passing · coverage 72% (threshold ≥ 55%)
 - Deployed at: `https://nutri-bot-ot0p.onrender.com`
 - Beta open: reports unlocked for all users via `REPORTS_OPEN_BETA=true`
 
@@ -210,5 +210,6 @@ docs/
 | 4 | Relatório PDF semanal · sugestões IA · histórico | ✅ |
 | 5 | Onboarding · UX polish · dashboard web · beta fechado | ✅ |
 | 6 | Deploy Render + Neon · UptimeRobot · auditoria segurança · beta aberto | ✅ |
+| Post-6 | Registro retroativo (bot NLP + /registrar) · entrada manual no painel (POST/DELETE /api/meals) | ✅ |
 | Fase 2 | Painel B2B para nutricionistas (R$ 79,90/mês) | 🗓️ Próxima |
 | Fase 3 | App nativo / Web | 🗓️ Planejado |

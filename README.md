@@ -7,8 +7,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Anthropic](https://img.shields.io/badge/Claude-Haiku%204.5-D4A017?logo=anthropic&logoColor=white)
 ![Status](https://img.shields.io/badge/status-beta%20aberto-brightgreen)
-![Cobertura](https://img.shields.io/badge/cobertura-71%25-brightgreen)
-![Testes](https://img.shields.io/badge/testes-238%20passing-brightgreen)
+![Cobertura](https://img.shields.io/badge/cobertura-72%25-brightgreen)
+![Testes](https://img.shields.io/badge/testes-289%20passing-brightgreen)
 ![Security](https://img.shields.io/badge/security-auditado-blue)
 
 ---
@@ -35,9 +35,11 @@ O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de f
 |---|---|---|
 | Registro por texto em PT-BR | Telegram / WhatsApp | ✅ Implementado |
 | Busca fuzzy na base TACO + USDA | — | ✅ Implementado |
-| Reconhecimento de foto (GPT-4 Vision) | Telegram / WhatsApp | ✅ Implementado |
+| Reconhecimento de foto (Claude Vision) | Telegram / WhatsApp | ✅ Implementado |
 | Transcrição de áudio (Whisper) | Telegram / WhatsApp | ✅ Implementado |
 | Fluxo de confirmação de refeição | Telegram / WhatsApp | ✅ Implementado |
+| **Registro retroativo pelo bot** (`/registrar` + NLP) | Telegram / WhatsApp | ✅ Implementado |
+| **Entrada manual de refeições no painel web** | Dashboard | ✅ Implementado |
 | Alertas proativos por janela de refeição | Telegram / WhatsApp | ✅ Implementado |
 | Meta de calorias diária configurável | — | ✅ Implementado |
 | Relatório PDF semanal com sugestões IA | — | ✅ Implementado |
@@ -153,6 +155,7 @@ Nutri_Bot/
 │   ├── test_sprint4.py
 │   ├── test_sprint5.py
 │   ├── test_webhooks.py
+│   ├── test_meals_api.py          # POST /api/meals + DELETE /api/meals/{id}
 │   └── fixtures/
 │       ├── golden_meals.json          # Dataset de refeições para testes
 │       └── taco_sample.json
@@ -274,7 +277,7 @@ Resumo dos passos:
 ## 🧪 Testes
 
 ```powershell
-# Suite completa (238 testes, cobertura 71%)
+# Suite completa (289 testes, cobertura 72%)
 pytest
 
 # Com cobertura detalhada
@@ -285,6 +288,9 @@ pytest tests/test_nutrition.py -v
 
 # Sprint específico
 pytest tests/test_sprint5.py -v
+
+# Novos endpoints REST de refeições
+pytest tests/test_meals_api.py -v
 ```
 
 **Thresholds de aceitação (PRD):**
@@ -292,7 +298,7 @@ pytest tests/test_sprint5.py -v
 - ✅ > 80% de acurácia no reconhecimento textual — top 500 alimentos TACO
 - ✅ > 75% de acurácia no reconhecimento por foto
 - ✅ Alertas entregues em < 2 min em 99% dos casos
-- ✅ Cobertura de testes ≥ 55% (atual: 71% · 238 testes)
+- ✅ Cobertura de testes ≥ 55% (atual: 72% · 289 testes)
 
 ---
 
@@ -329,6 +335,7 @@ python scripts/expand_taco.py
 | `/ajuda` | Lista todos os comandos |
 | `/hoje` | Resumo calórico do dia |
 | `/historico` | Histórico de refeições |
+| `/registrar [data]` | Adicionar refeição de dia passado (ex: `/registrar ontem`, `/registrar 20/08`) |
 | `/meta` | Configurar meta de calorias |
 | `/agua` | Registrar consumo de água |
 | `/relatorio` | Gerar relatório PDF sob demanda |
@@ -391,6 +398,41 @@ O NutriBot lida com **dados sensíveis de saúde** (LGPD Art. 11 — comportamen
 2. Escreva testes para a mudança
 3. Certifique-se que `pytest` passa com cobertura ≥ 55%
 4. Abra um Pull Request com descrição clara do que foi alterado
+
+---
+
+### Registro retroativo de refeições
+
+Usuários podem registrar refeições de dias passados de três formas:
+
+**1. Linguagem natural no bot** — basta mencionar a data na mensagem:
+```
+"ontem almocei arroz, feijão e frango"
+"anteontem tomei café com pão às 8h"
+"dia 20 jantar pizza"
+```
+
+**2. Comando `/registrar [data]`** — abre o fluxo de registro para a data indicada:
+```
+/registrar ontem
+/registrar anteontem
+/registrar 20/08
+/registrar 18/08/2026
+```
+
+**3. Painel web** — botão "＋ Adicionar refeição" na página de Histórico abre um modal com:
+- Seletor de tipo de refeição
+- Data pré-preenchida conforme o dia exibido
+- Textarea de descrição em linguagem natural
+- Processamento IA (TACO/USDA) igual ao bot
+- Resultado aparece na lista sem recarregar a página
+
+**Limites de retroatividade:**
+
+| Plano | Limite |
+|---|---|
+| Gratuito | 7 dias |
+| Premium | 30 dias |
 
 ---
 

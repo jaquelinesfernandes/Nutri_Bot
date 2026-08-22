@@ -1,6 +1,6 @@
 # NutriBot — API Specification
 
-**Versão:** 1.0 | **Data:** Junho 2026
+**Versão:** 1.1 | **Data:** Agosto 2026
 
 Todos os endpoints são assíncronos. A aplicação responde `200 OK` imediatamente em webhooks e processa em background task para evitar timeout.
 
@@ -184,7 +184,163 @@ Content-Type: application/json
 
 ---
 
-## 3. Interfaces Internas dos Services
+## 3. Endpoints REST — Refeições
+
+Autenticação: JWT em cookie `httpOnly` (definido em `POST /api/auth/login`). Todas as rotas abaixo retornam `401` se o cookie estiver ausente ou inválido.
+
+---
+
+### GET /api/meals
+
+Retorna o balanço diário de refeições para uma data.
+
+**Query params:**
+
+| Param | Tipo | Default | Descrição |
+|---|---|---|---|
+| `date` | `YYYY-MM-DD` | hoje | Data a consultar |
+
+**Response 200:**
+```json
+{
+  "date": "2026-08-22",
+  "total_calories_kcal": 1850.0,
+  "total_protein_g": 95.5,
+  "total_carb_g": 210.3,
+  "total_fat_g": 62.1,
+  "goal_calories": 2000,
+  "remaining_calories": 149.7,
+  "meals": [
+    {
+      "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      "meal_type": "lunch",
+      "logged_at": "2026-08-22T12:00:00-03:00",
+      "total_calories_kcal": 720.0,
+      "total_protein_g": 42.0,
+      "total_carb_g": 88.0,
+      "total_fat_g": 18.5,
+      "food_items": [
+        {
+          "name": "Arroz branco cozido",
+          "quantity_g": 150,
+          "calories_kcal": 192,
+          "protein_g": 2.8,
+          "carb_g": 42.3,
+          "fat_g": 0.3,
+          "source": "taco",
+          "confidence_score": 0.97
+        }
+      ]
+    }
+  ]
+}
+```
+
+---
+
+### GET /api/meals/today
+
+Atalho para `GET /api/meals` com `date` = hoje (fuso do usuário). Mesmo schema de resposta.
+
+---
+
+### GET /api/meals/week
+
+Retorna os últimos 7 dias. Response: `list[DailyBalance]`.
+
+---
+
+### POST /api/meals
+
+Cria um registro de refeição manual via painel web. Usa o mesmo pipeline de IA do bot: descrição em linguagem natural → Claude extrai alimentos → lookup TACO/USDA → persiste com `logged_at` correto.
+
+**Request body (`application/json`):**
+```json
+{
+  "logged_date": "2026-08-21",
+  "meal_type": "lunch",
+  "description": "arroz branco 150g, feijão carioca 80g e frango grelhado 120g"
+}
+```
+
+| Campo | Tipo | Obrigatório | Descrição |
+|---|---|---|---|
+| `logged_date` | `YYYY-MM-DD` | ✅ | Data da refeição. Não pode ser futura. |
+| `meal_type` | string | ❌ (default `"other"`) | `breakfast` \| `morning_snack` \| `lunch` \| `afternoon_snack` \| `dinner` \| `snack` \| `other` |
+| `description` | string (3–500 chars) | ✅ | Descrição em linguagem natural do que foi consumido. |
+
+**Regras de retroatividade:**
+
+| Plano | Limite máximo de dias passados |
+|---|---|
+| Gratuito | 7 dias |
+| Premium | 30 dias |
+
+**Responses:**
+
+| Código | Condição |
+|---|---|
+| `201` | Criado com sucesso — retorna `MealLogRead` com `food_items` |
+| `401` | Não autenticado |
+| `422` | Data futura / além do limite / nenhum alimento identificado / descrição inválida |
+| `503` | Serviço de IA temporariamente indisponível |
+
+**Response 201:**
+```json
+{
+  "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+  "meal_type": "lunch",
+  "logged_at": "2026-08-21T12:00:00-03:00",
+  "total_calories_kcal": 650.5,
+  "total_protein_g": 55.2,
+  "total_carb_g": 72.1,
+  "total_fat_g": 14.3,
+  "food_items": [...]
+}
+```
+
+**Notas:**
+- O `meal_type` explícito do usuário prevalece sobre o sugerido pela IA. Se enviado como `"other"`, usa a inferência da IA.
+- O `logged_at` é definido como `data_alvo + hora padrão do tipo de refeição` (café=8h, almoço=12h, jantar=19h…) no fuso do usuário.
+- O `raw_input` é criptografado em repouso (AES-256 Fernet, LGPD Art. 11).
+
+---
+
+### DELETE /api/meals/{meal_id}
+
+Remove um registro de refeição do usuário autenticado.
+
+**Path param:** `meal_id` — UUID da refeição.
+
+**Responses:**
+
+| Código | Condição |
+|---|---|
+| `204` | Deletado com sucesso |
+| `401` | Não autenticado |
+| `404` | Refeição não encontrada ou pertence a outro usuário |
+| `422` | `meal_id` não é um UUID válido |
+
+---
+
+## 4. Endpoints REST — Autenticação
+
+### POST /api/auth/register
+
+Cria uma nova conta. Retorna JWT em cookie `httpOnly`.
+
+### POST /api/auth/login
+
+Autentica com e-mail + senha. Retorna JWT em cookie `httpOnly`.
+Rate limit: 5 tentativas / 5 min por IP.
+
+### POST /api/auth/logout
+
+Limpa o cookie de sessão.
+
+---
+
+## 5. Interfaces Internas dos Services
 
 Estas não são rotas HTTP — são contratos internos entre módulos Python, documentados aqui para referência da equipe.
 
@@ -351,14 +507,17 @@ class ReportSuggestionsResponse(BaseModel):
 
 ---
 
-## 5. Códigos de Resposta HTTP
+## 6. Códigos de Resposta HTTP
 
 | Código | Usado em | Significado |
 |--------|----------|-------------|
 | 200 | Todos os webhooks | Recebido com sucesso (mesmo se processamento posterior falhar) |
+| 201 | `POST /api/meals` | Refeição criada com sucesso |
+| 204 | `DELETE /api/meals/{id}` | Refeição deletada com sucesso (sem body) |
+| 401 | Endpoints REST autenticados | JWT ausente ou inválido |
 | 403 | Webhooks com assinatura | Assinatura inválida |
-| 404 | Rotas não encontradas | — |
-| 422 | Validação Pydantic | Payload malformado (não deve ocorrer em webhooks de parceiros) |
-| 503 | /health | Serviço degradado |
+| 404 | `DELETE /api/meals/{id}` | Refeição não encontrada ou de outro usuário |
+| 422 | Validação Pydantic / regras de negócio | Payload malformado, data futura, além do limite de retroatividade, IA sem alimentos |
+| 503 | `/health`, `POST /api/meals` | Serviço degradado ou IA indisponível |
 
-> **Regra:** Nunca retornar 5xx para webhooks de parceiros (Telegram, Z-API, Mercado Pago). Eles fazem retry automático em erros 5xx, o que pode causar processamento duplicado. Sempre retornar 200 e tratar erros internamente.
+> **Regra:** Nunca retornar 5xx para webhooks de parceiros (Telegram, Evolution API, Mercado Pago). Eles fazem retry automático em erros 5xx, o que pode causar processamento duplicado. Sempre retornar 200 e tratar erros internamente.
