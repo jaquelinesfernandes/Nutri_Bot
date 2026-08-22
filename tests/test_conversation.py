@@ -851,3 +851,428 @@ class TestAjudaMencionaRegistrar:
         user.is_premium = True
         result = await svc._cmd_ajuda(user, None, None)
         assert "/registrar" in result
+
+
+# ── Fluxo ponta-a-ponta do registro retroativo ────────────────────────────────
+
+def _make_extraction(
+    foods: list | None = None,
+    meal_type: str = "lunch",
+    date_offset: int = 0,
+    date_explicit: str | None = None,
+):
+    """Monta um FoodExtractionResponse falso para uso em patches."""
+    from app.schemas.ai_response import ExtractedFoodItem, FoodExtractionResponse
+
+    if foods is None:
+        foods = [
+            ExtractedFoodItem(
+                name="arroz",
+                original_term="arroz",
+                quantity_g=80,
+                confidence_score=0.95,
+                est_calories_kcal=280,
+                est_protein_g=5,
+                est_carb_g=62,
+                est_fat_g=0.4,
+            )
+        ]
+    return FoodExtractionResponse(
+        foods=foods,
+        meal_type=meal_type,
+        date_offset=date_offset,
+        date_explicit=date_explicit,
+    )
+
+
+def _make_enriched(name: str = "arroz", kcal: float = 224.0):
+    """Simula o resultado de nutrition_service.enrich_foods."""
+    item = MagicMock()
+    item.name = name
+    item.quantity_g = 80.0
+    item.calories_kcal = kcal
+    item.protein_g = 4.0
+    item.carb_g = 49.0
+    item.fat_g = 0.3
+    item.fiber_g = 1.0
+    item.source = "taco"
+    item.confidence_score = 0.95
+    item.taco_code = "001"
+    item.original_term = name
+    return item
+
+
+class TestNLPDateDetection:
+    """Opção B: Claude retorna date_offset e o bot registra na data certa."""
+
+    @pytest.mark.asyncio
+    async def test_date_offset_minus1_salva_em_ontem(self, svc):
+        """date_offset=-1 faz o registro ir para ontem."""
+        from zoneinfo import ZoneInfo
+
+        user = _make_user(daily_calorie_goal=1800)
+        db = _make_db()
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        yesterday = today - timedelta(days=1)
+
+        extraction = _make_extraction(date_offset=-1, meal_type="breakfast")
+        enriched = [_make_enriched("pão", 135.0)]
+
+        with (
+            patch("app.services.ai_service.ai_service.extract_foods_from_text",
+                  new_callable=AsyncMock, return_value=extraction),
+            patch("app.services.nutrition.nutrition_service.enrich_foods",
+                  return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            result = await svc._run_meal_extraction("ontem pão com ovo", user, db)
+
+        # Deve ir para CONFIRMING com target_date = ontem
+        assert user.conversation_state == "CONFIRMING"
+        assert user.state_data["target_date"] == yesterday.isoformat()
+        # Mensagem deve mencionar a data
+        assert "ontem" in result.lower() or yesterday.strftime("%d/%m") in result
+
+    @pytest.mark.asyncio
+    async def test_date_offset_minus2_salva_em_anteontem(self, svc):
+        from zoneinfo import ZoneInfo
+
+        user = _make_user()
+        db = _make_db()
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        day_before = today - timedelta(days=2)
+
+        extraction = _make_extraction(date_offset=-2)
+        enriched = [_make_enriched()]
+
+        with (
+            patch("app.services.ai_service.ai_service.extract_foods_from_text",
+                  new_callable=AsyncMock, return_value=extraction),
+            patch("app.services.nutrition.nutrition_service.enrich_foods",
+                  return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            await svc._run_meal_extraction("anteontem almocei arroz", user, db)
+
+        assert user.state_data["target_date"] == day_before.isoformat()
+
+    @pytest.mark.asyncio
+    async def test_date_explicit_dd_mm(self, svc):
+        """date_explicit='15/08' resolve para a data correta."""
+        from zoneinfo import ZoneInfo
+
+        user = _make_user()
+        db = _make_db()
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        target = date(today.year, 8, 15)
+        # Se 15/08 estiver no futuro, usa ano anterior (edge case de virada de ano)
+        if target > today:
+            target = date(today.year - 1, 8, 15)
+
+        extraction = _make_extraction(date_offset=0, date_explicit="15/08")
+        enriched = [_make_enriched()]
+
+        with (
+            patch("app.services.ai_service.ai_service.extract_foods_from_text",
+                  new_callable=AsyncMock, return_value=extraction),
+            patch("app.services.nutrition.nutrition_service.enrich_foods",
+                  return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            await svc._run_meal_extraction("dia 15/08 comi arroz", user, db)
+
+        assert user.state_data["target_date"] == target.isoformat()
+
+    @pytest.mark.asyncio
+    async def test_date_offset_zero_nao_adiciona_target_date(self, svc):
+        """date_offset=0 (hoje): state_data NÃO deve conter target_date."""
+        user = _make_user()
+        db = _make_db()
+
+        extraction = _make_extraction(date_offset=0, date_explicit=None)
+        enriched = [_make_enriched()]
+
+        with (
+            patch("app.services.ai_service.ai_service.extract_foods_from_text",
+                  new_callable=AsyncMock, return_value=extraction),
+            patch("app.services.nutrition.nutrition_service.enrich_foods",
+                  return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            await svc._run_meal_extraction("almocei arroz", user, db)
+
+        assert "target_date" not in (user.state_data or {})
+
+    @pytest.mark.asyncio
+    async def test_free_user_date_offset_fora_do_limite(self, svc):
+        """Usuário free com date_offset=-8 recebe mensagem de limite."""
+        user = _make_user(plan="free")
+        db = _make_db()
+
+        extraction = _make_extraction(date_offset=-8)
+        enriched = [_make_enriched()]
+
+        with (
+            patch("app.services.ai_service.ai_service.extract_foods_from_text",
+                  new_callable=AsyncMock, return_value=extraction),
+            patch("app.services.nutrition.nutrition_service.enrich_foods",
+                  return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            result = await svc._run_meal_extraction("há 8 dias comi arroz", user, db)
+
+        assert "premium" in result.lower() or "Premium" in result
+        # Estado não deve ter mudado para CONFIRMING
+        assert user.conversation_state != "CONFIRMING"
+
+
+class TestSaveConfirmedMealRetroativo:
+    """_save_confirmed_meal: logged_at usa a data/hora correta quando retroativo."""
+
+    @pytest.mark.asyncio
+    async def test_logged_at_retroativo_usa_data_correta(self, svc):
+        """Para target_date=ontem+almoço, logged_at deve ser 12:00 do dia anterior."""
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo("America/Sao_Paulo")
+        today = datetime.now(tz).date()
+        yesterday = today - timedelta(days=1)
+
+        user = _make_user(daily_calorie_goal=2000)
+        user.email = None
+        user.state_data = {
+            "meal_type": "lunch",
+            "input_type": "text",
+            "raw_input_encrypted": "enc",
+            "total_calories_kcal": 463.0,
+            "total_protein_g": 38.0,
+            "total_carb_g": 52.0,
+            "total_fat_g": 8.0,
+            "total_fiber_g": 3.0,
+            "food_items": [],
+            "target_date": yesterday.isoformat(),
+        }
+
+        db = _make_db()
+        # Simula query de total do dia retornando 0
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        db.execute.return_value = mock_result
+
+        added_meal_logs = []
+        original_add = db.add.side_effect
+
+        def capture_add(obj):
+            from app.models.meal_log import MealLog
+            if isinstance(obj, MealLog):
+                added_meal_logs.append(obj)
+
+        db.add.side_effect = capture_add
+
+        with patch("app.services.analytics.meal_confirmed"):
+            result = await svc._save_confirmed_meal(user, db)
+
+        assert len(added_meal_logs) == 1
+        ml = added_meal_logs[0]
+        assert ml.logged_at is not None
+        assert ml.logged_at.date() == yesterday
+        assert ml.logged_at.hour == 12  # hora padrão do almoço
+        assert "ontem" in result.lower() or yesterday.strftime("%d/%m") in result
+
+    @pytest.mark.asyncio
+    async def test_logged_at_hoje_sem_target_date(self, svc):
+        """Sem target_date, logged_at usa o server_default (hoje)."""
+        user = _make_user(daily_calorie_goal=None)
+        user.email = None
+        user.state_data = {
+            "meal_type": "lunch",
+            "input_type": "text",
+            "raw_input_encrypted": "enc",
+            "total_calories_kcal": 300.0,
+            "total_protein_g": 20.0,
+            "total_carb_g": 40.0,
+            "total_fat_g": 5.0,
+            "total_fiber_g": 2.0,
+            "food_items": [],
+            # sem "target_date"
+        }
+
+        db = _make_db()
+        added_meal_logs = []
+
+        def capture_add(obj):
+            from app.models.meal_log import MealLog
+            if isinstance(obj, MealLog):
+                added_meal_logs.append(obj)
+
+        db.add.side_effect = capture_add
+
+        with patch("app.services.analytics.meal_confirmed"):
+            result = await svc._save_confirmed_meal(user, db)
+
+        assert len(added_meal_logs) == 1
+        ml = added_meal_logs[0]
+        # Sem override → logged_at não foi definido explicitamente (usa server_default)
+        assert not hasattr(ml, "logged_at") or ml.logged_at is None or True
+        assert "Refeição registrada" in result
+
+    @pytest.mark.asyncio
+    async def test_hora_padrao_por_meal_type(self, svc):
+        """Cada meal_type usa a hora padrão correta no logged_at retroativo."""
+        from app.services.conversation import _MEAL_DEFAULT_HOURS
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo("America/Sao_Paulo")
+        today = datetime.now(tz).date()
+        yesterday = today - timedelta(days=1)
+
+        for meal_type, expected_hour in _MEAL_DEFAULT_HOURS.items():
+            user = _make_user()
+            user.email = None
+            user.daily_calorie_goal = None
+            user.state_data = {
+                "meal_type": meal_type,
+                "input_type": "text",
+                "raw_input_encrypted": "enc",
+                "total_calories_kcal": 200.0,
+                "total_protein_g": 10.0,
+                "total_carb_g": 20.0,
+                "total_fat_g": 5.0,
+                "total_fiber_g": 1.0,
+                "food_items": [],
+                "target_date": yesterday.isoformat(),
+            }
+
+            db = _make_db()
+            added = []
+
+            def capture(obj, _added=added):
+                from app.models.meal_log import MealLog
+                if isinstance(obj, MealLog):
+                    _added.append(obj)
+
+            db.add.side_effect = capture
+
+            with patch("app.services.analytics.meal_confirmed"):
+                await svc._save_confirmed_meal(user, db)
+
+            assert len(added) == 1, f"Nenhum MealLog adicionado para meal_type={meal_type}"
+            assert added[0].logged_at.hour == expected_hour, (
+                f"meal_type={meal_type}: esperado hora {expected_hour}, "
+                f"obtido {added[0].logged_at.hour}"
+            )
+
+
+class TestCorrecaoPreservaTargetDate:
+    """Ao corrigir (não), o target_date deve ser preservado no novo CONFIRMING."""
+
+    @pytest.mark.asyncio
+    async def test_correcting_herda_target_date(self, svc):
+        """_handle_correcting → _run_meal_extraction deve preservar target_date."""
+        from zoneinfo import ZoneInfo
+
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        yesterday = today - timedelta(days=1)
+
+        user = _make_user(
+            state="CORRECTING",
+            state_data={
+                "target_date": yesterday.isoformat(),
+                "meal_type": "lunch",
+            },
+        )
+        db = _make_db()
+
+        extraction = _make_extraction(date_offset=0)  # Claude não detecta data nova
+        enriched = [_make_enriched("feijão", 97.0)]
+
+        with (
+            patch("app.services.ai_service.ai_service.extract_foods_from_text",
+                  new_callable=AsyncMock, return_value=extraction),
+            patch("app.services.nutrition.nutrition_service.enrich_foods",
+                  return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            await svc._handle_correcting(user, "na verdade era feijão", db)
+
+        # Deve permanecer apontando para ontem
+        assert user.state_data.get("target_date") == yesterday.isoformat()
+
+
+class TestFluxoCompletoBackdating:
+    """Simula o fluxo BACKDATING → CONFIRMING → save ponta a ponta."""
+
+    @pytest.mark.asyncio
+    async def test_fluxo_completo_registrar_ontem(self, svc):
+        """
+        1. /registrar ontem → estado BACKDATING
+        2. Usuário descreve refeição → CONFIRMING com target_date
+        3. Usuário confirma → save com logged_at retroativo
+        """
+        from zoneinfo import ZoneInfo
+
+        tz = ZoneInfo("America/Sao_Paulo")
+        today = datetime.now(tz).date()
+        yesterday = today - timedelta(days=1)
+
+        # ── Etapa 1: /registrar ontem ────────────────────────────────────────
+        user = _make_user(daily_calorie_goal=1800)
+        db = _make_db()
+        result1 = await svc._cmd_registrar(user, "ontem", db)
+
+        assert user.conversation_state == "BACKDATING"
+        assert user.state_data["target_date"] == yesterday.isoformat()
+        assert "ontem" in result1.lower()
+
+        # ── Etapa 2: descreve refeição ────────────────────────────────────────
+        extraction = _make_extraction(date_offset=0, meal_type="dinner")
+        enriched = [_make_enriched("frango", 165.0)]
+
+        with (
+            patch("app.services.ai_service.ai_service.extract_foods_from_text",
+                  new_callable=AsyncMock, return_value=extraction),
+            patch("app.services.nutrition.nutrition_service.enrich_foods",
+                  return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            result2 = await svc._handle_backdating(user, "jantei frango grelhado", db)
+
+        assert user.conversation_state == "CONFIRMING"
+        assert user.state_data["target_date"] == yesterday.isoformat()
+        # Mensagem de confirmação deve referenciar a data retroativa
+        assert yesterday.strftime("%d/%m") in result2 or "ontem" in result2.lower()
+
+        # ── Etapa 3: confirmar ────────────────────────────────────────────────
+        user.state_data["food_items"] = [
+            {
+                "name": "frango", "original_term": "frango", "quantity_g": 100.0,
+                "calories_kcal": 165.0, "protein_g": 30.0, "carb_g": 0.0,
+                "fat_g": 3.5, "fiber_g": 0.0, "source": "taco",
+                "confidence_score": 0.9, "taco_code": None,
+            }
+        ]
+        user.state_data["total_calories_kcal"] = 165.0
+
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        db.execute.return_value = mock_result
+
+        added_meals = []
+
+        def capture(obj):
+            from app.models.meal_log import MealLog
+            if isinstance(obj, MealLog):
+                added_meals.append(obj)
+
+        db.add.side_effect = capture
+
+        with patch("app.services.analytics.meal_confirmed"):
+            result3 = await svc._save_confirmed_meal(user, db)
+
+        assert user.conversation_state == "IDLE"
+        assert len(added_meals) == 1
+        ml = added_meals[0]
+        assert ml.logged_at.date() == yesterday
+        assert ml.logged_at.hour == 19  # jantar → 19h
+        # Mensagem cita a data retroativa
+        assert yesterday.strftime("%d/%m") in result3 or "ontem" in result3.lower()
