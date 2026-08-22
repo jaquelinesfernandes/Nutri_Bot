@@ -6,7 +6,7 @@ Usa mocks para DB e serviços externos (AI, nutrition).
 from __future__ import annotations
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime, timedelta
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
@@ -652,3 +652,202 @@ class TestCmdAlertas:
             db = _make_db()
             await svc._cmd_alertas(user, arg, db)
             assert user.alerts_enabled is False, f"arg={arg!r} deveria desativar"
+
+
+# ── Registro Retroativo ────────────────────────────────────────────────────────
+
+class TestDateLabel:
+    """_date_label retorna rótulos legíveis para datas passadas."""
+
+    def _tz(self):
+        from zoneinfo import ZoneInfo
+        return ZoneInfo("America/Sao_Paulo")
+
+    def test_ontem(self, svc):
+        tz = self._tz()
+        today = datetime.now(tz).date()
+        result = svc._date_label(today - timedelta(days=1), tz)
+        assert "ontem" in result
+        assert (today - timedelta(days=1)).strftime("%d/%m") in result
+
+    def test_anteontem(self, svc):
+        tz = self._tz()
+        today = datetime.now(tz).date()
+        result = svc._date_label(today - timedelta(days=2), tz)
+        assert "anteontem" in result
+
+    def test_dia_da_semana(self, svc):
+        tz = self._tz()
+        today = datetime.now(tz).date()
+        resultado = svc._date_label(today - timedelta(days=5), tz)
+        # Deve conter nome de dia da semana em português
+        dias = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
+        assert any(d in resultado for d in dias)
+
+
+class TestParseDateFromArgs:
+    """_parse_date_from_args converte texto livre em date."""
+
+    def test_ontem(self, svc):
+        user = _make_user()
+        result = svc._parse_date_from_args("ontem", user)
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        assert result == today - timedelta(days=1)
+
+    def test_anteontem(self, svc):
+        user = _make_user()
+        result = svc._parse_date_from_args("anteontem", user)
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        assert result == today - timedelta(days=2)
+
+    def test_formato_dd_mm(self, svc):
+        user = _make_user()
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        alvo = today - timedelta(days=3)
+        result = svc._parse_date_from_args(alvo.strftime("%d/%m"), user)
+        assert result == alvo
+
+    def test_argumento_vazio(self, svc):
+        user = _make_user()
+        assert svc._parse_date_from_args(None, user) is None
+        assert svc._parse_date_from_args("", user) is None
+
+    def test_texto_invalido(self, svc):
+        user = _make_user()
+        assert svc._parse_date_from_args("amanhã", user) is None
+
+
+class TestCheckBackdateLimit:
+    """_check_backdate_limit aplica os limites por plano."""
+
+    def test_ontem_free_ok(self, svc):
+        user = _make_user(plan="free")
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        assert svc._check_backdate_limit(today - timedelta(days=1), user) is None
+
+    def test_oito_dias_free_bloqueado(self, svc):
+        user = _make_user(plan="free")
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        result = svc._check_backdate_limit(today - timedelta(days=8), user)
+        assert result is not None
+        assert "premium" in result.lower() or "Premium" in result
+
+    def test_oito_dias_premium_ok(self, svc):
+        user = _make_user(plan="premium")
+        user.is_premium = True
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        assert svc._check_backdate_limit(today - timedelta(days=8), user) is None
+
+    def test_31_dias_premium_bloqueado(self, svc):
+        user = _make_user(plan="premium")
+        user.is_premium = True
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        result = svc._check_backdate_limit(today - timedelta(days=31), user)
+        assert result is not None
+
+    def test_hoje_bloqueado(self, svc):
+        user = _make_user()
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        result = svc._check_backdate_limit(today, user)
+        assert result is not None
+
+
+class TestCmdRegistrar:
+    """Comando /registrar abre o fluxo BACKDATING."""
+
+    @pytest.mark.asyncio
+    async def test_sem_args_mostra_ajuda(self, svc):
+        user = _make_user()
+        result = await svc._cmd_registrar(user, None, _make_db())
+        assert "/registrar ontem" in result
+        assert "/registrar" in result
+
+    @pytest.mark.asyncio
+    async def test_ontem_abre_backdating(self, svc):
+        user = _make_user()
+        db = _make_db()
+        result = await svc._cmd_registrar(user, "ontem", db)
+        assert user.conversation_state == "BACKDATING"
+        assert user.state_data is not None
+        assert "target_date" in user.state_data
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        assert user.state_data["target_date"] == (today - timedelta(days=1)).isoformat()
+        assert "ontem" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_data_fora_limite_free(self, svc):
+        user = _make_user(plan="free")
+        db = _make_db()
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        alvo = (today - timedelta(days=10)).strftime("%d/%m")
+        result = await svc._cmd_registrar(user, alvo, db)
+        assert user.conversation_state != "BACKDATING"
+        assert "premium" in result.lower() or "Premium" in result
+
+    @pytest.mark.asyncio
+    async def test_data_futura_rejeitada(self, svc):
+        user = _make_user()
+        result = await svc._cmd_registrar(user, "hoje", _make_db())
+        # "hoje" não é passado → rejeitado
+        assert user.conversation_state != "BACKDATING"
+
+
+class TestHandleBackdating:
+    """Estado BACKDATING chama _run_meal_extraction com target_date."""
+
+    @pytest.mark.asyncio
+    async def test_sem_state_data_reseta(self, svc):
+        user = _make_user(state="BACKDATING", state_data=None)
+        db = _make_db()
+        result = await svc._handle_backdating(user, "arroz", db)
+        assert user.conversation_state == "IDLE"
+        assert "errado" in result.lower() or "comeu" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_chama_extracao_com_target_date(self, svc):
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
+        yesterday = (today - timedelta(days=1)).isoformat()
+        user = _make_user(state="BACKDATING", state_data={"target_date": yesterday})
+        db = _make_db()
+
+        mock_extraction = MagicMock()
+        mock_extraction.foods = []  # retorna vazio para simplificar
+        mock_extraction.date_offset = 0
+        mock_extraction.date_explicit = None
+
+        with patch(
+            "app.services.ai_service.ai_service.extract_foods_from_text",
+            new_callable=AsyncMock,
+            return_value=mock_extraction,
+        ):
+            result = await svc._handle_backdating(user, "pão com ovo", db)
+        # Sem foods → mensagem de fallback, mas não deve crashar
+        assert isinstance(result, str)
+
+
+class TestAjudaMencionaRegistrar:
+    """O comando /ajuda menciona /registrar nos dois planos."""
+
+    @pytest.mark.asyncio
+    async def test_ajuda_free_menciona_registrar(self, svc):
+        user = _make_user(plan="free")
+        result = await svc._cmd_ajuda(user, None, None)
+        assert "/registrar" in result
+
+    @pytest.mark.asyncio
+    async def test_ajuda_premium_menciona_registrar(self, svc):
+        user = _make_user(plan="premium")
+        user.is_premium = True
+        result = await svc._cmd_ajuda(user, None, None)
+        assert "/registrar" in result

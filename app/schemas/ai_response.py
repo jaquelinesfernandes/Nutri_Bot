@@ -26,6 +26,9 @@ class FoodExtractionResponse(BaseModel):
     image_has_food: bool = True
     image_quality: Literal["good", "poor", "unreadable"] = "good"
     overall_confidence: float = Field(default=1.0, ge=0.0, le=1.0)
+    # Registro retroativo: detectado a partir do texto do usuário
+    date_offset: int = 0        # 0=hoje, -1=ontem, -2=anteontem, etc.
+    date_explicit: str | None = None  # "DD/MM" ou "DD/MM/AAAA" quando o usuário cita data explícita
 
 
 class ReportSuggestion(BaseModel):

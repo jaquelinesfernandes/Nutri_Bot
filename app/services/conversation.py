@@ -1,13 +1,14 @@
 """
 ConversationService — máquina de estados da conversa.
-Estados: IDLE | ONBOARDING | CONFIRMING | CORRECTING | DELETING
+Estados: IDLE | ONBOARDING | CONFIRMING | CORRECTING | DELETING | BACKDATING
 Ver docs/NutriBot_PRD_v2.1.md seção 7 para diagrama completo.
 """
 
 from __future__ import annotations
 
 import logging
-from datetime import datetime, timedelta
+import re
+from datetime import date, datetime, timedelta
 from typing import Literal
 from zoneinfo import ZoneInfo
 
@@ -53,7 +54,23 @@ _STATE_TIMEOUTS = {
     "CONFIRMING": timedelta(minutes=10),
     "CORRECTING": timedelta(minutes=5),
     "DELETING":   timedelta(minutes=5),
+    "BACKDATING": timedelta(minutes=10),
 }
+
+# Hora padrão (local) usada ao salvar um registro retroativo por tipo de refeição
+_MEAL_DEFAULT_HOURS: dict[str, int] = {
+    "breakfast":      8,
+    "morning_snack":  10,
+    "lunch":          12,
+    "afternoon_snack": 15,
+    "dinner":         19,
+    "snack":          12,
+    "other":          12,
+}
+
+# Limite de dias para registro retroativo (free / premium)
+_BACKDATE_LIMIT_FREE    = 7
+_BACKDATE_LIMIT_PREMIUM = 30
 
 MAINTENANCE_RESPONSE = (
     "Estou em manutenção no momento 🔧\n"
@@ -150,6 +167,9 @@ class ConversationService:
         if state == "DELETING":
             return await self._handle_deleting(user, str(content), db)
 
+        if state == "BACKDATING":
+            return await self._handle_backdating(user, str(content), db)
+
         # IDLE
         if message_type == "text":
             return await self._process_text_meal(user, str(content), db)
@@ -195,6 +215,7 @@ class ConversationService:
             "vincular":       self._cmd_vincular,
             "painel":         self._cmd_painel,
             "dashboard":      self._cmd_painel,  # alias
+            "registrar":      self._cmd_registrar,
         }
 
         handler = handlers.get(cmd)
@@ -548,6 +569,120 @@ class ConversationService:
 
         return f"Responda *sim* para confirmar a exclusão ou *não* para cancelar.\n_{summary}_"
 
+    # ── Registro retroativo: helpers de data ──────────────────────────────────
+
+    def _date_label(self, target: date, tz: ZoneInfo) -> str:
+        """'21/08 (ontem)', '19/08 (anteontem)', '17/08 (sábado)', etc."""
+        today = datetime.now(tz).date()
+        delta = (today - target).days
+        date_str = target.strftime("%d/%m")
+        if delta == 0:
+            return f"{date_str} (hoje)"
+        if delta == 1:
+            return f"{date_str} (ontem)"
+        if delta == 2:
+            return f"{date_str} (anteontem)"
+        weekdays = ["segunda", "terça", "quarta", "quinta", "sexta", "sábado", "domingo"]
+        return f"{date_str} ({weekdays[target.weekday()]})"
+
+    def _parse_date_from_args(self, args: str | None, user: User) -> date | None:
+        """Converte texto livre ('ontem', '20/08', 'dia 15') em um objeto date."""
+        tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+        today = datetime.now(tz).date()
+
+        if not args:
+            return None
+        text = args.strip().lower()
+
+        if "anteontem" in text or "antes de ontem" in text:
+            return today - timedelta(days=2)
+        if "ontem" in text:
+            return today - timedelta(days=1)
+
+        # "20/08", "20-08", "20/08/2026"
+        m = re.search(r'(\d{1,2})[/\-](\d{1,2})(?:[/\-](\d{2,4}))?', text)
+        if m:
+            day, month = int(m.group(1)), int(m.group(2))
+            year_raw = m.group(3)
+            year = int(year_raw) if year_raw else today.year
+            if year < 100:
+                year += 2000
+            try:
+                target = date(year, month, day)
+                if target > today:
+                    target = date(year - 1, month, day)
+                return target
+            except ValueError:
+                return None
+
+        # "dia 20" ou apenas "20"
+        m = re.search(r'(?:dia\s+)?(\d{1,2})$', text)
+        if m:
+            day = int(m.group(1))
+            if 1 <= day <= 31:
+                try:
+                    target = date(today.year, today.month, day)
+                    if target > today:
+                        # Mês anterior
+                        first = today.replace(day=1)
+                        prev_month_last = first - timedelta(days=1)
+                        target = date(prev_month_last.year, prev_month_last.month, day)
+                    return target
+                except ValueError:
+                    return None
+        return None
+
+    def _check_backdate_limit(self, target: date, user: User) -> str | None:
+        """Retorna mensagem de erro se a data estiver fora do limite, ou None se ok."""
+        tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+        today = datetime.now(tz).date()
+        if target >= today:
+            return "Só posso registrar refeições de dias passados. Para hoje, é só me contar o que comeu! 😊"
+        limit = _BACKDATE_LIMIT_PREMIUM if user.is_premium else _BACKDATE_LIMIT_FREE
+        delta = (today - target).days
+        if delta > limit:
+            if not user.is_premium:
+                return (
+                    f"No plano gratuito, o registro retroativo é limitado a {_BACKDATE_LIMIT_FREE} dias. "
+                    f"A data {target.strftime('%d/%m')} está fora desse limite. 📅\n\n"
+                    f"Com o Premium o limite sobe para {_BACKDATE_LIMIT_PREMIUM} dias! /premium"
+                )
+            return (
+                f"Só consigo registrar até {_BACKDATE_LIMIT_PREMIUM} dias atrás. "
+                f"A data {target.strftime('%d/%m')} está fora desse limite. 📅"
+            )
+        return None
+
+    async def _get_date_total_kcal(self, user: User, db: AsyncSession, target: date) -> float:
+        """Total de kcal confirmadas do usuário em uma data específica (no fuso dele)."""
+        tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+        day_start = datetime(target.year, target.month, target.day, 0, 0, 0, tzinfo=tz)
+        day_end = day_start + timedelta(days=1)
+        stmt = select(MealLog).where(
+            MealLog.user_id == user.id,
+            MealLog.logged_at >= day_start,
+            MealLog.logged_at < day_end,
+            MealLog.confirmed.is_(True),
+        )
+        result = await db.execute(stmt)
+        return sum(log.total_calories_kcal for log in result.scalars().all())
+
+    # ── Processadores de mídia ─────────────────────────────────────────────────
+
+    # ── Handler do estado BACKDATING ──────────────────────────────────────────
+
+    async def _handle_backdating(self, user: User, text: str, db: AsyncSession) -> str:
+        """Estado onde o usuário está descrevendo refeições de um dia passado específico."""
+        pending = user.state_data or {}
+        target_date_str = pending.get("target_date")
+        if not target_date_str:
+            user.conversation_state = "IDLE"
+            user.state_data = None
+            await db.commit()
+            return "Algo deu errado. Me conta o que comeu!"
+        target = date.fromisoformat(target_date_str)
+        return await self._run_meal_extraction(text, user, db, target_date=target)
+
     # ── Processadores de mídia ─────────────────────────────────────────────────
 
     async def _process_text_meal(self, user: User, text: str, db: AsyncSession) -> str:
@@ -667,11 +802,23 @@ class ConversationService:
     # ── Lógica de extração compartilhada ─────────────────────────────────────
 
     async def _run_meal_extraction(
-        self, text: str, user: User, db: AsyncSession, is_correction: bool = False
+        self,
+        text: str,
+        user: User,
+        db: AsyncSession,
+        is_correction: bool = False,
+        target_date: date | None = None,
     ) -> str:
         from app.services.ai_service import ai_service
         from app.services.nutrition import nutrition_service
         from app.utils.crypto import encrypt
+
+        # Em modo correção, preserva o target_date já definido no state_data anterior
+        if is_correction and target_date is None:
+            existing = user.state_data or {}
+            td_str = existing.get("target_date")
+            if td_str:
+                target_date = date.fromisoformat(td_str)
 
         try:
             extraction = await ai_service.extract_foods_from_text(text)
@@ -693,6 +840,39 @@ class ConversationService:
                 "Tente ser mais específico.\n"
                 "Ex: 'almocei arroz com feijão e frango grelhado'"
             )
+
+        # ── Detecção de data retroativa via NLP (Opção B) ─────────────────────
+        # Só aplicada quando o chamador não especificou target_date (fluxo IDLE normal).
+        if target_date is None and (extraction.date_offset != 0 or extraction.date_explicit):
+            tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+            today = datetime.now(tz).date()
+
+            if extraction.date_offset != 0:
+                candidate = today + timedelta(days=extraction.date_offset)
+            else:
+                # Parseia "DD/MM" retornado pelo Claude
+                m = re.match(r'(\d{1,2})[/\-](\d{1,2})(?:[/\-](\d{2,4}))?',
+                              extraction.date_explicit or "")
+                candidate = None
+                if m:
+                    try:
+                        day, month = int(m.group(1)), int(m.group(2))
+                        yr_raw = m.group(3)
+                        yr = int(yr_raw) if yr_raw else today.year
+                        if yr < 100:
+                            yr += 2000
+                        candidate = date(yr, month, day)
+                        if candidate > today:
+                            candidate = date(yr - 1, month, day)
+                    except ValueError:
+                        candidate = None
+
+            if candidate and candidate < today:
+                err = self._check_backdate_limit(candidate, user)
+                if err:
+                    return err
+                target_date = candidate
+        # ──────────────────────────────────────────────────────────────────────
 
         foods_raw = [
             {
@@ -718,8 +898,7 @@ class ConversationService:
             for e in enriched
         )
 
-        self._set_timed_state(user, "CONFIRMING")
-        user.state_data = {
+        state_data: dict = {
             "raw_input_encrypted": encrypt(text),
             "meal_type": extraction.meal_type,
             "input_type": "text",
@@ -745,11 +924,24 @@ class ConversationService:
                 for e in enriched
             ],
         }
+        if target_date is not None:
+            state_data["target_date"] = target_date.isoformat()
+
+        self._set_timed_state(user, "CONFIRMING")
+        user.state_data = state_data
         flag_modified(user, "state_data")
         await db.commit()
 
         emoji = MEAL_EMOJI.get(extraction.meal_type, "🍽️")
-        prefix = "🔄 *Corrigi para:*\n\n" if is_correction else f"{emoji} *Identifiquei sua refeição:*\n\n"
+
+        if is_correction:
+            prefix = "🔄 *Corrigi para:*\n\n"
+        elif target_date is not None:
+            tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+            lbl = self._date_label(target_date, tz)
+            prefix = f"📅 *{lbl.capitalize()}* — {emoji} *Identifiquei:*\n\n"
+        else:
+            prefix = f"{emoji} *Identifiquei sua refeição:*\n\n"
 
         return (
             f"{prefix}{foods_lines}\n\n"
@@ -761,8 +953,21 @@ class ConversationService:
     async def _save_confirmed_meal(self, user: User, db: AsyncSession) -> str:
         pending = user.state_data or {}
         # Captura atributos necessários ANTES do commit (evita lazy-load expirado)
-        user_email = user.email
         user_goal = user.daily_calorie_goal
+
+        # ── Registro retroativo: monta logged_at no fuso do usuário ───────────
+        target_date_str = pending.get("target_date")
+        logged_at_override: datetime | None = None
+        target_date_obj: date | None = None
+        if target_date_str:
+            target_date_obj = date.fromisoformat(target_date_str)
+            tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+            default_hour = _MEAL_DEFAULT_HOURS.get(pending.get("meal_type", "other"), 12)
+            logged_at_override = datetime(
+                target_date_obj.year, target_date_obj.month, target_date_obj.day,
+                default_hour, 0, 0, tzinfo=tz,
+            )
+        # ──────────────────────────────────────────────────────────────────────
 
         meal_log = MealLog(
             user_id=user.id,
@@ -776,6 +981,8 @@ class ConversationService:
             total_fiber_g=pending.get("total_fiber_g", 0.0),
             confirmed=True,
         )
+        if logged_at_override is not None:
+            meal_log.logged_at = logged_at_override
         db.add(meal_log)
         await db.flush()
 
@@ -810,18 +1017,33 @@ class ConversationService:
             user.channel_id, pending.get("meal_type", "other"), float(kcal)
         )
 
-        msg = f"✅ *Refeição registrada!* {kcal:.0f} kcal\n"
-
-        if user_goal:
-            today_total = await self._get_today_total_kcal(user, db)
-            remaining = user_goal - today_total
-            pct = min(100, int(today_total / user_goal * 100))
-            bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
-            msg += (
-                f"\n📊 Hoje: {today_total:.0f} / {user_goal} kcal\n"
-                f"`{bar}` {pct}%\n"
-                f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
-            )
+        # ── Mensagem de confirmação ────────────────────────────────────────────
+        if target_date_obj is not None:
+            tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+            lbl = self._date_label(target_date_obj, tz)
+            msg = f"✅ *Registrado para {lbl}!* {kcal:.0f} kcal\n"
+            if user_goal:
+                day_total = await self._get_date_total_kcal(user, db, target_date_obj)
+                remaining = user_goal - day_total
+                pct = min(100, int(day_total / user_goal * 100))
+                bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
+                msg += (
+                    f"\n📊 {lbl.capitalize()}: {day_total:.0f} / {user_goal} kcal\n"
+                    f"`{bar}` {pct}%\n"
+                    f"{'⚠️ Meta atingida nesse dia!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
+                )
+        else:
+            msg = f"✅ *Refeição registrada!* {kcal:.0f} kcal\n"
+            if user_goal:
+                today_total = await self._get_today_total_kcal(user, db)
+                remaining = user_goal - today_total
+                pct = min(100, int(today_total / user_goal * 100))
+                bar = "█" * (pct // 10) + "░" * (10 - pct // 10)
+                msg += (
+                    f"\n📊 Hoje: {today_total:.0f} / {user_goal} kcal\n"
+                    f"`{bar}` {pct}%\n"
+                    f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
+                )
 
         return msg
 
@@ -935,6 +1157,7 @@ class ConversationService:
                 "🍽️ *Refeições*\n"
                 "• /hoje — resumo do dia\n"
                 "• /historico — histórico (até 30 dias)\n"
+                "• /registrar [data] — adicionar refeição de dia passado\n"
                 "• /deletar [refeição] — apagar refeição de hoje\n"
                 "• /desfazer — desfazer última refeição\n\n"
                 "💧 *Hidratação*\n"
@@ -961,6 +1184,7 @@ class ConversationService:
             "🍽️ *Refeições*\n"
             "• /hoje — resumo do dia\n"
             "• /historico — últimos 7 dias\n"
+            "• /registrar [data] — adicionar refeição de dia passado\n"
             "• /deletar [refeição] — apagar refeição de hoje\n"
             "• /desfazer — desfazer última refeição\n\n"
             "💧 *Hidratação*\n"
@@ -1345,6 +1569,54 @@ class ConversationService:
             f"👉 [Abrir agora]({link})\n\n"
             "⏱️ Link válido por *10 minutos*.\n"
             "📲 No celular, toque em *'Adicionar à tela inicial'* para instalar como app!"
+        )
+
+    async def _cmd_registrar(self, user: User, args: str | None, db: AsyncSession) -> str:
+        """Abre o fluxo de registro retroativo para um dia passado específico."""
+        tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+        today = datetime.now(tz).date()
+
+        if not args or not args.strip():
+            limit = _BACKDATE_LIMIT_PREMIUM if user.is_premium else _BACKDATE_LIMIT_FREE
+            return (
+                "📅 *Registro retroativo*\n\n"
+                "Me diz a data da refeição que quer adicionar:\n"
+                "• /registrar ontem\n"
+                "• /registrar anteontem\n"
+                "• /registrar 20/08\n\n"
+                f"Ou simplesmente me conta diretamente:\n"
+                "_'Ontem de manhã comi pão com ovo'_\n\n"
+                f"ℹ️ Limite: {limit} dias para o plano {'Premium' if user.is_premium else 'gratuito'}"
+            )
+
+        target = self._parse_date_from_args(args, user)
+        if target is None:
+            return (
+                "Não entendi a data 🤔\n\n"
+                "Exemplos:\n"
+                "• /registrar ontem\n"
+                "• /registrar anteontem\n"
+                "• /registrar 20/08\n"
+                "• /registrar dia 15"
+            )
+
+        err = self._check_backdate_limit(target, user)
+        if err:
+            return err
+
+        lbl = self._date_label(target, tz)
+        self._set_timed_state(user, "BACKDATING")
+        user.state_data = {"target_date": target.isoformat()}
+        flag_modified(user, "state_data")
+        await db.commit()
+
+        return (
+            f"📅 Ok! Vou registrar para *{lbl}*.\n\n"
+            "Me conta o que você comeu nesse dia.\n"
+            "Pode mandar por tipo de refeição:\n"
+            "_'Café da manhã: pão com ovo e café'_\n"
+            "_'Almoço: arroz, feijão e frango'_\n\n"
+            "• /cancelar — desistir"
         )
 
     async def _cmd_relatorios(self, user: User, args, db: AsyncSession) -> str:

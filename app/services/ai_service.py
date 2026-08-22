@@ -50,9 +50,17 @@ REGRAS OBRIGATÓRIAS:
    - dinner: jantar (jantar, janta, noite)
    - snack: lanche sem contexto claro de horário (use quando não for possível distinguir manhã/tarde)
    - other: qualquer refeição não classificável acima
+8. REFERÊNCIA DE DATA (date_offset / date_explicit):
+   - Se o usuário mencionar um dia passado, preencha date_offset ou date_explicit:
+   - "ontem", "ontem de manhã", "ontem à noite" → date_offset: -1
+   - "anteontem", "antes de ontem" → date_offset: -2
+   - "há 3 dias" → date_offset: -3
+   - "sexta", "sábado" (dias da semana passados) → calcule o offset em relação a hoje
+   - "dia 20", "20/08", "20 de agosto", "dia 15 à noite" → date_explicit: "20/08" (formato DD/MM)
+   - Se não houver referência de data passada → date_offset: 0 e date_explicit: null
 
 SCHEMA:
-{"foods":[{"name":"string","original_term":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other","meal_time_hint":"string|null","unrecognized_terms":[]}"""
+{"foods":[{"name":"string","original_term":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other","meal_time_hint":"string|null","unrecognized_terms":[],"date_offset":0,"date_explicit":null}"""
 
 SYSTEM_PROMPT_VISION = """Você é um assistente especializado em nutrição brasileira com visão computacional.
 Analise a foto de uma refeição e identifique os alimentos presentes.
