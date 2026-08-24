@@ -729,13 +729,13 @@ class TestCheckBackdateLimit:
         today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
         assert svc._check_backdate_limit(today - timedelta(days=1), user) is None
 
-    def test_oito_dias_free_bloqueado(self, svc):
+    def test_oito_dias_free_ok(self, svc):
+        # Restrição de dias removida temporariamente — free = sem limite efetivo
         user = _make_user(plan="free")
         from zoneinfo import ZoneInfo
         today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
         result = svc._check_backdate_limit(today - timedelta(days=8), user)
-        assert result is not None
-        assert "premium" in result.lower() or "Premium" in result
+        assert result is None
 
     def test_oito_dias_premium_ok(self, svc):
         user = _make_user(plan="premium")
@@ -744,13 +744,14 @@ class TestCheckBackdateLimit:
         today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
         assert svc._check_backdate_limit(today - timedelta(days=8), user) is None
 
-    def test_31_dias_premium_bloqueado(self, svc):
+    def test_31_dias_premium_ok(self, svc):
+        # Restrição de dias removida temporariamente — limite é 3650 dias
         user = _make_user(plan="premium")
         user.is_premium = True
         from zoneinfo import ZoneInfo
         today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
         result = svc._check_backdate_limit(today - timedelta(days=31), user)
-        assert result is not None
+        assert result is None
 
     def test_hoje_bloqueado(self, svc):
         user = _make_user()
@@ -784,15 +785,15 @@ class TestCmdRegistrar:
         assert "ontem" in result.lower()
 
     @pytest.mark.asyncio
-    async def test_data_fora_limite_free(self, svc):
+    async def test_data_10_dias_free_ok(self, svc):
+        # Restrição de dias removida — 10 dias atrás deve abrir fluxo normalmente
         user = _make_user(plan="free")
         db = _make_db()
         from zoneinfo import ZoneInfo
         today = datetime.now(ZoneInfo("America/Sao_Paulo")).date()
         alvo = (today - timedelta(days=10)).strftime("%d/%m")
         result = await svc._cmd_registrar(user, alvo, db)
-        assert user.conversation_state != "BACKDATING"
-        assert "premium" in result.lower() or "Premium" in result
+        assert user.conversation_state == "BACKDATING"
 
     @pytest.mark.asyncio
     async def test_data_futura_rejeitada(self, svc):
@@ -1004,8 +1005,8 @@ class TestNLPDateDetection:
         assert "target_date" not in (user.state_data or {})
 
     @pytest.mark.asyncio
-    async def test_free_user_date_offset_fora_do_limite(self, svc):
-        """Usuário free com date_offset=-8 recebe mensagem de limite."""
+    async def test_free_user_date_offset_8_dias_ok(self, svc):
+        """Restrição removida — usuário free com date_offset=-8 segue para confirmação."""
         user = _make_user(plan="free")
         db = _make_db()
 
@@ -1021,9 +1022,8 @@ class TestNLPDateDetection:
         ):
             result = await svc._run_meal_extraction("há 8 dias comi arroz", user, db)
 
-        assert "premium" in result.lower() or "Premium" in result
-        # Estado não deve ter mudado para CONFIRMING
-        assert user.conversation_state != "CONFIRMING"
+        # Sem restrição: deve seguir para confirmação normalmente
+        assert user.conversation_state == "CONFIRMING"
 
 
 class TestSaveConfirmedMealRetroativo:

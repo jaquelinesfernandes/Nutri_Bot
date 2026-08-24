@@ -105,8 +105,8 @@ class Settings(BaseSettings):
     # Rate limiting
     rate_limit_messages_per_minute: int = 10
     rate_limit_photos_per_hour: int = 10
-    free_tier_max_logs_per_day: int = 3
-    free_tier_history_days: int = 3
+    free_tier_max_logs_per_day: int = 999  # sem restrição efetiva (temporário)
+    free_tier_history_days: int = 30       # igualado ao Premium (temporário)
 
 
     @model_validator(mode="after")

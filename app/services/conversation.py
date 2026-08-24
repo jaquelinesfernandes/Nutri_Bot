@@ -69,8 +69,9 @@ _MEAL_DEFAULT_HOURS: dict[str, int] = {
 }
 
 # Limite de dias para registro retroativo (free / premium)
-_BACKDATE_LIMIT_FREE    = 7
-_BACKDATE_LIMIT_PREMIUM = 30
+# Temporariamente sem restrição — ambos os planos aceitam qualquer data passada
+_BACKDATE_LIMIT_FREE    = 3650   # ~10 anos — sem restrição efetiva
+_BACKDATE_LIMIT_PREMIUM = 3650
 
 MAINTENANCE_RESPONSE = (
     "Estou em manutenção no momento 🔧\n"
@@ -1183,7 +1184,7 @@ class ConversationService:
             "📋 *NutriBot — Comandos:*\n\n"
             "🍽️ *Refeições*\n"
             "• /hoje — resumo do dia\n"
-            "• /historico — últimos 7 dias\n"
+            "• /historico — histórico de refeições\n"
             "• /registrar [data] — adicionar refeição de dia passado\n"
             "• /deletar [refeição] — apagar refeição de hoje\n"
             "• /desfazer — desfazer última refeição\n\n"
@@ -1577,16 +1578,14 @@ class ConversationService:
         today = datetime.now(tz).date()
 
         if not args or not args.strip():
-            limit = _BACKDATE_LIMIT_PREMIUM if user.is_premium else _BACKDATE_LIMIT_FREE
             return (
                 "📅 *Registro retroativo*\n\n"
                 "Me diz a data da refeição que quer adicionar:\n"
                 "• /registrar ontem\n"
                 "• /registrar anteontem\n"
                 "• /registrar 20/08\n\n"
-                f"Ou simplesmente me conta diretamente:\n"
-                "_'Ontem de manhã comi pão com ovo'_\n\n"
-                f"ℹ️ Limite: {limit} dias para o plano {'Premium' if user.is_premium else 'gratuito'}"
+                "Ou simplesmente me conta diretamente:\n"
+                "_'Ontem de manhã comi pão com ovo'_"
             )
 
         target = self._parse_date_from_args(args, user)
