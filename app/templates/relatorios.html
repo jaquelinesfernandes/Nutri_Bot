@@ -229,6 +229,96 @@
     display: grid; place-items: center; flex-shrink: 0;
   }
 
+  /* ── Botão gerar relatório ───────────────────────────── */
+  .btn-generate {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 20px; border-radius: 12px; border: none;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    box-shadow: 0 2px 10px rgba(34,197,94,.35);
+    transition: opacity .14s, box-shadow .14s;
+    text-decoration: none;
+  }
+  .btn-generate:hover { opacity: .88; box-shadow: 0 4px 16px rgba(34,197,94,.45); }
+  .btn-generate svg { width: 15px; height: 15px; flex-shrink: 0; }
+
+  /* ── Modal ───────────────────────────────────────────── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); backdrop-filter: blur(3px);
+    z-index: 1000; align-items: center; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-box {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 20px; padding: 32px 28px;
+    width: min(420px, 92vw);
+    box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    animation: modal-in .18s ease;
+  }
+  @keyframes modal-in {
+    from { opacity: 0; transform: scale(.95) translateY(8px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+  .modal-title {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 20px; color: var(--text-1); margin-bottom: 6px;
+  }
+  .modal-desc { font-size: 13px; color: var(--text-2); margin-bottom: 24px; line-height: 1.5; }
+  .period-grid {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 10px; margin-bottom: 24px;
+  }
+  .period-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+    padding: 16px 12px; border-radius: 14px;
+    border: 2px solid var(--card-b);
+    background: var(--bg);
+    cursor: pointer; transition: border-color .14s, background .14s;
+    font-family: 'DM Sans', sans-serif;
+  }
+  .period-btn:hover { border-color: #22c55e; background: rgba(34,197,94,.06); }
+  .period-btn.selected {
+    border-color: #22c55e; background: rgba(34,197,94,.1);
+  }
+  .period-btn-icon { font-size: 24px; line-height: 1; }
+  .period-btn-label { font-size: 13px; font-weight: 600; color: var(--text-1); }
+  .period-btn-sub { font-size: 11px; color: var(--text-3); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  .btn-cancel {
+    padding: 9px 18px; border-radius: 10px;
+    border: 1px solid var(--card-b); background: none;
+    font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+    color: var(--text-2); cursor: pointer;
+    transition: background .12s;
+  }
+  .btn-cancel:hover { background: var(--bg); }
+  .btn-confirm {
+    padding: 9px 22px; border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: #fff; font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(34,197,94,.35);
+    transition: opacity .14s; display: flex; align-items: center; gap: 8px;
+  }
+  .btn-confirm:disabled { opacity: .55; cursor: not-allowed; }
+  .btn-confirm:hover:not(:disabled) { opacity: .88; }
+  .spinner {
+    width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.4);
+    border-top-color: #fff; border-radius: 50%;
+    animation: spin .6s linear infinite; display: none;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .modal-feedback {
+    margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+    font-size: 12.5px; display: none; line-height: 1.5;
+  }
+  .modal-feedback.success { background: rgba(34,197,94,.12); color: #16a34a; }
+  .modal-feedback.error   { background: rgba(239,68,68,.1);  color: #dc2626; }
+
   /* ── Responsive ──────────────────────────────────────── */
   @media (max-width: 640px) {
     .report-stats { grid-template-columns: 1fr 1fr; }
@@ -242,6 +332,7 @@
     .pg-header { flex-direction: column; gap: 12px; }
     .report-tabs { width: 100%; justify-content: stretch; }
     .report-tab { flex: 1; text-align: center; }
+    .period-grid { grid-template-columns: 1fr 1fr; }
   }
 </style>
 
@@ -251,11 +342,64 @@
     <div class="greeting">Relatórios</div>
     <div class="today-date">Análises nutricionais do seu histórico</div>
   </div>
-  <div class="report-tabs" role="tablist" aria-label="Filtrar por período">
-    <button class="report-tab active" data-filter="all" role="tab" aria-selected="true">Todos</button>
-    <button class="report-tab" data-filter="weekly" role="tab" aria-selected="false">Semanal</button>
-    <button class="report-tab" data-filter="monthly" role="tab" aria-selected="false">Mensal</button>
-    <button class="report-tab" data-filter="quarterly" role="tab" aria-selected="false">Trimestral</button>
+  <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+    {% if can_access_reports %}
+    <button class="btn-generate" id="btnGerarRelatorio" onclick="openGenerateModal()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M8 2v12M2 8h12"/>
+      </svg>
+      Gerar relatório
+    </button>
+    {% endif %}
+    <div class="report-tabs" role="tablist" aria-label="Filtrar por período">
+      <button class="report-tab active" data-filter="all" role="tab" aria-selected="true">Todos</button>
+      <button class="report-tab" data-filter="weekly" role="tab" aria-selected="false">Semanal</button>
+      <button class="report-tab" data-filter="monthly" role="tab" aria-selected="false">Mensal</button>
+      <button class="report-tab" data-filter="quarterly" role="tab" aria-selected="false">Trimestral</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal gerar relatório ──────────────────────────── -->
+<div class="modal-overlay" id="generateModal" role="dialog" aria-modal="true"
+     aria-labelledby="modalTitle" onclick="if(event.target===this)closeGenerateModal()">
+  <div class="modal-box">
+    <div class="modal-title" id="modalTitle">📊 Gerar relatório</div>
+    <p class="modal-desc">Escolha o período que deseja analisar. O PDF será gerado na hora e ficará disponível para download.</p>
+
+    <div class="period-grid" role="group" aria-label="Período do relatório">
+      <button class="period-btn selected" data-period="semana" onclick="selectPeriod(this)">
+        <span class="period-btn-icon">📅</span>
+        <span class="period-btn-label">Última semana</span>
+        <span class="period-btn-sub">7 dias</span>
+      </button>
+      <button class="period-btn" data-period="mes" onclick="selectPeriod(this)">
+        <span class="period-btn-icon">📆</span>
+        <span class="period-btn-label">Último mês</span>
+        <span class="period-btn-sub">mês atual</span>
+      </button>
+      <button class="period-btn" data-period="3meses" onclick="selectPeriod(this)">
+        <span class="period-btn-icon">📊</span>
+        <span class="period-btn-label">3 meses</span>
+        <span class="period-btn-sub">trimestre</span>
+      </button>
+      <button class="period-btn" data-period="total" onclick="selectPeriod(this)">
+        <span class="period-btn-icon">📈</span>
+        <span class="period-btn-label">Histórico total</span>
+        <span class="period-btn-sub">desde o início</span>
+      </button>
+    </div>
+
+    <div class="modal-feedback" id="modalFeedback"></div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeGenerateModal()">Cancelar</button>
+      <button class="btn-confirm" id="btnConfirm" onclick="confirmGenerate()">
+        <div class="spinner" id="confirmSpinner"></div>
+        <span id="confirmText">Gerar PDF</span>
+      </button>
+    </div>
   </div>
 </div>
 
@@ -395,7 +539,6 @@
   /* ── Filtro de abas ──────────────────────────────────── */
   document.querySelectorAll('.report-tab').forEach(tab => {
     tab.addEventListener('click', function () {
-      // Atualiza estado visual das abas
       document.querySelectorAll('.report-tab').forEach(t => {
         t.classList.remove('active');
         t.setAttribute('aria-selected', 'false');
@@ -405,11 +548,9 @@
 
       const filter = this.dataset.filter;
       document.querySelectorAll('.report-card').forEach(card => {
-        const match = filter === 'all' || card.dataset.type === filter;
-        card.style.display = match ? '' : 'none';
+        card.style.display = (filter === 'all' || card.dataset.type === filter) ? '' : 'none';
       });
 
-      // Mostra mensagem se nenhum resultado na aba
       const list = document.getElementById('reportsList');
       if (list) {
         const visible = [...list.querySelectorAll('.report-card')]
@@ -430,6 +571,94 @@
         }
       }
     });
+  });
+
+  /* ── Modal gerar relatório ───────────────────────────── */
+  let selectedPeriod = 'semana';
+
+  function openGenerateModal() {
+    document.getElementById('generateModal').classList.add('open');
+    document.getElementById('modalFeedback').style.display = 'none';
+    document.getElementById('modalFeedback').className = 'modal-feedback';
+    resetConfirmBtn();
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeGenerateModal() {
+    document.getElementById('generateModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function selectPeriod(btn) {
+    document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    selectedPeriod = btn.dataset.period;
+  }
+
+  function resetConfirmBtn() {
+    const btn = document.getElementById('btnConfirm');
+    const spinner = document.getElementById('confirmSpinner');
+    const text = document.getElementById('confirmText');
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    text.textContent = 'Gerar PDF';
+  }
+
+  async function confirmGenerate() {
+    const btn = document.getElementById('btnConfirm');
+    const spinner = document.getElementById('confirmSpinner');
+    const text = document.getElementById('confirmText');
+    const feedback = document.getElementById('modalFeedback');
+
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    text.textContent = 'Gerando…';
+    feedback.style.display = 'none';
+
+    try {
+      const res = await fetch('/api/reports/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ period: selectedPeriod }),
+        credentials: 'include',
+      });
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Erro ${res.status}`);
+      }
+
+      const data = await res.json();
+
+      // Inicia download automático
+      const a = document.createElement('a');
+      a.href = data.download_url;
+      a.download = '';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+
+      feedback.className = 'modal-feedback success';
+      feedback.textContent = '✅ Relatório gerado! O download começou automaticamente.';
+      feedback.style.display = 'block';
+      text.textContent = 'Gerar outro';
+      btn.disabled = false;
+      spinner.style.display = 'none';
+
+      // Recarrega a lista após 2s
+      setTimeout(() => { window.location.reload(); }, 2200);
+
+    } catch (err) {
+      feedback.className = 'modal-feedback error';
+      feedback.textContent = '❌ ' + err.message;
+      feedback.style.display = 'block';
+      resetConfirmBtn();
+    }
+  }
+
+  /* Fecha modal com Esc */
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeGenerateModal();
   });
 </script>
 {% endblock %}
