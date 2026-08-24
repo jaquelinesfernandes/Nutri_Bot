@@ -19,9 +19,6 @@ from app.utils.jwt import get_current_user
 
 router = APIRouter(prefix="/api/meals", tags=["meals"])
 
-_BACKDATE_LIMIT_FREE    = 7
-_BACKDATE_LIMIT_PREMIUM = 30
-
 
 async def _meals_for_date(
     user: User, target_date: date, db: AsyncSession
@@ -139,18 +136,7 @@ async def create_meal(
     if target > today:
         raise HTTPException(status_code=422, detail="Não é possível registrar refeições para datas futuras.")
 
-    limit = _BACKDATE_LIMIT_PREMIUM if current_user.is_premium else _BACKDATE_LIMIT_FREE
-    if (today - target).days > limit:
-        if not current_user.is_premium:
-            raise HTTPException(
-                status_code=422,
-                detail=f"No plano gratuito, registros retroativos são limitados a {_BACKDATE_LIMIT_FREE} dias. "
-                       "Faça upgrade para Premium para acessar até 30 dias.",
-            )
-        raise HTTPException(
-            status_code=422,
-            detail=f"Registros retroativos são limitados a {_BACKDATE_LIMIT_PREMIUM} dias.",
-        )
+    # Restrição de dias retroativos removida temporariamente — qualquer data passada é aceita
 
     # ── Extração via IA ────────────────────────────────────────────────────────
     try:

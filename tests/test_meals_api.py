@@ -215,10 +215,28 @@ class TestCreateMeal:
         assert r.status_code == 201
 
     @patch("app.routers.meals.datetime")
-    def test_rejeita_retroativo_alem_limite_free(self, mock_dt, free_user, db_mock):
-        """Free user não pode registrar >7 dias atrás."""
+    @patch("app.utils.crypto.encrypt", return_value=b"encrypted")
+    @patch("app.services.nutrition.nutrition_service")
+    @patch("app.services.ai_service.ai_service")
+    def test_aceita_retroativo_12_dias_free(
+        self, mock_ai, mock_nutrition, mock_encrypt, mock_dt, free_user, db_mock
+    ):
+        """Restrição removida — free user pode registrar qualquer data passada (ex: 12 dias)."""
+        import uuid as _uuid
+        meal_id = _uuid.uuid4()
         mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
         mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+
+        mock_ai.extract_foods_from_text = AsyncMock(
+            return_value=_make_extraction(
+                foods=[{"name": "Arroz", "quantity_g": 100, "kcal": 130}]
+            )
+        )
+        mock_nutrition.enrich_foods.return_value = [_make_enriched()]
+
+        result_mock = MagicMock()
+        result_mock.scalar_one.return_value = _make_meal_log_db(meal_id, free_user.id)
+        db_mock.execute = AsyncMock(return_value=result_mock)
 
         with _client_for(free_user, db_mock) as client:
             r = self._post(client, {
@@ -227,8 +245,7 @@ class TestCreateMeal:
                 "description": "arroz e feijão",
             })
 
-        assert r.status_code == 422
-        assert "gratuito" in r.json()["detail"].lower()
+        assert r.status_code == 201
 
     @patch("app.routers.meals.datetime")
     @patch("app.utils.crypto.encrypt", return_value=b"encrypted")
