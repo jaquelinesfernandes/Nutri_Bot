@@ -1622,16 +1622,16 @@ class ConversationService:
         from app.config import settings
         from app.models.weekly_report import WeeklyReport
 
-        if not user.is_premium and not settings.reports_open_beta:
+        if not user.can_access_reports and not settings.reports_open_beta:
+            from datetime import datetime as _dt
+            delta = (_dt.utcnow() - user.created_at.replace(tzinfo=None)).days
+            faltam = 7 - delta
             return (
-                "📊 *Relatórios — Premium*\n\n"
-                "Você recebe relatórios automáticos conforme a periodicidade configurada.\n"
-                "Ou solicite um agora:\n"
-                "• /relatorio semana — últimos 7 dias\n"
-                "• /relatorio mes — último mês\n"
-                "• /relatorio 3meses — últimos 3 meses\n"
-                "• /relatorio total — todo o histórico\n\n"
-                "👉 /premium para assinar"
+                "📊 *Relatórios*\n\n"
+                f"Seus relatórios serão liberados em {faltam} dia(s)! "
+                "Após 7 dias de cadastro você terá acesso completo. 🎉\n\n"
+                "Enquanto isso, continue registrando suas refeições para ter um relatório rico.\n\n"
+                "👉 Quer acesso imediato? /premium"
             )
 
         result = await db.execute(
@@ -1688,15 +1688,15 @@ class ConversationService:
         from app.services.notification import notification_service
         from app.services.report import report_service
 
-        if not user.is_premium and not settings.reports_open_beta:
+        if not user.can_access_reports and not settings.reports_open_beta:
+            from datetime import datetime as _dt
+            delta = (_dt.utcnow() - user.created_at.replace(tzinfo=None)).days
+            faltam = 7 - delta
             return (
-                "📊 *Relatórios sob demanda — Premium*\n\n"
-                "Assine o Premium para solicitar relatórios a qualquer momento:\n"
-                "• /relatorio semana\n"
-                "• /relatorio mes\n"
-                "• /relatorio 3meses\n"
-                "• /relatorio total\n\n"
-                "👉 /premium"
+                "📊 *Relatórios*\n\n"
+                f"Faltam {faltam} dia(s) para liberar seus relatórios! "
+                "Após 7 dias de cadastro você pode solicitar a qualquer momento. 🎉\n\n"
+                "👉 Quer acesso imediato? /premium"
             )
 
         arg = (args or "semana").strip().lower()

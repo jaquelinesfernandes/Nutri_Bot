@@ -74,5 +74,13 @@ class User(Base):
             return True
         return datetime.utcnow() < self.plan_expires_at.replace(tzinfo=None)
 
+    @property
+    def can_access_reports(self) -> bool:
+        """Acesso a relatórios: premium OU 7+ dias desde o cadastro."""
+        if self.is_premium:
+            return True
+        delta = datetime.utcnow() - self.created_at.replace(tzinfo=None)
+        return delta.days >= 7
+
     def __repr__(self) -> str:
         return f"<User channel_id={self.channel_id} plan={self.plan}>"

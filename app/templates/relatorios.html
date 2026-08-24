@@ -259,21 +259,39 @@
   </div>
 </div>
 
-<!-- ── CTA Premium ────────────────────────────────────── -->
-{% if not is_premium %}
+<!-- ── Aviso: aguardando 7 dias ───────────────────────── -->
+{% if not can_access_reports %}
+{% set days_since = ((now or user.created_at) | string) %}
+<div class="premium-cta card" style="border-left: 4px solid var(--accent, #22c55e);">
+  <div class="premium-cta-icon">📅</div>
+  <div class="premium-cta-body">
+    <div class="premium-cta-title">Relatórios liberados em breve!</div>
+    <div class="premium-cta-desc">
+      Após <strong>7 dias de cadastro</strong> seus relatórios são liberados automaticamente — sem precisar assinar nada.
+      Continue registrando suas refeições para ter um relatório completo. 🥗
+    </div>
+    <div class="premium-cta-perks">
+      <span class="premium-perk">✅ Grátis após 7 dias</span>
+      <span class="premium-perk">📊 PDF com análise</span>
+      <span class="premium-perk">🤖 Sugestões de IA</span>
+    </div>
+  </div>
+  <a href="/configuracoes" class="premium-cta-btn">Ver Premium →</a>
+</div>
+<!-- ── CTA Premium (só se não tiver acesso ainda) ────── -->
+{% elif not is_premium %}
 <div class="premium-cta card">
   <div class="premium-cta-icon">✨</div>
   <div class="premium-cta-body">
-    <div class="premium-cta-title">Desbloqueie relatórios completos</div>
+    <div class="premium-cta-title">Potencialize seus relatórios</div>
     <div class="premium-cta-desc">
-      Assine o Premium e receba análises detalhadas com gráficos,
-      histórico de macros e sugestões personalizadas de IA.
+      Com o Premium você recebe relatórios mensais, trimestrais e
+      sugestões personalizadas de IA toda semana.
     </div>
     <div class="premium-cta-perks">
-      <span class="premium-perk">📊 PDF com gráficos</span>
-      <span class="premium-perk">🤖 Sugestões de IA</span>
       <span class="premium-perk">📆 Relatório mensal</span>
       <span class="premium-perk">📈 Histórico completo</span>
+      <span class="premium-perk">🤖 IA personalizada</span>
     </div>
   </div>
   <a href="/configuracoes" class="premium-cta-btn">Ver Premium →</a>

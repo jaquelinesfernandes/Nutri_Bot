@@ -366,7 +366,9 @@ async def relatorios(
         request=request, name="relatorios.html",
         context={
             "user": user, "active": "relatorios",
-            "reports": reports, "is_premium": user.is_premium or settings.reports_open_beta,
+            "reports": reports,
+            "is_premium": user.is_premium or settings.reports_open_beta,
+            "can_access_reports": user.can_access_reports or settings.reports_open_beta,
         },
     )
 

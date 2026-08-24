@@ -38,6 +38,7 @@ def _make_user(
     user.plan_expires_at = None
     user.first_name = first_name
     user.is_premium = plan != "free"
+    user.can_access_reports = True  # created_at 2026-06-01 = 84 dias, libera automaticamente
     user.alerts_enabled = alerts_enabled
     user.report_frequency = report_frequency
     user.created_at = datetime(2026, 6, 1, tzinfo=__import__("zoneinfo").ZoneInfo("UTC"))
@@ -79,18 +80,42 @@ class TestCmdRelatorios:
         assert "/relatorio" in result
 
     @pytest.mark.asyncio
-    async def test_free_user_com_beta_fechado_recebe_cta(self, svc):
-        """Com reports_open_beta=False, usuário free recebe CTA de premium."""
+    async def test_free_user_novo_com_beta_fechado_recebe_contador(self, svc):
+        """Com reports_open_beta=False e cadastro < 7 dias, free recebe aviso com contador."""
         from app.config import settings as _cfg
+        from datetime import datetime, timedelta, timezone
 
         user = _make_user(plan="free")
+        # Simula usuário com 3 dias de cadastro — can_access_reports = False
+        user.created_at = datetime.now(timezone.utc) - timedelta(days=3)
+        user.can_access_reports = False
         db = _make_db()
 
         with patch.object(_cfg, "reports_open_beta", False):
             result = await svc._cmd_relatorios(user, None, db)
 
-        assert "Premium" in result or "premium" in result.lower()
+        # Deve mostrar countdown e link /premium
+        assert "dia" in result.lower()
         assert "/premium" in result
+
+    @pytest.mark.asyncio
+    async def test_free_user_7dias_com_beta_fechado_acessa(self, svc):
+        """Com reports_open_beta=False mas 7+ dias de cadastro, free user acessa relatórios."""
+        from app.config import settings as _cfg
+
+        user = _make_user(plan="free")
+        # created_at = 2026-06-01 → 84 dias → can_access_reports = True
+        user.can_access_reports = True
+        db = _make_db()
+        mock_result = MagicMock()
+        mock_result.scalars.return_value.all.return_value = []
+        db.execute.return_value = mock_result
+
+        with patch.object(_cfg, "reports_open_beta", False):
+            result = await svc._cmd_relatorios(user, None, db)
+
+        # Não deve bloquear — deve mostrar orientação de relatórios
+        assert "/relatorio" in result
 
     @pytest.mark.asyncio
     async def test_premium_sem_relatorios_orienta_domingo(self, svc):
