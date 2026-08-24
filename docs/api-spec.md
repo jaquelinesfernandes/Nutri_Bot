@@ -1,6 +1,6 @@
 # NutriBot — API Specification
 
-**Versão:** 1.1 | **Data:** Agosto 2026
+**Versão:** 1.2 | **Data:** Agosto 2026
 
 Todos os endpoints são assíncronos. A aplicação responde `200 OK` imediatamente em webhooks e processa em background task para evitar timeout.
 
@@ -271,10 +271,7 @@ Cria um registro de refeição manual via painel web. Usa o mesmo pipeline de IA
 
 **Regras de retroatividade:**
 
-| Plano | Limite máximo de dias passados |
-|---|---|
-| Gratuito | 7 dias |
-| Premium | 30 dias |
+Qualquer data passada é aceita — **sem limite de dias** (free e premium igualados). Apenas datas futuras são rejeitadas.
 
 **Responses:**
 
@@ -282,7 +279,7 @@ Cria um registro de refeição manual via painel web. Usa o mesmo pipeline de IA
 |---|---|
 | `201` | Criado com sucesso — retorna `MealLogRead` com `food_items` |
 | `401` | Não autenticado |
-| `422` | Data futura / além do limite / nenhum alimento identificado / descrição inválida |
+| `422` | Data futura / nenhum alimento identificado / descrição inválida |
 | `503` | Serviço de IA temporariamente indisponível |
 
 **Response 201:**
@@ -323,7 +320,98 @@ Remove um registro de refeição do usuário autenticado.
 
 ---
 
-## 4. Endpoints REST — Autenticação
+## 4. Endpoints REST — Relatórios
+
+Autenticação: JWT em cookie `httpOnly`. Todas as rotas retornam `401` se ausente ou inválido.
+
+**Acesso:** usuários com plano Premium **ou** com cadastro ≥ 7 dias têm acesso a relatórios (`User.can_access_reports`). Open beta (`REPORTS_OPEN_BETA=true`) libera para todos.
+
+---
+
+### GET /api/reports
+
+Lista os relatórios gerados pelo usuário (máx. 20, ordenados por data desc).
+
+**Response 200:**
+```json
+[
+  {
+    "id": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+    "week_start_date": "2026-08-17",
+    "period_type": "weekly",
+    "generated_at": "2026-08-24T20:00:00",
+    "has_pdf": true
+  }
+]
+```
+
+---
+
+### POST /api/reports/generate
+
+Gera um novo relatório sob demanda e retorna o arquivo diretamente.
+
+**Request body:**
+```json
+{ "period": "semana" }
+```
+
+| Valor de `period` | Período gerado |
+|---|---|
+| `semana` / `week` / `7dias` | Últimos 7 dias |
+| `mes` / `mês` / `month` | Do 1º dia do mês atual até hoje |
+| `3meses` / `trimestre` | Últimos 3 meses (início do mês) |
+| `total` / `all` | Da data de cadastro até hoje |
+
+**Comportamento:**
+- Salva **um único** `WeeklyReport` no banco.
+- Retorna o PDF (ou HTML se WeasyPrint indisponível) diretamente no body — sem redirect.
+
+**Responses:**
+
+| Código | Condição |
+|---|---|
+| `201` | PDF gerado — `Content-Type: application/pdf`, `Content-Disposition: attachment` |
+| `401` | Não autenticado |
+| `403` | Cadastro com menos de 7 dias e sem plano Premium |
+| `422` | `period` inválido / período sem dados |
+| `503` | Erro interno ao gerar relatório |
+
+---
+
+### GET /api/reports/{report_id}/download
+
+Re-renderiza e faz download de um relatório existente **sem** criar novo registro no banco.
+
+**Path param:** `report_id` — UUID do relatório.
+
+**Responses:**
+
+| Código | Condição |
+|---|---|
+| `200` | PDF/HTML do relatório — `Content-Disposition: attachment` |
+| `401` | Não autenticado |
+| `404` | Relatório não encontrado ou de outro usuário |
+
+---
+
+### DELETE /api/reports
+
+Remove **todos** os relatórios do usuário autenticado.
+
+**Response 200:**
+```json
+{ "deleted": 5, "message": "5 relatório(s) removido(s)." }
+```
+
+| Código | Condição |
+|---|---|
+| `200` | Sucesso (mesmo se não havia relatórios — `deleted: 0`) |
+| `401` | Não autenticado |
+
+---
+
+## 5. Endpoints REST — Autenticação
 
 ### POST /api/auth/register
 
@@ -340,7 +428,7 @@ Limpa o cookie de sessão.
 
 ---
 
-## 5. Interfaces Internas dos Services
+## 6. Interfaces Internas dos Services
 
 Estas não são rotas HTTP — são contratos internos entre módulos Python, documentados aqui para referência da equipe.
 
@@ -469,7 +557,7 @@ class NotificationService:
 
 ---
 
-## 4. Schema de Respostas da IA (Pydantic)
+## 7. Schema de Respostas da IA (Pydantic)
 
 ```python
 # app/schemas/ai_response.py
@@ -507,17 +595,17 @@ class ReportSuggestionsResponse(BaseModel):
 
 ---
 
-## 6. Códigos de Resposta HTTP
+## 8. Códigos de Resposta HTTP
 
 | Código | Usado em | Significado |
 |--------|----------|-------------|
-| 200 | Todos os webhooks | Recebido com sucesso (mesmo se processamento posterior falhar) |
-| 201 | `POST /api/meals` | Refeição criada com sucesso |
+| 200 | Webhooks, `DELETE /api/reports` | Recebido / operação concluída com sucesso |
+| 201 | `POST /api/meals`, `POST /api/reports/generate` | Recurso criado com sucesso |
 | 204 | `DELETE /api/meals/{id}` | Refeição deletada com sucesso (sem body) |
 | 401 | Endpoints REST autenticados | JWT ausente ou inválido |
-| 403 | Webhooks com assinatura | Assinatura inválida |
-| 404 | `DELETE /api/meals/{id}` | Refeição não encontrada ou de outro usuário |
-| 422 | Validação Pydantic / regras de negócio | Payload malformado, data futura, além do limite de retroatividade, IA sem alimentos |
-| 503 | `/health`, `POST /api/meals` | Serviço degradado ou IA indisponível |
+| 403 | Webhooks com assinatura, `POST /api/reports/generate` | Assinatura inválida ou acesso negado (cadastro < 7 dias sem Premium) |
+| 404 | `DELETE /api/meals/{id}`, `GET /api/reports/{id}/download` | Recurso não encontrado ou de outro usuário |
+| 422 | Validação Pydantic / regras de negócio | Payload malformado, data futura, IA sem alimentos, período inválido |
+| 503 | `/health`, `POST /api/meals`, `POST /api/reports/generate` | Serviço degradado ou IA indisponível |
 
 > **Regra:** Nunca retornar 5xx para webhooks de parceiros (Telegram, Evolution API, Mercado Pago). Eles fazem retry automático em erros 5xx, o que pode causar processamento duplicado. Sempre retornar 200 e tratar erros internamente.

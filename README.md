@@ -8,7 +8,7 @@
 ![Anthropic](https://img.shields.io/badge/Claude-Haiku%204.5-D4A017?logo=anthropic&logoColor=white)
 ![Status](https://img.shields.io/badge/status-beta%20aberto-brightgreen)
 ![Cobertura](https://img.shields.io/badge/cobertura-72%25-brightgreen)
-![Testes](https://img.shields.io/badge/testes-289%20passing-brightgreen)
+![Testes](https://img.shields.io/badge/testes-290%20passing-brightgreen)
 ![Security](https://img.shields.io/badge/security-auditado-blue)
 
 ---
@@ -38,11 +38,12 @@ O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de f
 | Reconhecimento de foto (Claude Vision) | Telegram / WhatsApp | ✅ Implementado |
 | Transcrição de áudio (Whisper) | Telegram / WhatsApp | ✅ Implementado |
 | Fluxo de confirmação de refeição | Telegram / WhatsApp | ✅ Implementado |
-| **Registro retroativo pelo bot** (`/registrar` + NLP) | Telegram / WhatsApp | ✅ Implementado |
-| **Entrada manual de refeições no painel web** | Dashboard | ✅ Implementado |
+| **Registro retroativo pelo bot** (`/registrar` + NLP) — sem limite de dias | Telegram / WhatsApp | ✅ Implementado |
+| **Entrada manual de refeições no painel web** — sem limite de dias | Dashboard | ✅ Implementado |
 | Alertas proativos por janela de refeição | Telegram / WhatsApp | ✅ Implementado |
 | Meta de calorias diária configurável | — | ✅ Implementado |
-| Relatório PDF semanal com sugestões IA | — | ✅ Implementado |
+| **Relatório PDF sob demanda** — bot e painel web (liberado após 7 dias) | Bot + Dashboard | ✅ Implementado |
+| **Painel de relatórios** — gerar, baixar e limpar relatórios | Dashboard | ✅ Implementado |
 | Onboarding guiado | Telegram / WhatsApp | ✅ Implementado |
 | Rastreamento de água | — | ✅ Implementado |
 | Planos (Freemium / Premium) + pagamento | MercadoPago | ✅ Implementado |
@@ -269,6 +270,7 @@ Resumo dos passos:
 | **Sprint 4** | Relatório PDF semanal · sugestões IA · histórico | ✅ Concluído |
 | **Sprint 5** | Onboarding · UX polish · dashboard web · beta fechado | ✅ Concluído |
 | **Sprint 6** | Deploy Render + Neon · UptimeRobot · auditoria de segurança · beta aberto | ✅ Concluído |
+| **Post-6** | Registro retroativo sem limite · relatórios pelo painel (gerar/limpar) · acesso automático após 7 dias | ✅ Concluído |
 | **Fase 2** | Painel B2B para nutricionistas (R$ 79,90/mês) | 🗓️ Próxima |
 | **Fase 3** | App nativo / Web | 🗓️ Planejado |
 
@@ -277,7 +279,7 @@ Resumo dos passos:
 ## 🧪 Testes
 
 ```powershell
-# Suite completa (289 testes, cobertura 72%)
+# Suite completa (290 testes, cobertura 72%)
 pytest
 
 # Com cobertura detalhada
@@ -298,7 +300,7 @@ pytest tests/test_meals_api.py -v
 - ✅ > 80% de acurácia no reconhecimento textual — top 500 alimentos TACO
 - ✅ > 75% de acurácia no reconhecimento por foto
 - ✅ Alertas entregues em < 2 min em 99% dos casos
-- ✅ Cobertura de testes ≥ 55% (atual: 72% · 289 testes)
+- ✅ Cobertura de testes ≥ 55% (atual: 72% · 290 testes)
 
 ---
 
@@ -338,7 +340,8 @@ python scripts/expand_taco.py
 | `/registrar [data]` | Adicionar refeição de dia passado (ex: `/registrar ontem`, `/registrar 20/08`) |
 | `/meta` | Configurar meta de calorias |
 | `/agua` | Registrar consumo de água |
-| `/relatorio` | Gerar relatório PDF sob demanda |
+| `/relatorio [semana\|mes\|3meses\|total]` | Gerar relatório PDF sob demanda (liberado após 7 dias de cadastro) |
+| `/relatorios` | Listar relatórios gerados |
 | `/deletar` | Remover última refeição |
 | `/ping` | Verificar se o bot está online |
 | `/privacidade` | Informações LGPD e seus dados |
@@ -403,7 +406,7 @@ O NutriBot lida com **dados sensíveis de saúde** (LGPD Art. 11 — comportamen
 
 ### Registro retroativo de refeições
 
-Usuários podem registrar refeições de dias passados de três formas:
+Usuários podem registrar refeições de dias passados de três formas — **sem limite de dias** (free e premium igualados):
 
 **1. Linguagem natural no bot** — basta mencionar a data na mensagem:
 ```
@@ -427,13 +430,34 @@ Usuários podem registrar refeições de dias passados de três formas:
 - Processamento IA (TACO/USDA) igual ao bot
 - Resultado aparece na lista sem recarregar a página
 
-**Limites de retroatividade:**
-
-| Plano | Limite |
-|---|---|
-| Gratuito | 7 dias |
-| Premium | 30 dias |
+> **Retroatividade:** sem limite de dias em todos os planos (qualquer data passada é aceita).
 
 ---
 
-*NutriBot · Agosto 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude · Sprint 6 ✅ · Beta aberto*
+### Relatórios nutricionais
+
+**Acesso automático após 7 dias de cadastro** — sem precisar de plano Premium.
+
+**Pelo bot (Telegram):**
+```
+/relatorio semana   → últimos 7 dias
+/relatorio mes      → mês atual
+/relatorio 3meses   → trimestre
+/relatorio total    → todo o histórico
+/relatorios         → lista de relatórios gerados
+```
+
+**Pelo painel web (`/relatorios`):**
+
+| Botão | Função |
+|---|---|
+| **Gerar relatório** | Abre modal com 4 opções de período → gera PDF → download automático |
+| **Limpar** | Remove todos os relatórios (confirmação obrigatória) |
+
+Cada relatório inclui: médias de kcal e macros, aderência à meta, tabela por dia/semana e sugestões personalizadas de IA.
+
+> **Novo usuário (< 7 dias):** mensagem de contagem regressiva no bot e banner informativo no painel. Acesso imediato disponível com plano Premium.
+
+---
+
+*NutriBot · Agosto 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude · Sprint 6 ✅ + Post-6 ✅ · Beta aberto*
