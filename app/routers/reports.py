@@ -7,7 +7,7 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import Response as FastAPIResponse
 from pydantic import BaseModel
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
@@ -173,3 +173,17 @@ async def download_report(
         media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+@router.delete("", status_code=200)
+async def clear_reports(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    """Remove todos os relatórios do usuário logado."""
+    result = await db.execute(
+        delete(WeeklyReport).where(WeeklyReport.user_id == current_user.id)
+    )
+    await db.commit()
+    deleted = result.rowcount
+    return {"deleted": deleted, "message": f"{deleted} relatório(s) removido(s)."}

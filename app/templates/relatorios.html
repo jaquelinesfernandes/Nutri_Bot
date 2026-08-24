@@ -319,6 +319,29 @@
   .modal-feedback.success { background: rgba(34,197,94,.12); color: #16a34a; }
   .modal-feedback.error   { background: rgba(239,68,68,.1);  color: #dc2626; }
 
+  /* ── Botão limpar ────────────────────────────────────── */
+  .btn-clear {
+    display: inline-flex; align-items: center; gap: 7px;
+    padding: 9px 16px; border-radius: 12px;
+    border: 1.5px solid rgba(239,68,68,.35);
+    background: rgba(239,68,68,.06);
+    color: #ef4444;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 600;
+    cursor: pointer; white-space: nowrap;
+    transition: background .14s, border-color .14s;
+  }
+  .btn-clear:hover { background: rgba(239,68,68,.12); border-color: rgba(239,68,68,.6); }
+  .btn-clear svg { width: 14px; height: 14px; flex-shrink: 0; }
+
+  /* ── Modal limpar (confirmar exclusão) ───────────────── */
+  .modal-danger .modal-title { color: #ef4444; }
+  .modal-danger .btn-confirm-danger {
+    background: linear-gradient(135deg, #ef4444, #dc2626);
+    box-shadow: 0 2px 8px rgba(239,68,68,.35);
+  }
+  .modal-danger .btn-confirm-danger:hover:not(:disabled) { opacity: .88; }
+
   /* ── Responsive ──────────────────────────────────────── */
   @media (max-width: 640px) {
     .report-stats { grid-template-columns: 1fr 1fr; }
@@ -351,6 +374,15 @@
       </svg>
       Gerar relatório
     </button>
+    {% if reports %}
+    <button class="btn-clear" onclick="openClearModal()">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M2 4h12M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1M6 7v5M10 7v5M3 4l1 9a1 1 0 001 1h6a1 1 0 001-1l1-9"/>
+      </svg>
+      Limpar
+    </button>
+    {% endif %}
     {% endif %}
     <div class="report-tabs" role="tablist" aria-label="Filtrar por período">
       <button class="report-tab active" data-filter="all" role="tab" aria-selected="true">Todos</button>
@@ -398,6 +430,26 @@
       <button class="btn-confirm" id="btnConfirm" onclick="confirmGenerate()">
         <div class="spinner" id="confirmSpinner"></div>
         <span id="confirmText">Gerar PDF</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal confirmar limpeza ────────────────────────── -->
+<div class="modal-overlay modal-danger" id="clearModal" role="dialog" aria-modal="true"
+     onclick="if(event.target===this)closeClearModal()">
+  <div class="modal-box">
+    <div class="modal-title">🗑️ Limpar relatórios</div>
+    <p class="modal-desc">
+      Todos os seus relatórios serão <strong>excluídos permanentemente</strong>.
+      Você pode gerar novos a qualquer momento usando o botão "Gerar relatório".
+    </p>
+    <div class="modal-feedback" id="clearFeedback"></div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeClearModal()">Cancelar</button>
+      <button class="btn-confirm btn-confirm-danger" id="btnClearConfirm" onclick="confirmClear()">
+        <div class="spinner" id="clearSpinner"></div>
+        <span id="clearText">Excluir tudo</span>
       </button>
     </div>
   </div>
@@ -658,9 +710,61 @@
     }
   }
 
-  /* Fecha modal com Esc */
+  /* ── Modal limpar relatórios ─────────────────────────── */
+  function openClearModal() {
+    const fb = document.getElementById('clearFeedback');
+    fb.style.display = 'none'; fb.className = 'modal-feedback';
+    const btn = document.getElementById('btnClearConfirm');
+    btn.disabled = false;
+    document.getElementById('clearSpinner').style.display = 'none';
+    document.getElementById('clearText').textContent = 'Excluir tudo';
+    document.getElementById('clearModal').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closeClearModal() {
+    document.getElementById('clearModal').classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  async function confirmClear() {
+    const btn = document.getElementById('btnClearConfirm');
+    const spinner = document.getElementById('clearSpinner');
+    const text = document.getElementById('clearText');
+    const fb = document.getElementById('clearFeedback');
+
+    btn.disabled = true;
+    spinner.style.display = 'block';
+    text.textContent = 'Excluindo…';
+
+    try {
+      const res = await fetch('/api/reports', {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Erro ${res.status}`);
+      }
+      const data = await res.json();
+      fb.className = 'modal-feedback success';
+      fb.textContent = '✅ ' + data.message;
+      fb.style.display = 'block';
+      text.textContent = 'Concluído';
+      setTimeout(() => { window.location.reload(); }, 1400);
+    } catch (err) {
+      fb.className = 'modal-feedback error';
+      fb.textContent = '❌ ' + err.message;
+      fb.style.display = 'block';
+      btn.disabled = false;
+      spinner.style.display = 'none';
+      text.textContent = 'Excluir tudo';
+    }
+  }
+
+  /* Fecha modais com Esc */
   document.addEventListener('keydown', e => {
-    if (e.key === 'Escape') closeGenerateModal();
+    if (e.key === 'Escape') { closeGenerateModal(); closeClearModal(); }
   });
 </script>
 {% endblock %}
