@@ -183,6 +183,7 @@ class ReportService:
         end_date: date,
         period_type: str,
         db: AsyncSession,
+        save: bool = True,
     ) -> tuple[bytes, str]:
         """
         Generate a nutritional report for [start_date, end_date).
@@ -336,16 +337,17 @@ class ReportService:
             file_bytes = html.encode("utf-8")
             ext = "html"
 
-        report = WeeklyReport(
-            user_id=user.id,
-            week_start_date=start_date,
-            period_type=period_type,
-            period_end_date=end_date - timedelta(days=1),
-            summary_json=json.dumps(week_summary, ensure_ascii=False),
-            delivered_at=datetime.now(ZoneInfo("UTC")),
-        )
-        db.add(report)
-        await db.commit()
+        if save:
+            report = WeeklyReport(
+                user_id=user.id,
+                week_start_date=start_date,
+                period_type=period_type,
+                period_end_date=end_date - timedelta(days=1),
+                summary_json=json.dumps(week_summary, ensure_ascii=False),
+                delivered_at=datetime.now(ZoneInfo("UTC")),
+            )
+            db.add(report)
+            await db.commit()
 
         logger.info(
             f"[REPORT] Gerado para {user.channel_id} — {period_type} {start_date}→{end_date} ({ext})"

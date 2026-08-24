@@ -64,47 +64,45 @@ async def list_reports(
     ]
 
 
-@router.post("/generate", response_model=GenerateReportResponse, status_code=201)
+def _resolve_period(period: str, created_at_date: date) -> tuple[date, date, str]:
+    """Converte o slug de período em (start, end, period_type)."""
+    today = date.today()
+    if period in ("semana", "week", "7dias"):
+        return today - timedelta(days=7), today, "weekly"
+    if period in ("mes", "mês", "month", "30dias"):
+        return today.replace(day=1), today, "monthly"
+    if period in ("3meses", "trimestre", "90dias", "quarter"):
+        m = today.month - 3
+        y = today.year + (m - 1) // 12
+        m = ((m - 1) % 12) + 1
+        return today.replace(year=y, month=m, day=1), today, "quarterly"
+    if period in ("total", "all"):
+        return created_at_date, today, "custom"
+    raise ValueError(period)
+
+
+@router.post("/generate", status_code=201)
 async def generate_report(
     body: GenerateReportRequest,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
-) -> GenerateReportResponse:
-    """Gera um novo relatório sob demanda a partir do painel web."""
+) -> FastAPIResponse:
+    """Gera um novo relatório sob demanda e retorna o PDF diretamente."""
     from app.config import settings
     from app.services.report import report_service
 
-    # Verifica acesso (7 dias de cadastro ou premium ou open_beta)
     if not current_user.can_access_reports and not settings.reports_open_beta:
         raise HTTPException(
             status_code=403,
             detail="Relatórios disponíveis após 7 dias de cadastro ou com plano Premium.",
         )
 
-    today = date.today()
-    period = body.period.strip().lower()
-
-    if period in ("semana", "week", "7dias"):
-        start = today - timedelta(days=7)
-        end = today
-        period_type = "weekly"
-    elif period in ("mes", "mês", "month", "30dias"):
-        start = today.replace(day=1)
-        end = today
-        period_type = "monthly"
-    elif period in ("3meses", "trimestre", "90dias", "quarter"):
-        m = today.month - 3
-        y = today.year + (m - 1) // 12
-        m = ((m - 1) % 12) + 1
-        start = today.replace(year=y, month=m, day=1)
-        end = today
-        period_type = "quarterly"
-    elif period in ("total", "all"):
-        # Do início do cadastro até hoje
-        start = current_user.created_at.date()
-        end = today
-        period_type = "custom"
-    else:
+    try:
+        start, end, period_type = _resolve_period(
+            body.period.strip().lower(),
+            current_user.created_at.date(),
+        )
+    except ValueError:
         raise HTTPException(
             status_code=422,
             detail="Período inválido. Use: semana, mes, 3meses ou total.",
@@ -117,12 +115,14 @@ async def generate_report(
         )
 
     try:
-        _bytes, ext = await report_service.generate_report(
+        # save=True → salva o WeeklyReport no DB (único registro criado)
+        file_bytes, ext = await report_service.generate_report(
             user=current_user,
             start_date=start,
             end_date=end,
             period_type=period_type,
             db=db,
+            save=True,
         )
     except Exception as exc:
         raise HTTPException(
@@ -130,26 +130,13 @@ async def generate_report(
             detail="Erro ao gerar relatório. Tente novamente em instantes.",
         ) from exc
 
-    # Recupera o WeeklyReport recém-criado para retornar o ID
-    result = await db.execute(
-        select(WeeklyReport)
-        .where(
-            WeeklyReport.user_id == current_user.id,
-            WeeklyReport.week_start_date == start,
-        )
-        .order_by(WeeklyReport.generated_at.desc())
-        .limit(1)
-    )
-    report = result.scalar_one_or_none()
-    if not report:
-        raise HTTPException(status_code=500, detail="Relatório gerado mas não encontrado.")
-
-    return GenerateReportResponse(
-        report_id=report.id,
-        period_type=period_type,
-        start_date=start.isoformat(),
-        end_date=end.isoformat(),
-        download_url=f"/api/reports/{report.id}/download",
+    media_type = "application/pdf" if ext == "pdf" else "text/html"
+    filename = f"nutribot_relatorio_{start}_{period_type}.{ext}"
+    # Retorna o arquivo diretamente — sem segunda requisição, sem duplicata
+    return FastAPIResponse(
+        content=file_bytes,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 
@@ -170,12 +157,14 @@ async def download_report(
         raise HTTPException(status_code=404, detail="Relatório não encontrado")
 
     from app.services.report import report_service
+    # save=False: apenas re-renderiza o PDF sem criar novo registro no DB
     file_bytes, ext = await report_service.generate_report(
         user=current_user,
         start_date=report.week_start_date,
         end_date=report.period_end_date or (report.week_start_date + timedelta(days=7)),
         period_type=report.period_type or "weekly",
         db=db,
+        save=False,
     )
     media_type = "application/pdf" if ext == "pdf" else "text/html"
     filename = f"nutribot_relatorio_{report.week_start_date}.{ext}"

@@ -628,15 +628,17 @@
         throw new Error(err.detail || `Erro ${res.status}`);
       }
 
-      const data = await res.json();
-
-      // Inicia download automático
+      // Resposta é o PDF diretamente — cria blob URL para download
+      const blob = await res.blob();
+      const ext = blob.type === 'application/pdf' ? 'pdf' : 'html';
+      const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
-      a.href = data.download_url;
-      a.download = '';
+      a.href = url;
+      a.download = `nutribot_relatorio_${selectedPeriod}.${ext}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
 
       feedback.className = 'modal-feedback success';
       feedback.textContent = '✅ Relatório gerado! O download começou automaticamente.';
@@ -645,7 +647,7 @@
       btn.disabled = false;
       spinner.style.display = 'none';
 
-      // Recarrega a lista após 2s
+      // Recarrega a lista após 2,2s para mostrar o novo relatório
       setTimeout(() => { window.location.reload(); }, 2200);
 
     } catch (err) {
