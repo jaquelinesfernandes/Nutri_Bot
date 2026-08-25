@@ -1,50 +1,318 @@
 {% extends "base.html" %}
 {% block title %}Entrar — NutriBot{% endblock %}
 {% block body %}
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-slate-100 px-4">
-  <div class="w-full max-w-md">
-    <div class="text-center mb-8">
-      <div class="text-5xl mb-3">🥗</div>
-      <h1 class="text-3xl font-bold text-slate-800">NutriBot</h1>
-      <p class="text-slate-500 mt-1">Acompanhamento nutricional inteligente</p>
+<style>
+  .auth-wrap {
+    min-height: 100dvh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 16px;
+    background: var(--surface);
+  }
+  .auth-col {
+    width: 100%;
+    max-width: 440px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  /* ── Cabeçalho ─────────────────────────────── */
+  .auth-logo {
+    text-align: center;
+    padding-bottom: 4px;
+  }
+  .auth-logo .icon { font-size: 2.6rem; line-height: 1; display: block; }
+  .auth-logo h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.75rem; color: var(--text-1);
+    margin: 8px 0 4px;
+  }
+  .auth-logo p { font-size: .875rem; color: var(--text-2); margin: 0; }
+
+  /* ── Card compartilhado ─────────────────────── */
+  .auth-card {
+    background: var(--card);
+    border: 1px solid var(--card-b);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    padding: 32px 28px;
+  }
+
+  /* ── Bloco Telegram (opção principal) ────────── */
+  .tg-primary {
+    background: linear-gradient(135deg, #1E1B4B 0%, #13113D 100%);
+    border-color: rgba(99,102,241,.3);
+  }
+  .tg-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .tg-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: rgba(99,102,241,.35);
+    color: #A5B4FC;
+    border: 1px solid rgba(99,102,241,.4);
+    border-radius: 20px;
+    font-size: .7rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    padding: 3px 10px;
+  }
+  .tg-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #E0DEFF;
+    margin: 0 0 4px;
+  }
+  .tg-subtitle { font-size: .8rem; color: rgba(255,255,255,.45); margin: 0; }
+
+  .tg-steps {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+  .tg-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: .875rem;
+    color: rgba(255,255,255,.75);
+    line-height: 1.4;
+  }
+  .tg-num {
+    flex-shrink: 0;
+    width: 22px; height: 22px;
+    background: rgba(99,102,241,.5);
+    border: 1px solid rgba(99,102,241,.6);
+    border-radius: 50%;
+    color: #A5B4FC;
+    font-size: .7rem; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .tg-cmd {
+    display: inline-block;
+    background: rgba(99,102,241,.3);
+    color: #A5B4FC;
+    font-family: 'DM Mono', monospace;
+    font-size: .8rem;
+    padding: 1px 7px; border-radius: 5px;
+    border: 1px solid rgba(99,102,241,.3);
+  }
+  .tg-open-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 13px;
+    background: linear-gradient(135deg, #6366F1, #4F46E5);
+    color: #fff;
+    font-size: .9rem; font-weight: 600;
+    border: none; border-radius: 12px;
+    cursor: pointer;
+    text-decoration: none;
+    transition: opacity .15s, transform .1s;
+    box-shadow: 0 4px 14px rgba(99,102,241,.4);
+  }
+  .tg-open-btn:hover { opacity: .92; }
+  .tg-open-btn:active { transform: scale(.98); }
+
+  /* ── Divisor ─────────────────────────────────── */
+  .or-divider {
+    display: flex; align-items: center; gap: 12px;
+    font-size: .8rem; color: var(--text-3);
+  }
+  .or-divider::before,
+  .or-divider::after {
+    content: ''; flex: 1;
+    height: 1px; background: var(--card-b);
+  }
+
+  /* ── Formulário email/senha ──────────────────── */
+  .auth-form-title {
+    font-size: .8rem; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--text-2); margin-bottom: 16px;
+  }
+  .field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .field label {
+    font-size: .8rem; font-weight: 600;
+    color: var(--text-2); letter-spacing: .03em;
+  }
+  .field input {
+    padding: 11px 14px;
+    background: var(--surface);
+    color: var(--text-1);
+    border: 1px solid var(--card-b);
+    border-radius: 10px;
+    font-size: .9rem;
+    font-family: 'DM Sans', sans-serif;
+    outline: none;
+    transition: border-color .15s;
+  }
+  .field input:focus { border-color: var(--primary); }
+  .field input::placeholder { color: var(--text-3); }
+
+  .field-row {
+    display: flex; justify-content: space-between; align-items: center; gap: 8px;
+    margin-bottom: 5px;
+  }
+  .field-row label { font-size: .8rem; font-weight: 600; color: var(--text-2); }
+  .forgot-link {
+    font-size: .78rem; color: var(--primary);
+    text-decoration: none; white-space: nowrap;
+  }
+  .forgot-link:hover { text-decoration: underline; }
+
+  .auth-btn {
+    width: 100%;
+    padding: 13px;
+    background: var(--primary);
+    color: #fff;
+    font-size: .9rem; font-weight: 600;
+    border: none; border-radius: 12px;
+    cursor: pointer;
+    transition: background .15s, transform .1s;
+    font-family: 'DM Sans', sans-serif;
+    margin-top: 6px;
+  }
+  .auth-btn:hover { background: var(--primary-d); }
+  .auth-btn:active { transform: scale(.98); }
+
+  /* ── Alertas ─────────────────────────────────── */
+  .alert {
+    border-radius: 10px; padding: 10px 14px;
+    font-size: .85rem; margin-bottom: 16px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .alert-error {
+    background: rgba(239,68,68,.08);
+    border: 1px solid rgba(239,68,68,.25);
+    color: #ef4444;
+  }
+  .alert-success {
+    background: rgba(99,102,241,.08);
+    border: 1px solid rgba(99,102,241,.25);
+    color: var(--primary);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .alert-error { color: #fca5a5; }
+    :root:not([data-theme="light"]) .alert-success { color: #a5b4fc; }
+  }
+  :root[data-theme="dark"] .alert-error { color: #fca5a5; }
+  :root[data-theme="dark"] .alert-success { color: #a5b4fc; }
+
+  /* ── Footer ─────────────────────────────────── */
+  .auth-footer {
+    text-align: center;
+    font-size: .85rem; color: var(--text-2);
+  }
+  .auth-footer a { color: var(--primary); text-decoration: none; font-weight: 500; }
+  .auth-footer a:hover { text-decoration: underline; }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-col">
+
+    <!-- Logo -->
+    <div class="auth-logo">
+      <span class="icon">🌿</span>
+      <h1>NutriBot</h1>
+      <p>Acompanhamento nutricional inteligente</p>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-8">
-      <h2 class="text-xl font-semibold text-slate-700 mb-6">Entrar na plataforma</h2>
-
-      {% if error %}
-      <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-        {{ error }}
+    <!-- ── Opção 1: Telegram (recomendada) ───────── -->
+    <div class="auth-card tg-primary">
+      <div class="tg-header">
+        <span class="tg-badge">✨ Recomendado</span>
       </div>
+      <p class="tg-title">Entrar via Telegram</p>
+      <p class="tg-subtitle">Sem precisar lembrar senha — receba um link direto no chat</p>
+
+      <div class="tg-steps" style="margin-top:14px">
+        <div class="tg-step">
+          <div class="tg-num">1</div>
+          <span>Abra o NutriBot no Telegram</span>
+        </div>
+        <div class="tg-step">
+          <div class="tg-num">2</div>
+          <span>Envie o comando <span class="tg-cmd">/painel</span></span>
+        </div>
+        <div class="tg-step">
+          <div class="tg-num">3</div>
+          <span>Clique no link que o bot vai enviar — você já estará logado</span>
+        </div>
+      </div>
+
+      <a href="https://t.me/NutriBotOficialBot" target="_blank" rel="noopener" class="tg-open-btn">
+        <svg style="width:18px;height:18px;flex-shrink:0" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.894 8.221l-1.97 9.28c-.145.658-.537.818-1.084.508l-3-2.21-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.12L7.22 14.48l-2.96-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.928.08z"/>
+        </svg>
+        Abrir Telegram
+      </a>
+    </div>
+
+    <!-- ── Divisor ──────────────────────────────── -->
+    <div class="or-divider">ou entre com e-mail e senha</div>
+
+    <!-- ── Opção 2: Email + senha ──────────────── -->
+    <div class="auth-card">
+      {% if error %}
+      <div class="alert alert-error">⚠️ {{ error }}</div>
+      {% endif %}
+      {% if success %}
+      <div class="alert alert-success">✅ {{ success }}</div>
       {% endif %}
 
-      <form method="post" action="/auth/login-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">E-mail</label>
-          <input type="email" name="email" required autocomplete="email"
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
+      <form method="post" action="/auth/login-form">
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" name="email" required
+                 autocomplete="email" inputmode="email"
+                 placeholder="seu@email.com"/>
         </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">Senha</label>
-          <input type="password" name="password" required autocomplete="current-password"
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
-        </div>
-        <button type="submit"
-          class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
-          Entrar
-        </button>
-      </form>
 
-      <p class="mt-6 text-center text-sm text-slate-500">
-        Não tem conta?
-        <a href="/cadastro" class="text-brand-600 hover:underline font-medium">Criar conta</a>
-      </p>
+        <div>
+          <div class="field-row">
+            <label for="password">Senha</label>
+            <a href="/esqueci-senha" class="forgot-link">Esqueceu a senha?</a>
+          </div>
+          <input type="password" id="password" name="password" required
+                 autocomplete="current-password"
+                 placeholder="••••••"
+                 style="width:100%;padding:11px 14px;background:var(--surface);color:var(--text-1);
+                        border:1px solid var(--card-b);border-radius:10px;font-size:.9rem;
+                        font-family:inherit;outline:none;transition:border-color .15s"/>
+        </div>
+
+        <button type="submit" class="auth-btn" style="margin-top:18px">Entrar</button>
+      </form>
     </div>
 
-    <p class="text-center text-xs text-slate-400 mt-6">
-      Também disponível no
-      <a href="https://t.me/NutriBotOficialBot" class="underline">Telegram</a>
+    <!-- Footer -->
+    <p class="auth-footer">
+      Não tem conta? <a href="/cadastro">Criar conta gratuita</a>
     </p>
+
   </div>
 </div>
+
+<script>
+  /* Foco automático: se há erro no formulário, foca o campo e-mail */
+  {% if error %}
+  document.getElementById('email')?.focus();
+  {% endif %}
+  /* Melhora foco visual nos inputs de password via JS (o CSS inline não tem :focus) */
+  document.querySelectorAll('input[type=password]').forEach(el => {
+    el.addEventListener('focus', () => el.style.borderColor = 'var(--primary)');
+    el.addEventListener('blur',  () => el.style.borderColor = 'var(--card-b)');
+  });
+</script>
 {% endblock %}

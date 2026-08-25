@@ -49,6 +49,63 @@
   </div>
 </div>
 
+{% if user.channel_type != 'telegram' %}
+<!-- ── Banner: vincular Telegram ─────────────────────── -->
+<div id="tgBanner" style="
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  flex-wrap:wrap;
+  background:linear-gradient(135deg,#1E1B4B 0%,#13113D 100%);
+  border:1px solid rgba(99,102,241,.3);
+  border-radius:16px; padding:14px 18px; margin-bottom:20px;
+">
+  <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0">
+    <span style="font-size:1.5rem;flex-shrink:0;line-height:1.3">🔗</span>
+    <div>
+      <div style="font-size:.875rem;font-weight:600;color:#E0DEFF;margin-bottom:3px">
+        Vincule seu Telegram para aproveitar tudo
+      </div>
+      <div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.4">
+        Receba alertas de refeição e relatórios direto no chat — sem abrir o painel.
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
+    <a href="/vincular-telegram" style="
+      display:inline-flex;align-items:center;gap:5px;
+      padding:8px 14px;background:linear-gradient(135deg,#6366F1,#4F46E5);
+      color:#fff;font-size:.8rem;font-weight:600;
+      border-radius:8px;text-decoration:none;
+      transition:opacity .15s;white-space:nowrap;
+    " onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">
+      Vincular agora
+    </a>
+    <button onclick="dismissTgBanner()" style="
+      background:none;border:none;cursor:pointer;
+      color:rgba(255,255,255,.35);font-size:1.2rem;line-height:1;
+      padding:4px 6px;border-radius:6px;
+      transition:color .15s;
+    " title="Fechar" onmouseover="this.style.color='rgba(255,255,255,.65)'"
+      onmouseout="this.style.color='rgba(255,255,255,.35)'">×</button>
+  </div>
+</div>
+<script>
+  (function() {
+    try {
+      if (localStorage.getItem('tg_banner_dismissed') === '1') {
+        var b = document.getElementById('tgBanner');
+        if (b) b.style.display = 'none';
+      }
+    } catch(e) {}
+  })();
+  function dismissTgBanner() {
+    try { localStorage.setItem('tg_banner_dismissed', '1'); } catch(e) {}
+    var b = document.getElementById('tgBanner');
+    if (b) { b.style.transition = 'opacity .25s'; b.style.opacity = '0';
+              setTimeout(function(){ b.style.display='none'; }, 250); }
+  }
+</script>
+{% endif %}
+
 <!-- ── S1: Resumo de hoje ─────────────────────────────── -->
 <div class="sect-label">Resumo de hoje</div>
 <div class="today-grid">

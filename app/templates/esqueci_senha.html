@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+{% block title %}Recuperar acesso — NutriBot{% endblock %}
+{% block body %}
+<style>
+  .auth-wrap {
+    min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px; background: var(--surface);
+  }
+  .auth-col { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 20px; }
+
+  .auth-logo { text-align: center; }
+  .auth-logo .icon { font-size: 2.4rem; display: block; line-height: 1; }
+  .auth-logo h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem; color: var(--text-1); margin: 8px 0 4px;
+  }
+  .auth-logo p { font-size: .875rem; color: var(--text-2); margin: 0; }
+
+  .auth-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 20px; box-shadow: var(--shadow-md); padding: 32px 28px;
+  }
+  .card-title { font-size: 1rem; font-weight: 600; color: var(--text-1); margin-bottom: 8px; }
+  .card-desc { font-size: .875rem; color: var(--text-2); margin-bottom: 24px; line-height: 1.5; }
+
+  /* ── Estado de sucesso ──────────────────────── */
+  .success-box {
+    text-align: center; padding: 8px 0;
+  }
+  .success-icon { font-size: 3rem; margin-bottom: 12px; display: block; }
+  .success-title {
+    font-size: 1.1rem; font-weight: 600; color: var(--text-1); margin-bottom: 8px;
+  }
+  .success-text { font-size: .875rem; color: var(--text-2); line-height: 1.55; }
+  .success-note {
+    margin-top: 16px; padding: 12px 14px;
+    background: var(--primary-lt); border: 1px solid rgba(99,102,241,.2); border-radius: 10px;
+    font-size: .8rem; color: var(--text-2); line-height: 1.5;
+  }
+
+  /* ── Formulário ─────────────────────────────── */
+  .field { margin-bottom: 16px; }
+  .field label { display: block; font-size: .8rem; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+  .field input {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface); color: var(--text-1);
+    border: 1px solid var(--card-b); border-radius: 10px;
+    font-size: .9rem; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color .15s;
+  }
+  .field input:focus { border-color: var(--primary); }
+  .field input::placeholder { color: var(--text-3); }
+
+  .auth-btn {
+    width: 100%; padding: 13px;
+    background: var(--primary); color: #fff;
+    font-size: .9rem; font-weight: 600;
+    border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s, transform .1s; margin-top: 4px;
+  }
+  .auth-btn:hover { background: var(--primary-d); }
+  .auth-btn:active { transform: scale(.98); }
+
+  /* ── Alternativa Telegram ───────────────────── */
+  .tg-alt {
+    background: linear-gradient(135deg, #1E1B4B 0%, #13113D 100%);
+    border-color: rgba(99,102,241,.3);
+    border-radius: 16px; padding: 20px 22px;
+    border: 1px solid rgba(99,102,241,.3);
+  }
+  .tg-alt-title { font-size: .85rem; font-weight: 600; color: #E0DEFF; margin-bottom: 8px; }
+  .tg-alt-desc { font-size: .8rem; color: rgba(255,255,255,.5); margin-bottom: 14px; line-height: 1.4; }
+  .tg-cmd {
+    display: inline-block;
+    background: rgba(99,102,241,.3); color: #A5B4FC;
+    font-family: 'DM Mono', monospace; font-size: .8rem;
+    padding: 1px 7px; border-radius: 5px; border: 1px solid rgba(99,102,241,.3);
+  }
+  .tg-btn {
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    width: 100%; padding: 11px;
+    background: linear-gradient(135deg, #6366F1, #4F46E5);
+    color: #fff; font-size: .85rem; font-weight: 600;
+    border: none; border-radius: 10px; cursor: pointer;
+    text-decoration: none; font-family: 'DM Sans', sans-serif;
+    transition: opacity .15s;
+  }
+  .tg-btn:hover { opacity: .9; }
+
+  .auth-footer { text-align: center; font-size: .85rem; color: var(--text-2); }
+  .auth-footer a { color: var(--primary); text-decoration: none; font-weight: 500; }
+  .auth-footer a:hover { text-decoration: underline; }
+
+  /* ── Divisor ─────────────────────────────────── */
+  .or-divider {
+    display: flex; align-items: center; gap: 12px;
+    font-size: .8rem; color: var(--text-3);
+  }
+  .or-divider::before, .or-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--card-b);
+  }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-col">
+
+    <div class="auth-logo">
+      <span class="icon">🔐</span>
+      <h1>NutriBot</h1>
+      <p>Recuperar acesso à conta</p>
+    </div>
+
+    {% if sent %}
+    <!-- ── Estado: e-mail enviado ──────────────── -->
+    <div class="auth-card">
+      <div class="success-box">
+        <span class="success-icon">📬</span>
+        <div class="success-title">Link enviado para o Telegram!</div>
+        <p class="success-text">
+          Se o e-mail informado estiver cadastrado e vinculado a um Telegram,
+          você receberá um link de acesso no chat em instantes.
+        </p>
+        <div class="success-note">
+          ⏱️ O link expira em <strong>30 minutos</strong>. Se não receber, verifique se o e-mail
+          está correto ou tente entrar pelo Telegram usando <span class="tg-cmd">/painel</span>.
+        </div>
+      </div>
+    </div>
+
+    {% else %}
+    <!-- ── Formulário de recuperação ──────────── -->
+    <div class="auth-card">
+      <div class="card-title">Recuperar acesso</div>
+      <p class="card-desc">
+        Informe o e-mail da sua conta. Se ele estiver vinculado ao seu Telegram,
+        enviaremos um link de acesso direto no chat.
+      </p>
+
+      <form method="post" action="/auth/esqueci-senha">
+        <div class="field">
+          <label for="email">E-mail cadastrado</label>
+          <input type="email" id="email" name="email" required
+                 autocomplete="email" inputmode="email"
+                 placeholder="seu@email.com" autofocus/>
+        </div>
+        <button type="submit" class="auth-btn">Enviar link de acesso</button>
+      </form>
+    </div>
+
+    <div class="or-divider">ou acesse diretamente</div>
+
+    <!-- ── Alternativa: abrir Telegram agora ─── -->
+    <div class="tg-alt">
+      <div class="tg-alt-title">📱 Entrar sem senha via Telegram</div>
+      <p class="tg-alt-desc">
+        Se você usa o NutriBot no Telegram, basta enviar <span class="tg-cmd">/painel</span>
+        e o bot gera um link de acesso instantâneo — sem precisar de senha.
+      </p>
+      <a href="https://t.me/NutriBotOficialBot" target="_blank" rel="noopener" class="tg-btn">
+        Abrir Telegram
+      </a>
+    </div>
+    {% endif %}
+
+    <p class="auth-footer">
+      Lembrou a senha? <a href="/login">Voltar ao login</a>
+    </p>
+
+  </div>
+</div>
+{% endblock %}

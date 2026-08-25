@@ -1,58 +1,315 @@
 {% extends "base.html" %}
 {% block title %}Criar conta — NutriBot{% endblock %}
 {% block body %}
-<div class="min-h-screen flex items-center justify-center bg-gradient-to-br from-green-50 to-slate-100 px-4 py-8">
-  <div class="w-full max-w-md">
-    <div class="text-center mb-8">
-      <div class="text-5xl mb-3">🥗</div>
-      <h1 class="text-3xl font-bold text-slate-800">NutriBot</h1>
-      <p class="text-slate-500 mt-1">Crie sua conta gratuitamente</p>
+<style>
+  .auth-wrap {
+    min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+    background: var(--surface);
+  }
+  .auth-col { width: 100%; max-width: 440px; display: flex; flex-direction: column; gap: 18px; }
+
+  .auth-logo { text-align: center; }
+  .auth-logo .icon { font-size: 2.4rem; line-height: 1; display: block; }
+  .auth-logo h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem; color: var(--text-1); margin: 8px 0 4px;
+  }
+  .auth-logo p { font-size: .875rem; color: var(--text-2); margin: 0; }
+
+  .auth-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 20px; box-shadow: var(--shadow-md); padding: 28px 26px;
+  }
+  .card-title {
+    font-size: .8rem; font-weight: 600; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--text-2); margin-bottom: 20px;
+  }
+
+  .alert {
+    border-radius: 10px; padding: 10px 14px;
+    font-size: .85rem; margin-bottom: 16px;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+  .alert-error {
+    background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.25); color: #ef4444;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .alert-error { color: #fca5a5; }
+  }
+  :root[data-theme="dark"] .alert-error { color: #fca5a5; }
+
+  .field { margin-bottom: 14px; }
+  .field label {
+    display: block; font-size: .8rem; font-weight: 600;
+    color: var(--text-2); margin-bottom: 5px;
+  }
+  .field label .opt { color: var(--text-3); font-weight: 400; margin-left: 4px; }
+  .field input, .field select {
+    width: 100%; padding: 11px 14px;
+    background: var(--surface); color: var(--text-1);
+    border: 1px solid var(--card-b); border-radius: 10px;
+    font-size: .9rem; font-family: 'DM Sans', sans-serif;
+    outline: none; transition: border-color .15s; -webkit-appearance: none;
+  }
+  .field input:focus, .field select:focus { border-color: var(--primary); }
+  .field input::placeholder { color: var(--text-3); }
+  .field .hint { font-size: .75rem; color: var(--text-3); margin-top: 4px; }
+
+  .field-row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+
+  /* ── Calculadora TDEE ─────────────────────── */
+  .tdee-toggle {
+    display: flex; align-items: center; gap: 8px;
+    width: 100%; padding: 11px 14px;
+    background: var(--primary-lt); color: var(--primary);
+    border: 1px dashed rgba(99,102,241,.35);
+    border-radius: 10px; font-size: .85rem; font-weight: 500;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background .15s; margin-bottom: 14px;
+    text-align: left;
+  }
+  .tdee-toggle:hover { background: rgba(99,102,241,.12); }
+  .tdee-toggle .arrow { margin-left: auto; transition: transform .2s; font-size: 1rem; }
+  .tdee-toggle.open .arrow { transform: rotate(180deg); }
+
+  .tdee-panel {
+    display: none; margin-bottom: 14px;
+    background: var(--primary-lt); border: 1px solid rgba(99,102,241,.15);
+    border-radius: 12px; padding: 18px 16px;
+  }
+  .tdee-panel.open { display: block; }
+  .tdee-panel-title {
+    font-size: .78rem; font-weight: 600; letter-spacing: .05em;
+    text-transform: uppercase; color: var(--primary); margin-bottom: 14px;
+  }
+  .tdee-result {
+    margin-top: 14px; padding: 12px 14px;
+    background: var(--card); border: 1px solid var(--card-b); border-radius: 10px;
+    display: none;
+  }
+  .tdee-result.show { display: block; }
+  .tdee-result-val {
+    font-family: 'DM Serif Display', serif; font-size: 1.5rem; color: var(--primary);
+  }
+  .tdee-result-lbl { font-size: .8rem; color: var(--text-2); margin-top: 2px; }
+  .tdee-apply-btn {
+    width: 100%; margin-top: 10px; padding: 10px;
+    background: var(--primary); color: #fff;
+    font-size: .85rem; font-weight: 600; border: none; border-radius: 8px;
+    cursor: pointer; font-family: 'DM Sans', sans-serif;
+    transition: background .15s;
+  }
+  .tdee-apply-btn:hover { background: var(--primary-d); }
+
+  .auth-btn {
+    width: 100%; padding: 13px;
+    background: var(--primary); color: #fff;
+    font-size: .9rem; font-weight: 600;
+    border: none; border-radius: 12px; cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    transition: background .15s, transform .1s; margin-top: 4px;
+  }
+  .auth-btn:hover { background: var(--primary-d); }
+  .auth-btn:active { transform: scale(.98); }
+
+  .auth-footer { text-align: center; font-size: .85rem; color: var(--text-2); }
+  .auth-footer a { color: var(--primary); text-decoration: none; font-weight: 500; }
+  .auth-footer a:hover { text-decoration: underline; }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-col">
+
+    <div class="auth-logo">
+      <span class="icon">🌿</span>
+      <h1>NutriBot</h1>
+      <p>Crie sua conta gratuitamente</p>
     </div>
 
-    <div class="bg-white rounded-2xl shadow-lg p-8">
-      <h2 class="text-xl font-semibold text-slate-700 mb-6">Criar conta</h2>
+    <div class="auth-card">
+      <div class="card-title">Criar conta</div>
 
       {% if error %}
-      <div class="mb-4 px-4 py-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-        {{ error }}
-      </div>
+      <div class="alert alert-error">⚠️ {{ error }}</div>
       {% endif %}
 
-      <form method="post" action="/auth/register-form" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">Nome</label>
-          <input type="text" name="name" required
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">E-mail</label>
-          <input type="email" name="email" required autocomplete="email"
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">Senha</label>
-          <input type="password" name="password" required minlength="6" autocomplete="new-password"
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
-          <p class="text-xs text-slate-400 mt-1">Mínimo 6 caracteres</p>
-        </div>
-        <div>
-          <label class="block text-sm font-medium text-slate-600 mb-1">
-            Meta calórica diária <span class="text-slate-400">(opcional)</span>
-          </label>
-          <input type="number" name="daily_calorie_goal" min="800" max="5000" placeholder="ex: 2000"
-            class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand-500 text-sm"/>
-        </div>
-        <button type="submit"
-          class="w-full bg-brand-600 hover:bg-brand-700 text-white font-semibold py-2.5 rounded-lg transition-colors text-sm">
-          Criar conta
-        </button>
-      </form>
+      <form method="post" action="/auth/register-form" id="regForm">
 
-      <p class="mt-6 text-center text-sm text-slate-500">
-        Já tem conta?
-        <a href="/login" class="text-brand-600 hover:underline font-medium">Entrar</a>
-      </p>
+        <div class="field">
+          <label for="name">Como prefere ser chamado(a)?</label>
+          <input type="text" id="name" name="name" required autocomplete="given-name"
+                 placeholder="Ex: Ana"/>
+        </div>
+
+        <div class="field">
+          <label for="email">E-mail</label>
+          <input type="email" id="email" name="email" required
+                 autocomplete="email" inputmode="email"
+                 placeholder="seu@email.com"/>
+        </div>
+
+        <div class="field">
+          <label for="password">Senha</label>
+          <input type="password" id="password" name="password" required
+                 minlength="6" autocomplete="new-password"
+                 placeholder="Mínimo 6 caracteres"/>
+          <p class="hint">Mínimo 6 caracteres</p>
+        </div>
+
+        <!-- Meta calórica manual -->
+        <div class="field">
+          <label for="daily_calorie_goal">
+            Meta calórica diária <span class="opt">(opcional)</span>
+          </label>
+          <input type="number" id="daily_calorie_goal" name="daily_calorie_goal"
+                 min="800" max="6000" placeholder="Ex: 2000"/>
+          <p class="hint">Em kcal. Pode definir depois nas configurações.</p>
+        </div>
+
+        <!-- Calculadora TDEE -->
+        <button type="button" class="tdee-toggle" id="tdeeToggle">
+          🧮 Não sabe sua meta? Calcule aqui
+          <span class="arrow">▼</span>
+        </button>
+
+        <div class="tdee-panel" id="tdeePanel">
+          <div class="tdee-panel-title">Calculadora de gasto calórico (TDEE)</div>
+
+          <div class="field-row-2">
+            <div class="field" style="margin-bottom:0">
+              <label for="t_peso">Peso (kg)</label>
+              <input type="number" id="t_peso" min="30" max="300" step="0.5" placeholder="70"/>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label for="t_altura">Altura (cm)</label>
+              <input type="number" id="t_altura" min="100" max="250" placeholder="170"/>
+            </div>
+          </div>
+
+          <div class="field-row-2" style="margin-top:10px">
+            <div class="field" style="margin-bottom:0">
+              <label for="t_idade">Idade</label>
+              <input type="number" id="t_idade" min="10" max="120" placeholder="28"/>
+            </div>
+            <div class="field" style="margin-bottom:0">
+              <label for="t_sexo">Sexo biológico</label>
+              <select id="t_sexo">
+                <option value="">Selecione</option>
+                <option value="m">Masculino</option>
+                <option value="f">Feminino</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field" style="margin-top:10px">
+            <label for="t_ativ">Nível de atividade</label>
+            <select id="t_ativ">
+              <option value="">Selecione</option>
+              <option value="1.2">Sedentário (sem exercício)</option>
+              <option value="1.375">Levemente ativo (1–3x/semana)</option>
+              <option value="1.55">Moderadamente ativo (3–5x/semana)</option>
+              <option value="1.725">Muito ativo (6–7x/semana)</option>
+              <option value="1.9">Extremamente ativo (atleta / 2x/dia)</option>
+            </select>
+          </div>
+
+          <div class="field" style="margin-top:6px">
+            <label for="t_obj">Objetivo</label>
+            <select id="t_obj">
+              <option value="0">Manter peso atual</option>
+              <option value="-300">Perder peso (−300 kcal/dia)</option>
+              <option value="-500">Perder peso mais rápido (−500 kcal/dia)</option>
+              <option value="300">Ganhar massa muscular (+300 kcal/dia)</option>
+            </select>
+          </div>
+
+          <div class="tdee-result" id="tdeeResult">
+            <div class="tdee-result-val" id="tdeeVal">—</div>
+            <div class="tdee-result-lbl" id="tdeeLbl">kcal/dia recomendadas</div>
+            <button type="button" class="tdee-apply-btn" id="tdeeApply">
+              ✅ Usar essa meta
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="auth-btn">Criar conta</button>
+      </form>
     </div>
+
+    <p class="auth-footer">
+      Já tem conta? <a href="/login">Entrar</a>
+    </p>
+
   </div>
 </div>
+
+<script>
+  /* ── Toggle da calculadora ───────────────────────── */
+  const toggle = document.getElementById('tdeeToggle');
+  const panel  = document.getElementById('tdeePanel');
+  toggle.addEventListener('click', () => {
+    const open = panel.classList.toggle('open');
+    toggle.classList.toggle('open', open);
+  });
+
+  /* ── Cálculo TDEE (Harris-Benedict revisado) ─────── */
+  function calcTDEE() {
+    const peso  = parseFloat(document.getElementById('t_peso').value);
+    const alt   = parseFloat(document.getElementById('t_altura').value);
+    const idade = parseFloat(document.getElementById('t_idade').value);
+    const sexo  = document.getElementById('t_sexo').value;
+    const ativ  = parseFloat(document.getElementById('t_ativ').value);
+    const obj   = parseInt(document.getElementById('t_obj').value, 10) || 0;
+    const result = document.getElementById('tdeeResult');
+
+    if (!peso || !alt || !idade || !sexo || !ativ) {
+      result.classList.remove('show');
+      return;
+    }
+
+    let bmr;
+    if (sexo === 'm') {
+      bmr = 88.362 + (13.397 * peso) + (4.799 * alt) - (5.677 * idade);
+    } else {
+      bmr = 447.593 + (9.247 * peso) + (3.098 * alt) - (4.330 * idade);
+    }
+    const tdee = Math.round((bmr * ativ + obj) / 50) * 50;
+
+    document.getElementById('tdeeVal').textContent = tdee + ' kcal';
+    const objLabels = {
+      '0': 'para manter o peso',
+      '-300': 'para perda moderada de peso',
+      '-500': 'para perda acelerada de peso',
+      '300': 'para ganho de massa muscular',
+    };
+    document.getElementById('tdeeLbl').textContent =
+      'kcal/dia ' + (objLabels[String(obj)] || 'recomendadas');
+    result.classList.add('show');
+
+    document.getElementById('tdeeApply').dataset.val = tdee;
+  }
+
+  ['t_peso','t_altura','t_idade','t_sexo','t_ativ','t_obj'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', calcTDEE);
+    document.getElementById(id)?.addEventListener('change', calcTDEE);
+  });
+
+  document.getElementById('tdeeApply').addEventListener('click', function() {
+    const val = this.dataset.val;
+    if (val) {
+      document.getElementById('daily_calorie_goal').value = val;
+      panel.classList.remove('open');
+      toggle.classList.remove('open');
+      document.getElementById('daily_calorie_goal').focus();
+    }
+  });
+
+  /* ── Foco visual nos inputs (complementa CSS inline) ── */
+  document.querySelectorAll('input,select').forEach(el => {
+    el.addEventListener('focus', () => el.style.borderColor = 'var(--primary)');
+    el.addEventListener('blur',  () => el.style.borderColor = 'var(--card-b)');
+  });
+</script>
 {% endblock %}

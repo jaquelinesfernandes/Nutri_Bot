@@ -43,7 +43,10 @@ async def register(
     # Rate limit: 5 registros por IP por hora (evita criação em massa)
     client_ip = request.client.host if request.client else "unknown"
     if not await rate_limiter.is_allowed(f"register:{client_ip}", max_requests=5, window_seconds=3600):
-        raise HTTPException(status_code=429, detail="Muitas tentativas. Tente em 1 hora.")
+        wait = await rate_limiter.get_wait_seconds(f"register:{client_ip}", 3600)
+        mins, secs = divmod(wait, 60)
+        msg = f"Muitas tentativas de cadastro. Aguarde {mins}min {secs:02d}s." if mins else f"Muitas tentativas de cadastro. Aguarde {wait}s."
+        raise HTTPException(status_code=429, detail=msg)
 
     # Verifica e-mail duplicado
     existing = await db.execute(select(User).where(User.email == body.email))
@@ -79,7 +82,10 @@ async def login(
     # Rate limit: 5 tentativas por IP por 5 minutos (anti-brute-force)
     client_ip = request.client.host if request.client else "unknown"
     if not await rate_limiter.is_allowed(f"login:{client_ip}", max_requests=5, window_seconds=300):
-        raise HTTPException(status_code=429, detail="Muitas tentativas. Tente em 5 minutos.")
+        wait = await rate_limiter.get_wait_seconds(f"login:{client_ip}", 300)
+        mins, secs = divmod(wait, 60)
+        msg = f"Muitas tentativas. Aguarde {mins}min {secs:02d}s." if mins else f"Muitas tentativas. Aguarde {wait}s."
+        raise HTTPException(status_code=429, detail=msg)
 
     result = await db.execute(select(User).where(User.email == body.email))
     user = result.scalar_one_or_none()

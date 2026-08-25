@@ -95,9 +95,24 @@ async def root():
 
 # ── Auth (formulários HTML) ────────────────────────────────────────────────────
 
+_MAGIC_ERROR_MSGS: dict[str, str] = {
+    "link_invalido": "Link de acesso inválido.",
+    "link_expirado": "Link de acesso expirado. Solicite um novo pelo Telegram (/painel).",
+    "usuario_nao_encontrado": "Usuário não encontrado ou conta desativada.",
+}
+
+
 @router.get("/login", response_class=HTMLResponse)
-async def login_page(request: Request):
-    return templates.TemplateResponse(request=request, name="login.html")
+async def login_page(
+    request: Request,
+    error: str | None = None,
+    success: str | None = None,
+):
+    error_msg = _MAGIC_ERROR_MSGS.get(error, error) if error else None
+    return templates.TemplateResponse(
+        request=request, name="login.html",
+        context={"error": error_msg, "success": success},
+    )
 
 
 @router.post("/auth/login-form", response_class=HTMLResponse)
@@ -108,18 +123,44 @@ async def login_form(
     db: AsyncSession = Depends(get_db),
 ):
     from app.config import settings as cfg
+    from app.utils.rate_limiter import rate_limiter
+
+    client_ip = request.client.host if request.client else "unknown"
+    if not await rate_limiter.is_allowed(f"login:{client_ip}", max_requests=5, window_seconds=300):
+        wait = await rate_limiter.get_wait_seconds(f"login:{client_ip}", 300)
+        mins, secs = divmod(wait, 60)
+        msg = f"Muitas tentativas. Aguarde {mins}min {secs:02d}s." if mins else f"Muitas tentativas. Aguarde {wait}s."
+        return templates.TemplateResponse(
+            request=request, name="login.html",
+            context={"error": msg},
+            status_code=429,
+        )
+
     result = await db.execute(select(User).where(User.email == email))
     user = result.scalar_one_or_none()
-    if not user or not user.password_hash or not pwd_context.verify(password, user.password_hash):
+
+    if not user or not user.password_hash:
+        pwd_context.dummy_verify()
         return templates.TemplateResponse(
             request=request, name="login.html",
             context={"error": "E-mail ou senha incorretos"},
             status_code=401,
         )
+    if not pwd_context.verify(password, user.password_hash):
+        return templates.TemplateResponse(
+            request=request, name="login.html",
+            context={"error": "E-mail ou senha incorretos"},
+            status_code=401,
+        )
+    if user.deleted_at is not None:
+        return templates.TemplateResponse(
+            request=request, name="login.html",
+            context={"error": "Conta desativada. Entre em contato com o suporte."},
+            status_code=403,
+        )
+
     token = create_access_token(user.id)
-    # Se usuário web puro (não vinculou Telegram), passa pelo onboarding de vinculação
-    next_url = "/dashboard" if user.channel_type == "telegram" else "/vincular-telegram"
-    return _cookie_response(next_url, token, cfg.app_env == "production")
+    return _cookie_response("/dashboard", token, cfg.app_env == "production")
 
 
 @router.get("/cadastro", response_class=HTMLResponse)
@@ -163,8 +204,8 @@ async def register_form(
     await db.commit()
     await db.refresh(user)
     token = create_access_token(user.id)
-    # Novo cadastro: sempre passa pelo onboarding de vinculação Telegram
-    return _cookie_response("/vincular-telegram", token, cfg.app_env == "production")
+    # Vai direto ao dashboard; vinculação do Telegram é sugerida lá como CTA
+    return _cookie_response("/dashboard", token, cfg.app_env == "production")
 
 
 @router.post("/api/auth/logout")
@@ -620,6 +661,67 @@ async def vincular_telegram_submit(
 
     token = create_access_token(tg_user_id)
     return _cookie_response("/dashboard", token, cfg.app_env == "production")
+
+
+# ── Recuperação de senha ──────────────────────────────────────────────────────
+
+@router.get("/esqueci-senha", response_class=HTMLResponse)
+async def esqueci_senha_page(
+    request: Request,
+    sent: str | None = None,
+    error: str | None = None,
+):
+    return templates.TemplateResponse(
+        request=request, name="esqueci_senha.html",
+        context={"sent": bool(sent), "error": error},
+    )
+
+
+@router.post("/auth/esqueci-senha")
+async def esqueci_senha_submit(
+    request: Request,
+    email: str = Form(...),
+    db: AsyncSession = Depends(get_db),
+):
+    """Envia magic link de acesso pelo Telegram quando o usuário esquece a senha.
+
+    Anti-enumeração: sempre redireciona para /esqueci-senha?sent=1,
+    independentemente de o usuário existir ou não.
+    """
+    import httpx
+    from app.config import settings as cfg
+    from app.utils.jwt import create_magic_token
+
+    result = await db.execute(
+        select(User).where(User.email == email.strip().lower())
+    )
+    user = result.scalar_one_or_none()
+
+    if user and user.deleted_at is None and user.channel_type == "telegram":
+        try:
+            token = create_magic_token(user.id, minutes=30)
+            base = (cfg.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+            magic_url = f"{base}/auth/magic?t={token}"
+            text = (
+                "🔐 *Acesso ao painel NutriBot*\n\n"
+                "Você (ou alguém com seu e-mail) solicitou acesso ao painel web.\n\n"
+                f"👉 [Clique aqui para entrar]({magic_url})\n\n"
+                "_O link expira em 30 minutos. Se não foi você, ignore._"
+            )
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                await client.post(
+                    f"https://api.telegram.org/bot{cfg.telegram_bot_token}/sendMessage",
+                    json={
+                        "chat_id": user.channel_id,
+                        "text": text,
+                        "parse_mode": "Markdown",
+                        "disable_web_page_preview": True,
+                    },
+                )
+        except Exception:
+            pass  # Silencia erros — não expõe detalhes ao usuário
+
+    return RedirectResponse(url="/esqueci-senha?sent=1", status_code=302)
 
 
 # fix import name conflict
