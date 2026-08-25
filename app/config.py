@@ -73,7 +73,12 @@ class Settings(BaseSettings):
 
     # JWT / autenticação web
     jwt_secret: str = _JWT_INSECURE_DEFAULT
-    jwt_expire_days: int = 365  # 1 ano — renovado a cada visita (sliding expiration)
+    # Duração do token JWT de sessão web.
+    # O SlidingSessionMiddleware renova automaticamente quando restam ≤ 30 dias,
+    # então o usuário efetivamente nunca precisa re-logar enquanto usar o painel
+    # ao menos uma vez a cada (jwt_expire_days - 30) dias.
+    # Padrão: 365 dias → renovação automática a partir do dia 335.
+    jwt_expire_days: int = 365
 
     # Segurança
     raw_input_encryption_key: str = _ENC_INSECURE_DEFAULT  # placeholder — substituir em produção

@@ -31,14 +31,19 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 
 class SlidingSessionMiddleware(BaseHTTPMiddleware):
-    """Renova o cookie de sessão a cada visita ao painel (sliding expiration).
+    """Sliding-expiration de sessão: renova o cookie quando restar ≤ RENEW_DAYS.
 
-    Rotas de API, webhook e static são ignoradas — só renova em páginas HTML
-    do dashboard, garantindo que o usuário vinculado nunca seja deslogado
-    enquanto usar o painel pelo menos uma vez no período de jwt_expire_days.
+    Estratégia:
+    - Cookie e JWT têm duração de jwt_expire_days (padrão: 365 dias).
+    - O middleware SÓ emite novo token quando restam ≤ RENEW_DAYS dias
+      (padrão: 30 dias), evitando Set-Cookie desnecessário em toda visita.
+    - Resultado: usuário que abre o painel ao menos uma vez a cada ~335 dias
+      nunca precisa fazer login novamente.
+    - Rotas de API, webhook e static são ignoradas.
     """
 
-    # Prefixos que NÃO devem acionar a renovação (não são páginas do painel)
+    RENEW_DAYS = 30  # renova quando restar ≤ 30 dias de vida no token
+
     _SKIP_PREFIXES = (
         "/api/", "/webhook/", "/static/",
         "/health", "/ping", "/scheduler/",
@@ -48,7 +53,6 @@ class SlidingSessionMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next) -> Response:
         response = await call_next(request)
 
-        # Só renova em rotas de página HTML
         path = request.url.path
         if any(path.startswith(p) for p in self._SKIP_PREFIXES):
             return response
@@ -57,23 +61,39 @@ class SlidingSessionMiddleware(BaseHTTPMiddleware):
         if not token:
             return response
 
-        from app.utils.jwt import create_access_token, decode_token
+        try:
+            import uuid
+            from datetime import datetime, timezone
 
-        user_id = decode_token(token)
-        if user_id is None:
-            return response  # token inválido/expirado — não renova
+            from jose import JWTError
+            from jose import jwt as _jwt
 
-        # Emite novo JWT com expiração reiniciada a partir de agora
-        new_token = create_access_token(user_id)
-        response.set_cookie(
-            key="access_token",
-            value=new_token,
-            httponly=True,
-            secure=settings.app_env == "production",
-            samesite="lax",
-            max_age=settings.jwt_expire_days * 86_400,
-            path="/",
-        )
+            payload = _jwt.decode(token, settings.jwt_secret, algorithms=["HS256"])
+            exp = payload.get("exp", 0)
+            sub = payload.get("sub")
+            if not sub:
+                return response
+
+            remaining = exp - datetime.now(timezone.utc).timestamp()
+            # Ainda tem tempo de sobra — não renova agora
+            if remaining > self.RENEW_DAYS * 86_400:
+                return response
+
+            # Perto de expirar (≤ 30 dias) — emite novo JWT com prazo cheio
+            from app.utils.jwt import create_access_token
+            new_token = create_access_token(uuid.UUID(sub))
+            response.set_cookie(
+                key="access_token",
+                value=new_token,
+                httponly=True,
+                secure=settings.app_env == "production",
+                samesite="lax",
+                max_age=settings.jwt_expire_days * 86_400,
+                path="/",
+            )
+        except Exception:
+            pass  # token inválido/expirado já — não renova
+
         return response
 
 
