@@ -165,6 +165,19 @@
     cursor: default;
     pointer-events: none;
   }
+  /* Dias futuros: mais escuros que os "outros", com cursor proibido */
+  .nb-dp-day--future {
+    color: var(--text-3);
+    opacity: .25;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
+  /* Botão "próximo mês" desabilitado quando já está no mês atual */
+  .nb-dp-nav:disabled {
+    opacity: .25;
+    cursor: not-allowed;
+    pointer-events: none;
+  }
   /* Today: texto colorido + ponto abaixo */
   .nb-dp-day--today:not(.nb-dp-day--selected) {
     color: var(--primary);
@@ -611,6 +624,10 @@
     const lastDay  = new Date(viewYear, viewMonth + 1, 0);
     const startDow = firstDay.getDay(); // 0=Dom
 
+    // Desabilita "próximo mês" se já estamos no mês atual (não permite navegar p/ futuro)
+    const dpNextBtn = document.getElementById('dpNext');
+    dpNextBtn.disabled = (viewYear === today.getFullYear() && viewMonth === today.getMonth());
+
     grid.innerHTML = '';
 
     // Dias do mês anterior (preenchimento)
@@ -638,14 +655,21 @@
       date.toLocaleDateString('pt-BR', { day: 'numeric', month: 'long', year: 'numeric' }));
     btn.setAttribute('role', 'gridcell');
 
-    if (otherMonth)          btn.classList.add('nb-dp-day--other');
+    // Verifica se o dia é no futuro (normalizado para meia-noite, sem fuso)
+    const todayMidnight = new Date(today); todayMidnight.setHours(0, 0, 0, 0);
+    const dateMidnight  = new Date(date);  dateMidnight.setHours(0, 0, 0, 0);
+    const isFuture = !otherMonth && dateMidnight > todayMidnight;
+
+    if (otherMonth)           btn.classList.add('nb-dp-day--other');
+    if (isFuture)             btn.classList.add('nb-dp-day--future');
     if (sameDay(date, today)) btn.classList.add('nb-dp-day--today');
     if (sameDay(date, selDate)) {
       btn.classList.add('nb-dp-day--selected');
       btn.setAttribute('aria-current', 'date');
     }
 
-    if (!otherMonth) {
+    // Apenas dias passados/hoje e não "outros meses" recebem handler de clique
+    if (!otherMonth && !isFuture) {
       btn.addEventListener('click', () => {
         selDate = date;
         hiddenInput.value = toISO(date);
@@ -697,6 +721,13 @@
   });
 
   document.getElementById('dpNext').addEventListener('click', () => {
+    const today = new Date();
+    const nextM = viewMonth === 11 ? 0 : viewMonth + 1;
+    const nextY = viewMonth === 11 ? viewYear + 1 : viewYear;
+    // Bloqueia navegação para meses futuros
+    if (nextY > today.getFullYear() || (nextY === today.getFullYear() && nextM > today.getMonth())) {
+      return;
+    }
     if (++viewMonth > 11) { viewMonth = 0; viewYear++; }
     renderCalendar();
   });
@@ -866,6 +897,11 @@
     // Lê a data selecionada no datepicker (id="datePicker") ou cai no hidden do form
     const dpInput  = document.getElementById('datePicker');
     const dateVal  = (dpInput && dpInput.value) ? dpInput.value : document.getElementById('fmDate').value;
+
+    // Guarda de segurança: nunca permite abrir o modal com data futura
+    const todayISO = new Date().toISOString().slice(0, 10);
+    if (dateVal > todayISO) { return; }
+
     document.getElementById('fmDate').value = dateVal;
 
     const [y, m, d] = dateVal.split('-');
