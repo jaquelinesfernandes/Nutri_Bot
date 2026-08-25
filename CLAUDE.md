@@ -10,11 +10,12 @@ The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, pri
 
 ## Current State (August 2026)
 
-**All 6 sprints complete — in production on Render + Neon.**
+**All 6 sprints + Post-6 UX polish complete — in production on Render + Neon.**
 
-- 290 tests passing · coverage 72% (threshold ≥ 55%)
+- 290 tests passing · coverage 70% (threshold ≥ 55%)
 - Deployed at: `https://nutri-bot-ot0p.onrender.com`
 - Beta open: reports unlocked for all users via `REPORTS_OPEN_BETA=true`
+- Sessions persist for 365 days with sliding-expiration renewal (no re-login needed)
 
 ## Real Architecture (differs from original PRD)
 
@@ -120,7 +121,7 @@ app/
     webhook_whatsapp.py    # POST /webhook/whatsapp
     webhook_payment.py     # POST /webhook/payment (HMAC validation, required in prod)
     auth.py                # POST /api/auth/register|login|logout
-    dashboard.py           # Jinja2 server-rendered web dashboard
+    dashboard.py           # Jinja2 server-rendered web dashboard · GET /login · GET /esqueci-senha · POST /auth/esqueci-senha · GET /auth/magic
     meals.py               # REST API meals
     reports.py             # REST API reports
     users.py               # REST API user profile
@@ -190,15 +191,19 @@ docs/
 
 *Endpoints marked `*` require `X-Admin-Key: <ADMIN_API_KEY>` header when `ADMIN_API_KEY` is set.*
 
-## Security Notes (post-audit 2026-08-20)
+## Security Notes (post-audit 2026-08-20, updated 2026-08-25)
 
 - **Startup validation:** `config.py` `_check_production_secrets()` blocks startup if insecure defaults are used in production.
-- **JWT:** Stored in httpOnly cookie only — never returned in response body.
-- **Rate limiting:** `/api/auth/login` — 5 attempts/5min per IP · `/api/auth/register` — 5/hour per IP.
+- **JWT:** Stored in httpOnly cookie only — never returned in response body. Expires in 365 days; `SlidingSessionMiddleware` renews automatically when ≤ 30 days remain so the user never re-logs while actively using the dashboard.
+- **Rate limiting:** `/api/auth/login` and `/dashboard/login` — 5 attempts/5min per IP (precise countdown in error message via `get_wait_seconds()`). `/api/auth/register` — 5/hour per IP.
+- **Timing-attack protection:** `dummy_verify()` called even when user not found (prevents user enumeration via response time).
+- **Password recovery:** `POST /auth/esqueci-senha` — anti-enumeration (always returns success), sends 30-min magic link via Telegram Bot API. No e-mail required.
+- **Magic link auth:** `GET /auth/magic?t={token}` — 10-min JWT with `type='magic'`; once validated, sets a full 365-day session cookie and the token is invalidated by expiry.
 - **Webhooks:** Telegram requires `TELEGRAM_WEBHOOK_SECRET`; MercadoPago requires HMAC signature in production.
 - **Sensitive endpoints:** `/scheduler/trigger` and `/scheduler/status` require `X-Admin-Key` header.
 - **Encryption:** Meal raw text encrypted with Fernet (AES-256) using `RAW_INPUT_ENCRYPTION_KEY`.
 - **Link token:** Generated with `secrets.choice()` (cryptographically secure).
+- **Date validation:** `POST /api/meals` rejects future dates (422); the dashboard datepicker also blocks them client-side (disabled button, greyed-out cells, modal guard).
 
 ## Sprint History
 
@@ -211,5 +216,6 @@ docs/
 | 5 | Onboarding · UX polish · dashboard web · beta fechado | ✅ |
 | 6 | Deploy Render + Neon · UptimeRobot · auditoria segurança · beta aberto | ✅ |
 | Post-6 | Registro retroativo sem limite · entrada manual no painel · relatórios pelo painel (gerar/limpar/baixar) · acesso automático após 7 dias | ✅ |
+| Post-6 UX | Login redesenhado (Telegram como primário) · recuperação de senha via magic link · sessão 365 dias sem re-login · calculadora TDEE no cadastro · banner CTA Telegram · countdown preciso no rate-limit · datepicker bloqueia datas futuras | ✅ |
 | Fase 2 | Painel B2B para nutricionistas (R$ 79,90/mês) | 🗓️ Próxima |
 | Fase 3 | App nativo / Web | 🗓️ Planejado |

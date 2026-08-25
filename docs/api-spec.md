@@ -1,6 +1,6 @@
 # NutriBot — API Specification
 
-**Versão:** 1.2 | **Data:** Agosto 2026
+**Versão:** 1.3 | **Data:** 2026-08-25
 
 Todos os endpoints são assíncronos. A aplicação responde `200 OK` imediatamente em webhooks e processa em background task para evitar timeout.
 
@@ -94,42 +94,48 @@ Tipos de message tratados: `text`, `photo`, `voice`, `audio`, `document` (ignora
 
 ### POST /webhook/whatsapp
 
-Recebe mensagens do Z-API (WhatsApp Business).
+Recebe mensagens do **Evolution API** (WhatsApp Business).
 
 **Headers obrigatórios:**
 ```
-Authorization: Bearer {ZAPI_WEBHOOK_SECRET}
+Authorization: Bearer {EVOLUTION_WEBHOOK_SECRET}
 Content-Type: application/json
 ```
 
-**Payload Z-API (simplificado):**
+**Payload Evolution API (simplificado):**
 ```json
 {
-  "instanceId": "ABC123",
-  "messageId": "msg_xyz",
-  "phone": "5511999999999",
-  "fromMe": false,
-  "momment": 1718000000,
-  "type": "ReceivedCallback",
-  "chatName": "Ana Silva",
-  "senderName": "Ana Silva",
-  "text": {
-    "message": "almocei arroz com feijão"
+  "event": "messages.upsert",
+  "instance": "nutribot",
+  "data": {
+    "key": {
+      "remoteJid": "5511999999999@s.whatsapp.net",
+      "fromMe": false,
+      "id": "MSG_ID"
+    },
+    "message": {
+      "conversation": "almocei arroz com feijão"
+    },
+    "messageTimestamp": 1718000000,
+    "pushName": "Ana Silva"
   }
 }
 ```
 
-Para foto (`type: "ImageMessage"`):
+Para foto (`imageMessage`):
 ```json
 {
-  "image": {
-    "imageUrl": "https://...",
-    "caption": "meu almoço"
+  "message": {
+    "imageMessage": {
+      "url": "https://...",
+      "caption": "meu almoço",
+      "mediaKey": "..."
+    }
   }
 }
 ```
 
-**Tratamento de mensagens ativas (templates):** Mensagens enviadas pelo bot ao usuário fora da janela de 24h usam templates aprovados pela Meta. O endpoint `/webhook/whatsapp` apenas recebe — envios são feitos via Z-API REST client no `NotificationService`.
+**Tratamento de mensagens ativas:** Mensagens enviadas pelo bot ao usuário são feitas via Evolution API REST client no `NotificationService`.
 
 **Response:** `200 OK` sempre.
 
@@ -411,20 +417,137 @@ Remove **todos** os relatórios do usuário autenticado.
 
 ---
 
-## 5. Endpoints REST — Autenticação
+## 5. Endpoints — Autenticação
 
-### POST /api/auth/register
+### GET /login
 
-Cria uma nova conta. Retorna JWT em cookie `httpOnly`.
+Renderiza a página de login (Jinja2).
 
-### POST /api/auth/login
+Aceita query params para exibir mensagens:
 
-Autentica com e-mail + senha. Retorna JWT em cookie `httpOnly`.
-Rate limit: 5 tentativas / 5 min por IP.
+| Param | Descrição |
+|---|---|
+| `error` | Código de erro (`invalid_credentials`, `account_deleted`, `magic_expired`, `magic_invalid`, `magic_used`, `magic_type`) |
+| `success` | Código de sucesso (`magic_sent`) |
+
+---
+
+### POST /dashboard/login  *(HTML form)*
+
+Autentica via formulário web com e-mail + senha.  
+Rate limit: **5 tentativas / 5 min** por IP — mensagem de erro inclui countdown preciso (ex.: "Aguarde 4min 23s.").  
+Proteção timing-attack: `dummy_verify()` é chamado mesmo quando o usuário não existe.
+
+**Form fields:** `email`, `password`
+
+**Redirect em sucesso:** `302 → /dashboard`  
+**Redirect em erro:** `302 → /login?error=<código>`
+
+---
+
+### POST /api/auth/register  *(JSON API)*
+
+Cria uma nova conta. Retorna JWT em cookie `httpOnly`.  
+Rate limit: **5 cadastros / hora** por IP.
+
+**Request body:**
+```json
+{
+  "name": "Ana Silva",
+  "email": "ana@example.com",
+  "password": "senha-segura",
+  "daily_calorie_goal": 2000
+}
+```
+
+**Response 201:** `AuthResponse` — JWT definido em cookie `httpOnly`, **não** retornado no body.
+
+| Código | Condição |
+|---|---|
+| `201` | Conta criada |
+| `400` | E-mail já cadastrado |
+| `422` | Dados inválidos |
+| `429` | Rate limit atingido |
+
+---
+
+### POST /api/auth/login  *(JSON API)*
+
+Autentica com e-mail + senha. Retorna JWT em cookie `httpOnly`.  
+Rate limit: **5 tentativas / 5 min** por IP.
+
+| Código | Condição |
+|---|---|
+| `200` | Autenticado — cookie definido |
+| `401` | Credenciais inválidas |
+| `429` | Rate limit atingido (body inclui `retry_after` em segundos) |
+
+---
 
 ### POST /api/auth/logout
 
-Limpa o cookie de sessão.
+Limpa o cookie de sessão (define `max_age=0`).
+
+**Response 200:** `{ "message": "Logout realizado com sucesso." }`
+
+---
+
+### GET /esqueci-senha
+
+Renderiza a página de recuperação de senha (Jinja2).
+
+Query param `?sent=1` exibe a tela de confirmação de envio (estado pós-submit).
+
+---
+
+### POST /auth/esqueci-senha  *(HTML form)*
+
+Inicia a recuperação de acesso via magic link enviado ao Telegram do usuário.
+
+**Comportamento anti-enumeração:** sempre redireciona para `/esqueci-senha?sent=1`, independente de o e-mail existir ou não.
+
+**Lógica interna:**
+```
+1. Busca usuário pelo e-mail informado
+2. Se encontrado e channel_type == "telegram":
+   a. Gera JWT de 30 min com type='magic'
+   b. Envia link /auth/magic?t={token} via Telegram Bot API sendMessage
+3. Sempre: redirect 302 → /esqueci-senha?sent=1
+```
+
+**Form field:** `email`
+
+---
+
+### GET /auth/magic
+
+Autentica o usuário via magic link (token JWT de curta duração).
+
+**Query param:** `t` — JWT com `type='magic'` e `exp` de 10 min (fluxo `/painel`) ou 30 min (fluxo recuperação de senha).
+
+**Lógica:**
+```
+1. Decodifica o JWT; verifica type == 'magic' e exp
+2. Busca o usuário pelo sub (UUID)
+3. Emite cookie de sessão completo (365 dias, sliding)
+4. Redirect 302 → /dashboard
+```
+
+| Código | Condição |
+|---|---|
+| `302 → /dashboard` | Autenticado com sucesso |
+| `302 → /login?error=magic_expired` | Token expirado |
+| `302 → /login?error=magic_invalid` | Token inválido ou mal-formado |
+| `302 → /login?error=magic_type` | JWT não é do tipo `magic` |
+| `302 → /login?error=account_deleted` | Usuário não encontrado no banco |
+
+---
+
+### Sessão e Sliding Expiration
+
+O JWT de sessão tem duração de **365 dias**. O `SlidingSessionMiddleware` renova automaticamente o cookie quando restar ≤ 30 dias de validade — o usuário jamais precisa re-logar enquanto usar o painel ao menos uma vez a cada ~335 dias.
+
+O middleware é ignorado para rotas de API, webhooks e arquivos estáticos (prefixos `/api/`, `/webhook/`, `/static/`, `/health`, `/ping`, `/scheduler/`, `/docs`, `/redoc`, `/openapi`).
 
 ---
 
