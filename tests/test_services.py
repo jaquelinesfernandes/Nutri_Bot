@@ -55,6 +55,7 @@ class _FakeLog:
         self.total_protein_g = 30.0
         self.total_carb_g = 70.0
         self.total_fat_g = 15.0
+        self.total_fiber_g = 8.0
         self.meal_type = meal_type
         self.confirmed = True
         self.food_items: list = []   # selectinload esperado por generate_report

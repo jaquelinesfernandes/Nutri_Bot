@@ -134,14 +134,18 @@ def _build_row(
     that actually have data, excluding empty days from the denominator so the
     percentage stays meaningful. Empty days are reported as ``missing_days``.
     """
-    total_kcal = sum(l.total_calories_kcal for l in logs)
+    total_kcal   = sum(l.total_calories_kcal for l in logs)
+    total_prot   = sum(l.total_protein_g    for l in logs)
+    total_fiber  = sum(getattr(l, "total_fiber_g", 0.0) for l in logs)
     meal_types = {l.meal_type for l in logs}
 
     # Unique days with at least one log in this chunk
     days_with_data = len({l.logged_at.astimezone(tz).date() for l in logs}) if logs else 0
 
-    # Average daily kcal over days that have data (avoids ÷0 and avoids inflating pct)
-    avg_daily_kcal = total_kcal / days_with_data if days_with_data else 0.0
+    # Average daily values over days that have data
+    avg_daily_kcal  = total_kcal  / days_with_data if days_with_data else 0.0
+    avg_daily_prot  = total_prot  / days_with_data if days_with_data else 0.0
+    avg_daily_fiber = total_fiber / days_with_data if days_with_data else 0.0
 
     pct = int(avg_daily_kcal / goal_kcal * 100) if (logs and goal_kcal) else 0
 
@@ -161,17 +165,56 @@ def _build_row(
     meals_label = " ".join(_MEAL_ICONS[m] for m in icon_order if m in meal_types) or "—"
 
     return {
-        "label": label,
-        "kcal": f"{avg_daily_kcal:.0f}" if logs else "—",
-        "meals_label": meals_label,
-        "pct": pct,
-        "bar_pct": min(pct, 100),
-        "bar_cls": _bar_class(pct),
-        "badge_cls": badge_cls,
-        "badge_lbl": badge_lbl,
+        "label":         label,
+        "kcal":          f"{avg_daily_kcal:.0f}" if logs else "—",
+        "protein_g":     round(avg_daily_prot, 1),
+        "fiber_g":       round(avg_daily_fiber, 1),
+        "meals_label":   meals_label,
+        "pct":           pct,
+        "bar_pct":       min(pct, 100),
+        "bar_cls":       _bar_class(pct),
+        "badge_cls":     badge_cls,
+        "badge_lbl":     badge_lbl,
         "days_with_data": days_with_data,
-        "missing_days": missing_days,
-        "chunk_days": chunk_days,
+        "missing_days":  missing_days,
+        "chunk_days":    chunk_days,
+    }
+
+
+def _compute_week_highlights(days_data: list[dict]) -> dict:
+    """Calcula destaques específicos da semana a partir das linhas diárias já montadas."""
+    days_logged = sum(1 for r in days_data if r["days_with_data"] > 0)
+    perfect_days = sum(1 for r in days_data if r["badge_cls"] == "badge-ok")
+
+    # Melhor e pior dia (somente entre dias com dados)
+    logged_rows = [r for r in days_data if r["pct"] > 0]
+    best_row  = max(logged_rows, key=lambda r: r["pct"])  if logged_rows else None
+    worst_row = min(logged_rows, key=lambda r: r["pct"])  if logged_rows else None
+
+    # Sequência atual de dias consecutivos (contando de trás para frente)
+    streak = 0
+    for row in reversed(days_data):
+        if row["days_with_data"] > 0:
+            streak += 1
+        else:
+            break
+
+    # Médias de proteína e fibra (todos os dias com registro)
+    prot_vals  = [r["protein_g"] for r in days_data if r["protein_g"] > 0]
+    fiber_vals = [r["fiber_g"]   for r in days_data if r["fiber_g"]   > 0]
+    avg_prot_daily  = round(sum(prot_vals)  / len(prot_vals),  1) if prot_vals  else 0.0
+    avg_fiber_daily = round(sum(fiber_vals) / len(fiber_vals), 1) if fiber_vals else 0.0
+
+    return {
+        "days_logged":      days_logged,
+        "perfect_days":     perfect_days,
+        "streak_days":      streak,
+        "best_day_label":   best_row["label"]  if best_row  else None,
+        "best_day_pct":     best_row["pct"]    if best_row  else 0,
+        "worst_day_label":  worst_row["label"] if worst_row else None,
+        "worst_day_pct":    worst_row["pct"]   if worst_row else 0,
+        "avg_prot_daily":   avg_prot_daily,
+        "avg_fiber_daily":  avg_fiber_daily,
     }
 
 
@@ -357,20 +400,23 @@ class ReportService:
         weekly_score, score_label, score_emoji = _weekly_score(pct_days, pct_kcal, pct_protein)
 
         # Build table rows based on period granularity
+        week_highlights: dict | None = None
         if period_type == "weekly":
             days_data = _group_logs_daily(list(logs), start_date, end_date, tz)
-            # Patch goal_kcal and recompute badge/bar for each row (single-day rows)
+            # Patch goal_kcal and recompute badge/bar/macros for each row (single-day rows)
             for row in days_data:
                 day = start_date + timedelta(days=days_data.index(row))
                 day_logs = [l for l in logs if l.logged_at.astimezone(tz).date() == day]
                 pct_day = int(sum(l.total_calories_kcal for l in day_logs) / goal_kcal * 100) if day_logs and goal_kcal else 0
-                row["pct"] = pct_day
-                row["bar_pct"] = min(pct_day, 100)
-                row["bar_cls"] = _bar_class(pct_day)
-                # single-day: sem conceito de dias faltantes
-                row["missing_days"] = 0
-                row["chunk_days"] = 1
+                row["pct"]           = pct_day
+                row["bar_pct"]       = min(pct_day, 100)
+                row["bar_cls"]       = _bar_class(pct_day)
+                row["missing_days"]  = 0   # single-day: sem conceito de dias faltantes
+                row["chunk_days"]    = 1
                 row["days_with_data"] = 1 if day_logs else 0
+                # Macros reais do dia (totais, não médias — é 1 dia)
+                row["protein_g"] = round(sum(l.total_protein_g for l in day_logs), 1) if day_logs else 0.0
+                row["fiber_g"]   = round(sum(getattr(l, "total_fiber_g", 0.0) for l in day_logs), 1) if day_logs else 0.0
                 if not day_logs:
                     row["badge_cls"], row["badge_lbl"] = "badge-miss", "Sem registro"
                 elif 80 <= pct_day <= 115:
@@ -379,6 +425,8 @@ class ReportService:
                     row["badge_cls"], row["badge_lbl"] = "badge-low", "Abaixo"
                 else:
                     row["badge_cls"], row["badge_lbl"] = "badge-over", "Acima"
+            # Destaques específicos da semana
+            week_highlights = _compute_week_highlights(days_data)
         elif period_type in ("monthly", "custom"):
             days_data = _group_logs_weekly(list(logs), start_date, end_date, tz, goal_kcal)
         else:  # quarterly
@@ -456,10 +504,13 @@ class ReportService:
             days_logged=len(days_with_logs),
             total_meals=len(logs),
             days=days_data,
+            period_type=period_type,
             # Score da semana
             weekly_score=weekly_score,
             score_label=score_label,
             score_emoji=score_emoji,
+            # Destaques da semana (só weekly)
+            week_highlights=week_highlights,
             # Análise por refeição e ranking de alimentos
             meal_type_dist=meal_type_dist,
             food_ranking=food_ranking,
