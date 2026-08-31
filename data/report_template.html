@@ -68,18 +68,17 @@ body {
   font-size: 9.5pt;
   color: rgba(255,255,255,.45);
 }
-.header-meta {
-  margin-top: 14pt;
-  display: flex;
-  gap: 8pt;
-}
+.header-meta { margin-top: 14pt; }
 .header-pill {
+  display: inline-block;
   background: rgba(99,102,241,.25);
   border: 1pt solid rgba(99,102,241,.4);
   border-radius: 20pt;
   padding: 4pt 12pt;
   font-size: 8.5pt;
   color: #A5B4FC;
+  margin-right: 6pt;
+  margin-bottom: 4pt;
 }
 
 /* ── Body wrapper ─────────────────────────────────────────────────── */
@@ -123,90 +122,102 @@ body {
   font-size: 10pt;
 }
 
-/* ── KPI Cards (card do painel: border rgba(99,102,241,.1)) ───────── */
+/* ── KPI Cards ────────────────────────────────────────────────────── */
+/* display:table é 100% suportado pelo WeasyPrint; evita bugs de flex  */
 .cards-grid {
-  display: flex;
-  gap: 8pt;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 7pt 0;
   margin-bottom: 4pt;
 }
 .kpi-card {
-  flex: 1;
+  display: table-cell;
   background: white;
   border: 1pt solid #E0E7FF;
-  border-radius: 12pt;
-  padding: 12pt 10pt 10pt;
+  border-radius: 10pt;
+  padding: 10pt 8pt 9pt;
   text-align: center;
-  box-shadow: 0 1pt 4pt rgba(99,102,241,.07);
+  vertical-align: top;
 }
 .kpi-card.highlight {
   background: #EEF2FF;
   border-color: #A5B4FC;
 }
 .kpi-val {
-  font-size: 20pt;
+  font-size: 18pt;
   font-weight: 800;
   color: #4F46E5;
   line-height: 1;
-  margin-bottom: 4pt;
+  margin-bottom: 3pt;
 }
 .kpi-lbl {
-  font-size: 7.5pt;
+  font-size: 7pt;
   color: #9096C0;
   text-transform: uppercase;
-  letter-spacing: 0.4pt;
+  letter-spacing: 0.3pt;
   font-weight: 600;
-  margin-bottom: 6pt;
+  margin-bottom: 5pt;
 }
-/* barra de progresso do card */
 .kpi-bar-track {
   background: #EEF2FF;
-  border-radius: 6pt;
+  border-radius: 4pt;
   height: 5pt;
   width: 100%;
   margin-bottom: 5pt;
   overflow: hidden;
 }
-.kpi-bar-fill {
-  height: 5pt;
-  border-radius: 6pt;
-}
+.kpi-bar-fill { height: 5pt; border-radius: 4pt; }
+/* footer: tabela interna de 2 células para meta + % */
 .kpi-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
 }
 .kpi-goal {
-  font-size: 7.5pt;
+  display: table-cell;
+  font-size: 7pt;
   color: #9096C0;
+  text-align: left;
+  vertical-align: middle;
 }
 .kpi-pct {
-  font-size: 8pt;
+  display: table-cell;
+  font-size: 7.5pt;
   font-weight: 700;
-  padding: 1.5pt 5pt;
-  border-radius: 8pt;
+  padding: 1pt 4pt;
+  border-radius: 6pt;
+  text-align: right;
+  vertical-align: middle;
+  width: 34pt;
 }
 .pct-ok   { background: #EEF2FF; color: #4338CA; }
 .pct-low  { background: #FEF9C3; color: #78350F; }
 .pct-over { background: #FEE2E2; color: #991B1B; }
 .pct-zero { background: #F1F5F9; color: #94A3B8; }
 
-/* ── Macro strip (cores idênticas ao dashboard: índigo/ciano/violeta) */
+/* ── Macro strip ──────────────────────────────────────────────────── */
 .macro-strip {
-  display: flex;
-  gap: 6pt;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 6pt 0;
   margin-top: 8pt;
 }
 .macro-box {
-  flex: 1;
+  display: table-cell;
   border-radius: 8pt;
-  padding: 8pt 6pt;
+  padding: 8pt 4pt;
   text-align: center;
+  vertical-align: middle;
 }
 .macro-box.prot  { background: #EEF2FF; border: 1pt solid #A5B4FC; }
 .macro-box.carb  { background: #E0F2FE; border: 1pt solid #7DD3FC; }
 .macro-box.fat   { background: #F5F3FF; border: 1pt solid #D8B4FE; }
 .macro-box.fiber { background: #F0FDF4; border: 1pt solid #BBF7D0; }
-.macro-val { font-size: 14pt; font-weight: 800; }
+.macro-val { font-size: 13pt; font-weight: 800; }
 .macro-box.prot  .macro-val { color: #6366F1; }
 .macro-box.carb  .macro-val { color: #0EA5E9; }
 .macro-box.fat   .macro-val { color: #A855F7; }
@@ -284,9 +295,10 @@ body {
   box-shadow: 0 1pt 3pt rgba(99,102,241,.06);
 }
 .highlight-item {
-  display: flex;
-  align-items: flex-start;
-  gap: 8pt;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
   padding: 4pt 0;
   border-bottom: 0.5pt solid #EEF2FF;
   font-size: 9.5pt;
@@ -294,32 +306,37 @@ body {
 }
 .highlight-item:last-child { border-bottom: none; }
 .highlight-dot {
+  display: table-cell;
+  width: 12pt;
+  vertical-align: top;
+  padding-top: 3pt;
+}
+.highlight-dot::before {
+  content: '';
+  display: inline-block;
   width: 7pt;
   height: 7pt;
   background: #6366F1;
   border-radius: 50%;
-  margin-top: 3pt;
-  flex-shrink: 0;
 }
+.highlight-text { display: table-cell; vertical-align: top; }
 
 /* ── Suggestions (faixa lateral por categoria, igual ao painel) ───── */
 .sug-card {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
   background: white;
   border: 1pt solid #E0E7FF;
-  border-radius: 12pt;
-  padding: 11pt 13pt;
+  border-radius: 10pt;
   margin-bottom: 8pt;
-  box-shadow: 0 1pt 3pt rgba(99,102,241,.05);
-  display: flex;
-  gap: 12pt;
-  align-items: flex-start;
 }
 .sug-accent {
-  width: 4pt;
-  border-radius: 4pt;
-  flex-shrink: 0;
-  align-self: stretch;
-  min-height: 30pt;
+  display: table-cell;
+  width: 5pt;
+  border-radius: 4pt 0 0 4pt;
+  vertical-align: top;
 }
 .sug-accent.proteina    { background: #DC2626; }
 .sug-accent.carboidrato { background: #EA580C; }
@@ -327,7 +344,18 @@ body {
 .sug-accent.hidratacao  { background: #0284C7; }
 .sug-accent.horario     { background: #7C3AED; }
 .sug-accent.variedade   { background: #6366F1; }
-.sug-body { flex: 1; }
+.sug-body {
+  display: table-cell;
+  padding: 10pt 12pt;
+  vertical-align: top;
+}
+.sug-priority-cell {
+  display: table-cell;
+  width: 42pt;
+  padding: 10pt 10pt 10pt 0;
+  vertical-align: top;
+  text-align: right;
+}
 .sug-cat {
   font-size: 7pt;
   font-weight: 700;
@@ -338,12 +366,11 @@ body {
 }
 .sug-txt { font-size: 9.5pt; color: #1E1B4B; line-height: 1.45; }
 .sug-priority {
+  display: inline-block;
   font-size: 6.5pt;
   font-weight: 700;
   padding: 1.5pt 5pt;
   border-radius: 8pt;
-  align-self: flex-start;
-  flex-shrink: 0;
 }
 .priority-high   { background: #FEE2E2; color: #991B1B; }
 .priority-medium { background: #FEF9C3; color: #78350F; }
@@ -351,17 +378,30 @@ body {
 
 /* ── Insight box (análise da IA — gradiente índigo/violeta) ───────── */
 .insight-box {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
   background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
   border: 1pt solid #C7D2FE;
   border-radius: 12pt;
-  padding: 12pt 14pt;
   margin-top: 6pt;
-  display: flex;
-  gap: 10pt;
-  align-items: flex-start;
 }
-.insight-icon { font-size: 14pt; flex-shrink: 0; }
-.insight-txt  { font-size: 9.5pt; color: #3730A3; line-height: 1.5; }
+.insight-icon {
+  display: table-cell;
+  width: 24pt;
+  font-size: 14pt;
+  padding: 12pt 8pt 12pt 14pt;
+  vertical-align: top;
+}
+.insight-txt {
+  display: table-cell;
+  font-size: 9.5pt;
+  color: #3730A3;
+  line-height: 1.5;
+  padding: 12pt 14pt 12pt 0;
+  vertical-align: middle;
+}
 
 /* ── Score da semana ──────────────────────────────────────────────── */
 .score-pill {
@@ -386,55 +426,70 @@ body {
 
 /* ── Two-column wrapper ───────────────────────────────────────────── */
 .two-col {
-  display: flex;
-  gap: 14pt;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 14pt 0;
 }
-.two-col > .col { flex: 1; }
+.two-col > .col {
+  display: table-cell;
+  vertical-align: top;
+}
 
-/* ── Distribuição por refeição ────────────────────────────────────── */
+/* ── Distribuição por refeição (tabela interna p/ WeasyPrint) ──────── */
 .dist-row {
-  display: flex;
-  align-items: center;
-  gap: 7pt;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
   margin-bottom: 7pt;
   font-size: 8.5pt;
 }
 .dist-label {
+  display: table-cell;
   width: 100pt;
   color: #1E1B4B;
   font-weight: 500;
-  flex-shrink: 0;
+  vertical-align: middle;
+  padding-right: 6pt;
 }
 .dist-bar-track {
-  flex: 1;
+  display: table-cell;
   background: #EEF2FF;
   border-radius: 6pt;
   height: 8pt;
   overflow: hidden;
+  vertical-align: middle;
 }
 .dist-bar-fill {
   height: 8pt;
   border-radius: 6pt;
   background: linear-gradient(90deg, #6366F1, #818CF8);
+  display: block;
 }
 .dist-stats {
+  display: table-cell;
   width: 62pt;
   text-align: right;
   font-size: 7.5pt;
   color: #9096C0;
-  flex-shrink: 0;
+  vertical-align: middle;
+  padding-left: 5pt;
 }
 
 /* ── Ranking de alimentos ─────────────────────────────────────────── */
 .rank-row {
-  display: flex;
-  align-items: center;
-  gap: 7pt;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
   margin-bottom: 6pt;
   font-size: 8.5pt;
 }
 .rank-num {
-  width: 15pt;
+  display: table-cell;
+  width: 16pt;
   height: 15pt;
   background: #EEF2FF;
   border-radius: 50%;
@@ -443,46 +498,57 @@ body {
   font-size: 7pt;
   font-weight: 800;
   color: #4338CA;
-  flex-shrink: 0;
+  vertical-align: middle;
+  padding-right: 5pt;
 }
 .rank-name {
+  display: table-cell;
   width: 95pt;
   color: #1E1B4B;
   font-weight: 500;
-  flex-shrink: 0;
   font-size: 8pt;
+  vertical-align: middle;
+  padding-right: 5pt;
 }
 .rank-bar-track {
-  flex: 1;
+  display: table-cell;
   background: #EEF2FF;
   border-radius: 6pt;
   height: 8pt;
   overflow: hidden;
+  vertical-align: middle;
 }
 .rank-bar-fill {
   height: 8pt;
   border-radius: 6pt;
+  display: block;
 }
 .rank-info {
+  display: table-cell;
   width: 55pt;
   text-align: right;
   font-size: 7pt;
   color: #9096C0;
-  flex-shrink: 0;
+  vertical-align: middle;
+  padding-left: 5pt;
 }
 
 /* ── Destaques da semana ──────────────────────────────────────────── */
 .highlights-grid {
-  display: flex;
-  gap: 10pt;
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 9pt 0;
 }
 .hl-box {
-  flex: 1;
+  display: table-cell;
   background: white;
   border: 1pt solid #C7D2FE;
   border-radius: 10pt;
-  padding: 9pt 11pt;
+  padding: 9pt 8pt;
   text-align: center;
+  vertical-align: top;
 }
 .hl-icon { font-size: 14pt; line-height: 1; }
 .hl-value {
@@ -504,6 +570,33 @@ body {
   color: #6B7280;
   margin-top: 2pt;
   font-weight: 500;
+}
+
+/* ── Elogios (destaques positivos) ───────────────────────────────── */
+.elogio-card {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  background: #F0FDF4;
+  border: 1pt solid #BBF7D0;
+  border-radius: 10pt;
+  margin-bottom: 7pt;
+}
+.elogio-icon {
+  display: table-cell;
+  width: 22pt;
+  font-size: 12pt;
+  padding: 9pt 4pt 9pt 12pt;
+  vertical-align: middle;
+}
+.elogio-txt {
+  display: table-cell;
+  font-size: 9.5pt;
+  color: #14532D;
+  line-height: 1.4;
+  padding: 9pt 12pt 9pt 6pt;
+  vertical-align: middle;
 }
 
 /* ── Macro sub-text no período detalhado ─────────────────────────── */
@@ -739,16 +832,18 @@ body {
     </div>
   </div>
   <!-- Macros médios diários -->
-  <div style="margin-top:8pt;display:flex;gap:10pt;">
-    <div style="flex:1;background:#EEF2FF;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#3730A3;">
-      <span style="font-size:9.5pt;">💪</span>
-      <strong>Proteína média/dia:</strong> {{ week_highlights.avg_prot_daily }}g
-    </div>
-    <div style="flex:1;background:#DCFCE7;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#14532D;">
-      <span style="font-size:9.5pt;">🌿</span>
-      <strong>Fibra média/dia:</strong> {{ week_highlights.avg_fiber_daily }}g
-    </div>
-  </div>
+  <table style="display:table;width:100%;table-layout:fixed;border-collapse:separate;border-spacing:10pt 0;margin-top:8pt;">
+    <tr>
+      <td style="background:#EEF2FF;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#3730A3;vertical-align:middle;">
+        <span style="font-size:9.5pt;">💪</span>
+        <strong>Proteína média/dia:</strong> {{ week_highlights.avg_prot_daily }}g
+      </td>
+      <td style="background:#DCFCE7;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#14532D;vertical-align:middle;">
+        <span style="font-size:9.5pt;">🌿</span>
+        <strong>Fibra média/dia:</strong> {{ week_highlights.avg_fiber_daily }}g
+      </td>
+    </tr>
+  </table>
 </div>
 {% endif %}
 
@@ -823,13 +918,29 @@ body {
     {% for h in highlights %}
     <div class="highlight-item">
       <div class="highlight-dot"></div>
-      <span>{{ h }}</span>
+      <div class="highlight-text">{{ h }}</div>
     </div>
     {% endfor %}
   </div>
 </div>
 {% endif %}
 
+
+<!-- ── ELOGIOS ──────────────────────────────────────────────────────── -->
+{% if elogios %}
+<div class="section">
+  <div class="section-title">
+    <span class="section-bar" style="background:#16A34A;"></span>
+    <span class="section-icon">🌟</span> O que você fez bem
+  </div>
+  {% for e in elogios %}
+  <div class="elogio-card">
+    <div class="elogio-icon">✅</div>
+    <div class="elogio-txt">{{ e }}</div>
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
 
 <!-- ── SUGESTÕES ───────────────────────────────────────────────────── -->
 <div class="section">
@@ -844,9 +955,11 @@ body {
       <div class="sug-cat">{{ sug.category }}</div>
       <div class="sug-txt">{{ sug.text }}</div>
     </div>
-    <span class="sug-priority priority-{{ sug.priority }}">
-      {% if sug.priority == 'high' %}Alta{% elif sug.priority == 'medium' %}Média{% else %}Baixa{% endif %}
-    </span>
+    <div class="sug-priority-cell">
+      <span class="sug-priority priority-{{ sug.priority }}">
+        {% if sug.priority == 'high' %}Alta{% elif sug.priority == 'medium' %}Média{% else %}Baixa{% endif %}
+      </span>
+    </div>
   </div>
   {% endfor %}
 </div>

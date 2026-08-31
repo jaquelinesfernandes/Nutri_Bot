@@ -39,5 +39,6 @@ class ReportSuggestion(BaseModel):
 
 class ReportSuggestionsResponse(BaseModel):
     highlights: list[str]
+    elogios: list[str] = []
     suggestions: list[ReportSuggestion]
     weekly_insight: str

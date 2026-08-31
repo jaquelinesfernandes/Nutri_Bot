@@ -458,6 +458,7 @@ class ReportService:
             ai_result = await ai_service.generate_report_suggestions(user_context, week_summary)
             suggestions = [s.model_dump() for s in ai_result.suggestions]
             highlights = ai_result.highlights
+            elogios = ai_result.elogios
             weekly_insight = ai_result.weekly_insight
         except Exception as e:
             logger.warning(f"[REPORT] AI suggestions falhou: {e}")
@@ -467,6 +468,7 @@ class ReportService:
                 "priority": "medium",
             }]
             highlights = []
+            elogios = []
             weekly_insight = None
 
         period_label = _period_label(start_date, end_date, period_type)
@@ -515,6 +517,7 @@ class ReportService:
             # IA
             suggestions=suggestions,
             highlights=highlights,
+            elogios=elogios,
             weekly_insight=weekly_insight,
             generated_at=datetime.now(tz).strftime("%d/%m/%Y às %H:%M"),
         )

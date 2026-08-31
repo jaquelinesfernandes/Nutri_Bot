@@ -78,6 +78,7 @@ def _mock_ai_suggestions() -> MagicMock:
     s = MagicMock()
     s.suggestions = []
     s.highlights = ["Boa semana!"]
+    s.elogios = ["Ótima consistência nos registros!"]
     s.weekly_insight = "Continue assim."
     return s
 

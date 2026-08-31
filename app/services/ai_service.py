@@ -202,13 +202,23 @@ class AIService:
         self, user_context: dict, week_summary: dict
     ) -> ReportSuggestionsResponse:
         system = (
-            "Você é um assistente de nutrição que analisa dados semanais e gera "
-            "sugestões personalizadas, encorajadoras e práticas em português brasileiro. "
-            "Tom: encorajador, nunca punitivo. Gere exatamente 3 sugestões acionáveis. "
+            "Você é um nutricionista brasileiro que analisa dados nutricionais reais e gera "
+            "feedback personalizado, baseado em evidências e em português brasileiro. "
+            "Nunca seja genérico — use os números concretos fornecidos. "
+            "Gere exatamente:\n"
+            "  • 2-3 ELOGIOS (campo 'elogios'): frases curtas celebrando conquistas reais "
+            "    baseadas nos dados (ex: sequência de dias, meta de proteína atingida).\n"
+            "  • 4-5 SUGESTÕES acionáveis (campo 'suggestions'): melhorias práticas com "
+            "    base nos pontos de atenção identificados nos dados.\n"
+            "  • 2-3 DESTAQUES (campo 'highlights'): fatos marcantes da semana em frases curtas.\n"
+            "  • 1 INSIGHT (campo 'weekly_insight'): análise motivadora de 1-2 frases.\n"
+            "Tom: direto, encorajador, jamais punitivo. "
             "Responda SOMENTE com JSON válido, sem texto adicional, sem markdown.\n"
-            "ATENÇÃO: o campo category DEVE ser exatamente um destes valores (lowercase, sem acento): "
+            "ATENÇÃO: category DEVE ser exatamente um de: "
             "proteina, carboidrato, gordura, hidratacao, horario, variedade\n"
-            'SCHEMA: {"highlights":["string"],"suggestions":[{"category":"proteina|carboidrato|gordura|hidratacao|horario|variedade","text":"string","priority":"high|medium|low"}],"weekly_insight":"string"}'
+            'SCHEMA: {"highlights":["string"],"elogios":["string"],'
+            '"suggestions":[{"category":"proteina|carboidrato|gordura|hidratacao|horario|variedade",'
+            '"text":"string","priority":"high|medium|low"}],"weekly_insight":"string"}'
         )
         user_msg = (
             f"CONTEXTO DO USUÁRIO: {json.dumps(user_context, ensure_ascii=False)}\n"
@@ -218,7 +228,7 @@ class AIService:
         async def _call():
             response = await self._client.messages.create(
                 model=settings.anthropic_model,
-                max_tokens=800,
+                max_tokens=1200,
                 system=system,
                 messages=[{"role": "user", "content": user_msg}],
             )
