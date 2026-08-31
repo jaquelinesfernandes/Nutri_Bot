@@ -309,6 +309,15 @@
             </div>
             <span class="mprog-pct">{{ pct_prot2 }}%</span>
           </div>
+          {% if week_prot_avg_pct %}
+          <div class="mprog-row" style="margin-top:4px">
+            <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
+            <div class="mprog-track today" style="opacity:.6">
+              <div class="mprog-fill" style="width:{{ [week_prot_avg_pct,100]|min }}%;background:linear-gradient(90deg,#6366F1,#818CF8);opacity:.75"></div>
+            </div>
+            <span class="mprog-pct" style="color:var(--text-3)">{{ week_prot_avg_pct }}%</span>
+          </div>
+          {% endif %}
         </div>
       </div>
 
@@ -325,6 +334,15 @@
             </div>
             <span class="mprog-pct">{{ pct_carb }}%</span>
           </div>
+          {% if week_carb_avg_pct %}
+          <div class="mprog-row" style="margin-top:4px">
+            <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
+            <div class="mprog-track today" style="opacity:.6">
+              <div class="mprog-fill" style="width:{{ [week_carb_avg_pct,100]|min }}%;background:linear-gradient(90deg,#0EA5E9,#38BDF8);opacity:.75"></div>
+            </div>
+            <span class="mprog-pct" style="color:var(--text-3)">{{ week_carb_avg_pct }}%</span>
+          </div>
+          {% endif %}
         </div>
       </div>
 
@@ -341,6 +359,15 @@
             </div>
             <span class="mprog-pct">{{ pct_fat }}%</span>
           </div>
+          {% if week_fat_avg_pct %}
+          <div class="mprog-row" style="margin-top:4px">
+            <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
+            <div class="mprog-track today" style="opacity:.6">
+              <div class="mprog-fill" style="width:{{ [week_fat_avg_pct,100]|min }}%;background:linear-gradient(90deg,#A855F7,#C084FC);opacity:.75"></div>
+            </div>
+            <span class="mprog-pct" style="color:var(--text-3)">{{ week_fat_avg_pct }}%</span>
+          </div>
+          {% endif %}
         </div>
       </div>
 
@@ -357,13 +384,22 @@
             </div>
             <span class="mprog-pct">{{ pct_fiber }}%</span>
           </div>
+          {% if week_fiber_avg_pct %}
+          <div class="mprog-row" style="margin-top:4px">
+            <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
+            <div class="mprog-track today" style="opacity:.6">
+              <div class="mprog-fill" style="width:{{ [week_fiber_avg_pct,100]|min }}%;background:linear-gradient(90deg,#16A34A,#4ADE80);opacity:.75"></div>
+            </div>
+            <span class="mprog-pct" style="color:var(--text-3)">{{ week_fiber_avg_pct }}%</span>
+          </div>
+          {% endif %}
         </div>
       </div>
 
     </div>
     <div class="mprog-legend">
       <span class="mprog-legend-item" style="font-size:11px;color:var(--text-3)">
-        📊 Comparativo 30 dias disponível em breve
+        📊 Barra mais clara = média diária dos últimos 7 dias (exclui dias sem registro)
       </span>
     </div>
   </div>

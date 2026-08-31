@@ -256,11 +256,14 @@ async def dashboard(
     total_fiber = sum(m.total_fiber_g for m in meals)
     goal_kcal   = user.daily_calorie_goal
     goal_fiber  = 25   # DRI: 25 g/dia
-    pct_kcal    = (total_kcal / goal_kcal * 100) if goal_kcal else 0
-    pct_prot    = (total_prot / (goal_kcal * 0.06) * 100) if goal_kcal else 0
+    # Metas de macros (mesma fórmula usada no template via {% set %})
+    goal_prot_g = round(goal_kcal * 0.25 / 4) if goal_kcal else 0
+    goal_carb_g = round(goal_kcal * 0.50 / 4) if goal_kcal else 0
+    goal_fat_g  = round(goal_kcal * 0.25 / 9) if goal_kcal else 0
+    pct_kcal    = round(total_kcal / goal_kcal * 100) if goal_kcal else 0
     pct_fiber   = round(total_fiber / goal_fiber * 100) if goal_fiber else 0
 
-    # Dados dos últimos 7 dias para gráfico
+    # Dados dos últimos 7 dias para gráfico e comparativo de macros
     week_data = []
     for i in range(6, -1, -1):
         d = today - timedelta(days=i)
@@ -276,6 +279,9 @@ async def dashboard(
         week_data.append({
             "label": d.strftime("%a %d/%m"),
             "kcal":  round(sum(m.total_calories_kcal for m in day_meals), 1),
+            "prot":  round(sum(m.total_protein_g for m in day_meals), 1),
+            "carb":  round(sum(m.total_carb_g for m in day_meals), 1),
+            "fat":   round(sum(m.total_fat_g for m in day_meals), 1),
             "fiber": round(sum(m.total_fiber_g for m in day_meals), 1),
         })
 
@@ -285,11 +291,23 @@ async def dashboard(
     months_pt = ["","jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
     today_label = f"{today.day} de {months_pt[today.month]} de {today.year}"
 
+    def _week_avg_pct(values: list[float], goal: float) -> tuple[int, float]:
+        """Média diária dos 7 dias excluindo dias sem registro; retorna (pct, avg_g)."""
+        days_with = [v for v in values if v > 0]
+        if not days_with or not goal:
+            return 0, 0.0
+        avg = round(sum(days_with) / len(days_with), 1)
+        return round(avg / goal * 100), avg
+
+    week_prot  = [w["prot"]  for w in week_data]
+    week_carb  = [w["carb"]  for w in week_data]
+    week_fat   = [w["fat"]   for w in week_data]
     week_fiber = [w["fiber"] for w in week_data]
-    # Média de fibra dos últimos 7 dias (exclui dias sem dados do denominador)
-    fiber_days = [f for f in week_fiber if f > 0]
-    week_fiber_avg     = round(sum(fiber_days) / len(fiber_days), 1) if fiber_days else 0.0
-    week_fiber_avg_pct = round(week_fiber_avg / goal_fiber * 100) if goal_fiber else 0
+
+    week_prot_avg_pct,  week_prot_avg  = _week_avg_pct(week_prot,  goal_prot_g)
+    week_carb_avg_pct,  week_carb_avg  = _week_avg_pct(week_carb,  goal_carb_g)
+    week_fat_avg_pct,   week_fat_avg   = _week_avg_pct(week_fat,   goal_fat_g)
+    week_fiber_avg_pct, week_fiber_avg = _week_avg_pct(week_fiber, goal_fiber)
 
     return templates.TemplateResponse(
         request=request, name="dashboard.html",
@@ -300,11 +318,15 @@ async def dashboard(
             "total_carb": total_carb, "total_fat": total_fat,
             "total_fiber": total_fiber,
             "goal_kcal": goal_kcal, "goal_fiber": goal_fiber,
-            "pct_kcal": pct_kcal, "pct_prot": pct_prot, "pct_fiber": pct_fiber,
+            "pct_kcal": pct_kcal, "pct_fiber": pct_fiber,
             "week_labels": week_labels,
-            "week_kcal":  [w["kcal"]  for w in week_data],
+            "week_kcal":  [w["kcal"] for w in week_data],
             "week_fiber": week_fiber,
-            "week_fiber_avg": week_fiber_avg,
+            # Médias dos últimos 7 dias por macro (exclui dias sem dados)
+            "week_prot_avg_pct":  week_prot_avg_pct,
+            "week_carb_avg_pct":  week_carb_avg_pct,
+            "week_fat_avg_pct":   week_fat_avg_pct,
+            "week_fiber_avg":     week_fiber_avg,
             "week_fiber_avg_pct": week_fiber_avg_pct,
             "now_hour": now.hour, "today_label": today_label,
         }
