@@ -6,7 +6,7 @@
 /* ── Página (WeasyPrint) ───────────────────────────────────────────── */
 @page {
   size: A4;
-  margin: 8mm 10mm 14mm;   /* top | sides | bottom (espaço p/ rodapé) */
+  margin: 0 0 12mm 0;      /* header full-bleed topo/lados; 12mm baixo p/ rodapé */
   @bottom-center {
     content: "NutriBot · Relatório · Página " counter(page);
     font-size: 7.5pt;
@@ -84,7 +84,7 @@ body {
 
 /* ── Body wrapper ─────────────────────────────────────────────────── */
 .body-wrap {
-  padding: 18pt 0;          /* @page margin (10mm≈28pt) já cuida das laterais */
+  padding: 20pt 30pt 28pt; /* laterais 30pt evitam corte nas bordas do papel */
   background: #F8F8FF;
 }
 
