@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+/* ── Página (WeasyPrint) ───────────────────────────────────────────── */
+@page {
+  size: A4;
+  margin: 0;
+  @bottom-center {
+    content: "NutriBot · Relatório · Página " counter(page);
+    font-size: 7.5pt;
+    color: #9096C0;
+  }
+}
+
+/* ── Reset & Base ─────────────────────────────────────────────────── */
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10pt;
+  color: #1E1B4B;
+  line-height: 1.5;
+  background: #F8F8FF;
+}
+
+/* ── Header (dark indigo — igual ao sidebar do painel) ────────────── */
+.header {
+  background: linear-gradient(135deg, #0F0D2E 0%, #1E1B4B 60%, #13113D 100%);
+  padding: 28pt 30pt 22pt;
+  color: white;
+  position: relative;
+  overflow: hidden;
+}
+/* glows decorativos (como no ring-card do dashboard) */
+.header::before {
+  content: '';
+  position: absolute;
+  bottom: -40pt; left: -30pt;
+  width: 180pt; height: 180pt;
+  background: radial-gradient(circle, rgba(99,102,241,.28) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.header::after {
+  content: '';
+  position: absolute;
+  top: -20pt; right: -30pt;
+  width: 140pt; height: 140pt;
+  background: radial-gradient(circle, rgba(14,165,233,.2) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.header-logo {
+  font-size: 9pt;
+  font-weight: 700;
+  letter-spacing: 2pt;
+  text-transform: uppercase;
+  color: #A5B4FC;
+  margin-bottom: 6pt;
+}
+.header-title {
+  font-size: 24pt;
+  font-weight: 800;
+  color: #E0DEFF;
+  line-height: 1.1;
+  margin-bottom: 4pt;
+}
+.header-sub {
+  font-size: 9.5pt;
+  color: rgba(255,255,255,.45);
+}
+.header-meta {
+  margin-top: 14pt;
+  display: flex;
+  gap: 8pt;
+}
+.header-pill {
+  background: rgba(99,102,241,.25);
+  border: 1pt solid rgba(99,102,241,.4);
+  border-radius: 20pt;
+  padding: 4pt 12pt;
+  font-size: 8.5pt;
+  color: #A5B4FC;
+}
+
+/* ── Body wrapper ─────────────────────────────────────────────────── */
+.body-wrap {
+  padding: 22pt 28pt;
+  background: #F8F8FF;
+}
+
+/* ── Section titles (idêntico ao sect-label do painel) ────────────── */
+.section { margin-bottom: 20pt; }
+.section-title {
+  font-size: 9pt;
+  font-weight: 700;
+  color: #9096C0;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  margin-bottom: 10pt;
+  padding-bottom: 5pt;
+  border-bottom: 1pt solid #E0E7FF;
+  display: flex;
+  align-items: center;
+  gap: 6pt;
+}
+/* barra vertical colorida antes do título (como no sect-label::before) */
+.section-bar {
+  display: inline-block;
+  width: 3pt;
+  height: 12pt;
+  background: linear-gradient(to bottom, #6366F1, #7C3AED);
+  border-radius: 2pt;
+  flex-shrink: 0;
+}
+.section-icon {
+  display: inline-block;
+  width: 18pt;
+  height: 18pt;
+  background: #EEF2FF;
+  border-radius: 6pt;
+  text-align: center;
+  line-height: 18pt;
+  font-size: 10pt;
+}
+
+/* ── KPI Cards (card do painel: border rgba(99,102,241,.1)) ───────── */
+.cards-grid {
+  display: flex;
+  gap: 8pt;
+  margin-bottom: 4pt;
+}
+.kpi-card {
+  flex: 1;
+  background: white;
+  border: 1pt solid #E0E7FF;
+  border-radius: 12pt;
+  padding: 12pt 10pt 10pt;
+  text-align: center;
+  box-shadow: 0 1pt 4pt rgba(99,102,241,.07);
+}
+.kpi-card.highlight {
+  background: #EEF2FF;
+  border-color: #A5B4FC;
+}
+.kpi-val {
+  font-size: 20pt;
+  font-weight: 800;
+  color: #4F46E5;
+  line-height: 1;
+  margin-bottom: 4pt;
+}
+.kpi-lbl {
+  font-size: 7.5pt;
+  color: #9096C0;
+  text-transform: uppercase;
+  letter-spacing: 0.4pt;
+  font-weight: 600;
+  margin-bottom: 6pt;
+}
+/* barra de progresso do card */
+.kpi-bar-track {
+  background: #EEF2FF;
+  border-radius: 6pt;
+  height: 5pt;
+  width: 100%;
+  margin-bottom: 5pt;
+  overflow: hidden;
+}
+.kpi-bar-fill {
+  height: 5pt;
+  border-radius: 6pt;
+}
+.kpi-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.kpi-goal {
+  font-size: 7.5pt;
+  color: #9096C0;
+}
+.kpi-pct {
+  font-size: 8pt;
+  font-weight: 700;
+  padding: 1.5pt 5pt;
+  border-radius: 8pt;
+}
+.pct-ok   { background: #EEF2FF; color: #4338CA; }
+.pct-low  { background: #FEF9C3; color: #78350F; }
+.pct-over { background: #FEE2E2; color: #991B1B; }
+.pct-zero { background: #F1F5F9; color: #94A3B8; }
+
+/* ── Macro strip (cores idênticas ao dashboard: índigo/ciano/violeta) */
+.macro-strip {
+  display: flex;
+  gap: 6pt;
+  margin-top: 8pt;
+}
+.macro-box {
+  flex: 1;
+  border-radius: 8pt;
+  padding: 8pt 6pt;
+  text-align: center;
+}
+.macro-box.prot  { background: #EEF2FF; border: 1pt solid #A5B4FC; }
+.macro-box.carb  { background: #E0F2FE; border: 1pt solid #7DD3FC; }
+.macro-box.fat   { background: #F5F3FF; border: 1pt solid #D8B4FE; }
+.macro-box.fiber { background: #F0FDF4; border: 1pt solid #BBF7D0; }
+.macro-val { font-size: 14pt; font-weight: 800; }
+.macro-box.prot  .macro-val { color: #6366F1; }
+.macro-box.carb  .macro-val { color: #0EA5E9; }
+.macro-box.fat   .macro-val { color: #A855F7; }
+.macro-box.fiber .macro-val { color: #16A34A; }
+.macro-lbl {
+  font-size: 7pt; color: #9096C0;
+  font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.3pt; margin-top: 2pt;
+}
+
+/* ── Day table (header roxo escuro como sidebar) ──────────────────── */
+.days-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
+.days-table thead tr {
+  background: #1E1B4B;
+  color: rgba(255,255,255,.75);
+}
+.days-table th {
+  padding: 7pt 8pt;
+  text-align: left;
+  font-size: 8pt;
+  font-weight: 600;
+  letter-spacing: 0.3pt;
+  text-transform: uppercase;
+}
+.days-table tbody tr { background: white; }
+.days-table tbody tr:nth-child(even) { background: #F8F8FF; }
+.days-table td {
+  padding: 7pt 8pt;
+  border-bottom: 0.5pt solid #EEF2FF;
+  vertical-align: middle;
+}
+.days-table tbody tr:last-child td { border-bottom: none; }
+.day-name { font-weight: 600; color: #1E1B4B; }
+
+/* ── Progress bar ─────────────────────────────────────────────────── */
+.bar-wrap {
+  display: inline-block;
+  background: #EEF2FF;
+  border-radius: 6pt;
+  height: 8pt;
+  width: 80pt;
+  vertical-align: middle;
+  overflow: hidden;
+}
+.bar-fill { height: 8pt; border-radius: 6pt; display: block; }
+/* indigo para meta atingida (igual ao ok-c do dashboard) */
+.bar-indigo { background: linear-gradient(90deg, #6366F1, #818CF8); }
+.bar-yellow { background: linear-gradient(90deg, #D97706, #FBBF24); }
+.bar-orange { background: linear-gradient(90deg, #DC2626, #F97316); }
+.bar-gray   { background: #CBD5E1; width: 2pt !important; }
+/* manter aliases antigos para compatibilidade (report.py usa bar-green) */
+.bar-green  { background: linear-gradient(90deg, #6366F1, #818CF8); }
+.pct-label  { font-size: 7.5pt; color: #9096C0; margin-left: 4pt; vertical-align: middle; }
+
+/* ── Badges ───────────────────────────────────────────────────────── */
+.badge {
+  display: inline-block;
+  padding: 2pt 7pt;
+  border-radius: 10pt;
+  font-size: 7.5pt;
+  font-weight: 700;
+  letter-spacing: 0.2pt;
+}
+.badge-ok   { background: #EEF2FF; color: #4338CA; }
+.badge-low  { background: #FEF9C3; color: #713F12; }
+.badge-over { background: #FEE2E2; color: #7F1D1D; }
+.badge-miss { background: #F1F5F9; color: #64748B; }
+
+/* ── Highlights ───────────────────────────────────────────────────── */
+.highlights-wrap {
+  background: white;
+  border: 1pt solid #E0E7FF;
+  border-radius: 12pt;
+  padding: 12pt 14pt;
+  box-shadow: 0 1pt 3pt rgba(99,102,241,.06);
+}
+.highlight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8pt;
+  padding: 4pt 0;
+  border-bottom: 0.5pt solid #EEF2FF;
+  font-size: 9.5pt;
+  color: #1E1B4B;
+}
+.highlight-item:last-child { border-bottom: none; }
+.highlight-dot {
+  width: 7pt;
+  height: 7pt;
+  background: #6366F1;
+  border-radius: 50%;
+  margin-top: 3pt;
+  flex-shrink: 0;
+}
+
+/* ── Suggestions (faixa lateral por categoria, igual ao painel) ───── */
+.sug-card {
+  background: white;
+  border: 1pt solid #E0E7FF;
+  border-radius: 12pt;
+  padding: 11pt 13pt;
+  margin-bottom: 8pt;
+  box-shadow: 0 1pt 3pt rgba(99,102,241,.05);
+  display: flex;
+  gap: 12pt;
+  align-items: flex-start;
+}
+.sug-accent {
+  width: 4pt;
+  border-radius: 4pt;
+  flex-shrink: 0;
+  align-self: stretch;
+  min-height: 30pt;
+}
+.sug-accent.proteina    { background: #DC2626; }
+.sug-accent.carboidrato { background: #EA580C; }
+.sug-accent.gordura     { background: #CA8A04; }
+.sug-accent.hidratacao  { background: #0284C7; }
+.sug-accent.horario     { background: #7C3AED; }
+.sug-accent.variedade   { background: #6366F1; }
+.sug-body { flex: 1; }
+.sug-cat {
+  font-size: 7pt;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8pt;
+  color: #9096C0;
+  margin-bottom: 4pt;
+}
+.sug-txt { font-size: 9.5pt; color: #1E1B4B; line-height: 1.45; }
+.sug-priority {
+  font-size: 6.5pt;
+  font-weight: 700;
+  padding: 1.5pt 5pt;
+  border-radius: 8pt;
+  align-self: flex-start;
+  flex-shrink: 0;
+}
+.priority-high   { background: #FEE2E2; color: #991B1B; }
+.priority-medium { background: #FEF9C3; color: #78350F; }
+.priority-low    { background: #EEF2FF; color: #4338CA; }
+
+/* ── Insight box (análise da IA — gradiente índigo/violeta) ───────── */
+.insight-box {
+  background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
+  border: 1pt solid #C7D2FE;
+  border-radius: 12pt;
+  padding: 12pt 14pt;
+  margin-top: 6pt;
+  display: flex;
+  gap: 10pt;
+  align-items: flex-start;
+}
+.insight-icon { font-size: 14pt; flex-shrink: 0; }
+.insight-txt  { font-size: 9.5pt; color: #3730A3; line-height: 1.5; }
+
+/* ── Footer ───────────────────────────────────────────────────────── */
+.footer {
+  margin-top: 20pt;
+  padding: 12pt 0 0;
+  border-top: 1pt solid #E0E7FF;
+  font-size: 7.5pt;
+  color: #9096C0;
+  text-align: center;
+  line-height: 1.7;
+}
+.footer strong { color: #4C4980; }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ─────────────────────────────────────────────────────── -->
+<div class="header">
+  <div class="header-logo">NutriBot</div>
+  <div class="header-title">Relatório Nutricional</div>
+  <div class="header-sub">25/08 a 31/08/2026 · Jaqueline</div>
+  <div class="header-meta">
+    <span class="header-pill">📅 0 dias registrados</span>
+    <span class="header-pill">🍽️ 0 refeições</span>
+    <span class="header-pill">🎯 Meta: 2000 kcal/dia</span>
+  </div>
+</div>
+
+<div class="body-wrap">
+
+<!-- ── RESUMO KPIs ─────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-bar"></span>
+    <span class="section-icon">📊</span> Resumo do Período
+  </div>
+
+  <div class="cards-grid">
+
+    <!-- Calorias -->
+    <div class="kpi-card highlight">
+      <div class="kpi-val">0</div>
+      <div class="kpi-lbl">kcal / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:0%; background:#cbd5e1;"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta 2000 kcal</span>
+        <span class="kpi-pct pct-zero">0%</span>
+      </div>
+    </div>
+
+    <!-- Proteína -->
+    <div class="kpi-card">
+      <div class="kpi-val">0g</div>
+      <div class="kpi-lbl">Proteína / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:0%; background:#cbd5e1;"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta 125g</span>
+        <span class="kpi-pct pct-zero">0%</span>
+      </div>
+    </div>
+
+    <!-- Carboidratos -->
+    <div class="kpi-card">
+      <div class="kpi-val">0g</div>
+      <div class="kpi-lbl">Carboidratos / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:0%; background:#cbd5e1;"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta 250g</span>
+        <span class="kpi-pct pct-zero">0%</span>
+      </div>
+    </div>
+
+    <!-- Gorduras -->
+    <div class="kpi-card">
+      <div class="kpi-val">0g</div>
+      <div class="kpi-lbl">Gorduras / dia</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:0%; background:#cbd5e1;"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">Meta 55g</span>
+        <span class="kpi-pct pct-zero">0%</span>
+      </div>
+    </div>
+
+    <!-- Dias ativos -->
+    <div class="kpi-card">
+      <div class="kpi-val">0</div>
+      <div class="kpi-lbl">Dias ativos</div>
+      <div class="kpi-bar-track">
+        <div class="kpi-bar-fill" style="width:0%; background:#cbd5e1;"></div>
+      </div>
+      <div class="kpi-footer">
+        <span class="kpi-goal">0 refeições</span>
+        <span class="kpi-pct pct-zero">0%</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Macro strip -->
+  <div class="macro-strip">
+    <div class="macro-box prot">
+      <div class="macro-val">0g</div>
+      <div class="macro-lbl">Proteína</div>
+    </div>
+    <div class="macro-box carb">
+      <div class="macro-val">0g</div>
+      <div class="macro-lbl">Carboidrato</div>
+    </div>
+    <div class="macro-box fat">
+      <div class="macro-val">0g</div>
+      <div class="macro-lbl">Gordura</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── DIA A DIA ───────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-bar"></span>
+    <span class="section-icon">📆</span> Período Detalhado
+  </div>
+  <table class="days-table">
+    <thead>
+      <tr>
+        <th>Período</th>
+        <th>Refeições</th>
+        <th>Kcal</th>
+        <th>Progresso</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      
+      <tr>
+        <td><span class="day-name">Ter 25/08</span></td>
+        <td>—</td>
+        <td><strong>—</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill bar-gray" style="width: 0%;"></div>
+          </div>
+          <span class="pct-label">0%</span>
+        </td>
+        <td><span class="badge badge-miss">Sem registro</span></td>
+      </tr>
+      
+      <tr>
+        <td><span class="day-name">Qua 26/08</span></td>
+        <td>—</td>
+        <td><strong>—</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill bar-gray" style="width: 0%;"></div>
+          </div>
+          <span class="pct-label">0%</span>
+        </td>
+        <td><span class="badge badge-miss">Sem registro</span></td>
+      </tr>
+      
+      <tr>
+        <td><span class="day-name">Qui 27/08</span></td>
+        <td>—</td>
+        <td><strong>—</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill bar-gray" style="width: 0%;"></div>
+          </div>
+          <span class="pct-label">0%</span>
+        </td>
+        <td><span class="badge badge-miss">Sem registro</span></td>
+      </tr>
+      
+      <tr>
+        <td><span class="day-name">Sex 28/08</span></td>
+        <td>—</td>
+        <td><strong>—</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill bar-gray" style="width: 0%;"></div>
+          </div>
+          <span class="pct-label">0%</span>
+        </td>
+        <td><span class="badge badge-miss">Sem registro</span></td>
+      </tr>
+      
+      <tr>
+        <td><span class="day-name">Sáb 29/08</span></td>
+        <td>—</td>
+        <td><strong>—</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill bar-gray" style="width: 0%;"></div>
+          </div>
+          <span class="pct-label">0%</span>
+        </td>
+        <td><span class="badge badge-miss">Sem registro</span></td>
+      </tr>
+      
+      <tr>
+        <td><span class="day-name">Dom 30/08</span></td>
+        <td>—</td>
+        <td><strong>—</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill bar-gray" style="width: 0%;"></div>
+          </div>
+          <span class="pct-label">0%</span>
+        </td>
+        <td><span class="badge badge-miss">Sem registro</span></td>
+      </tr>
+      
+      <tr>
+        <td><span class="day-name">Seg 31/08</span></td>
+        <td>—</td>
+        <td><strong>—</strong></td>
+        <td>
+          <div class="bar-wrap">
+            <div class="bar-fill bar-gray" style="width: 0%;"></div>
+          </div>
+          <span class="pct-label">0%</span>
+        </td>
+        <td><span class="badge badge-miss">Sem registro</span></td>
+      </tr>
+      
+    </tbody>
+  </table>
+</div>
+
+<!-- ── DESTAQUES ───────────────────────────────────────────────────── -->
+
+<div class="section">
+  <div class="section-title">
+    <span class="section-bar"></span>
+    <span class="section-icon">⭐</span> Destaques
+  </div>
+  <div class="highlights-wrap">
+    
+    <div class="highlight-item">
+      <div class="highlight-dot"></div>
+      <span>Nenhum dado registrado esta semana - vamos começar do zero!</span>
+    </div>
+    
+    <div class="highlight-item">
+      <div class="highlight-dot"></div>
+      <span>Meta de 2000 kcal definida para manutenção</span>
+    </div>
+    
+    <div class="highlight-item">
+      <div class="highlight-dot"></div>
+      <span>Oportunidade perfeita para estabelecer uma rotina de registro</span>
+    </div>
+    
+  </div>
+</div>
+
+
+<!-- ── SUGESTÕES ───────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="section-title">
+    <span class="section-bar"></span>
+    <span class="section-icon">💡</span> Sugestões Personalizadas
+  </div>
+  
+  <div class="sug-card">
+    <div class="sug-accent horario"></div>
+    <div class="sug-body">
+      <div class="sug-cat">horario</div>
+      <div class="sug-txt">Jaqueline, que tal começar registrando suas refeições de hoje? Escolha um horário fixo (como logo após cada refeição) para anotar o que comeu. Isso ajuda a criar o hábito e torna mais fácil atingir suas metas!</div>
+    </div>
+    <span class="sug-priority priority-high">
+      Alta
+    </span>
+  </div>
+  
+  <div class="sug-card">
+    <div class="sug-accent variedade"></div>
+    <div class="sug-body">
+      <div class="sug-cat">variedade</div>
+      <div class="sug-txt">Para manter sua energia em 2000 kcal, procure incluir alimentos de diferentes cores e grupos ao longo do dia: frutas, vegetais, proteínas, grãos e gorduras saudáveis. A variedade torna a alimentação mais nutritiva e saborosa!</div>
+    </div>
+    <span class="sug-priority priority-high">
+      Alta
+    </span>
+  </div>
+  
+  <div class="sug-card">
+    <div class="sug-accent proteina"></div>
+    <div class="sug-body">
+      <div class="sug-cat">proteina</div>
+      <div class="sug-txt">Uma boa meta é distribuir proteína entre as refeições (cerca de 50-60g por dia para manutenção). Tente incluir uma fonte de proteína em cada refeição principal: ovos, frango, peixe, iogurte ou legumes. Você consegue!</div>
+    </div>
+    <span class="sug-priority priority-medium">
+      Média
+    </span>
+  </div>
+  
+</div>
+
+<!-- ── INSIGHT IA ──────────────────────────────────────────────────── -->
+
+<div class="section">
+  <div class="section-title">
+    <span class="section-bar"></span>
+    <span class="section-icon">🤖</span> Análise da IA
+  </div>
+  <div class="insight-box">
+    <div class="insight-icon">💬</div>
+    <div class="insight-txt">Jaqueline, essa é sua primeira semana de rastreamento! 🎉 Começar é sempre o passo mais importante. Registre suas refeições com consistência e você verá padrões que te ajudarão a manter seu peso com mais facilidade. Você está no caminho certo!</div>
+  </div>
+</div>
+
+
+<!-- ── FOOTER ──────────────────────────────────────────────────────── -->
+<div class="footer">
+  Gerado por <strong>NutriBot</strong> em 31/08/2026 às 18:12<br>
+  Valores baseados em registros de refeição. Estimativas nutricionais por IA — consulte um nutricionista para orientação profissional.
+</div>
+
+</div><!-- .body-wrap -->
+</body>
+</html>
