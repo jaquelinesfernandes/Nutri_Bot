@@ -113,7 +113,7 @@ def _bar_color(pct: int) -> str:
 def _period_label(start: date, end: date, period_type: str) -> str:
     """Human-readable label for the report period."""
     last = end - timedelta(days=1)
-    if period_type == "weekly":
+    if period_type in ("weekly", "biweekly"):
         return f"{start.strftime('%d/%m')} a {last.strftime('%d/%m/%Y')}"
     if period_type == "monthly":
         return f"{_MONTH_FULL_PT[start.month].capitalize()} de {start.year}"
@@ -401,7 +401,7 @@ class ReportService:
 
         # Build table rows based on period granularity
         week_highlights: dict | None = None
-        if period_type == "weekly":
+        if period_type in ("weekly", "biweekly"):
             days_data = _group_logs_daily(list(logs), start_date, end_date, tz)
             # Patch goal_kcal and recompute badge/bar/macros for each row (single-day rows)
             for row in days_data:

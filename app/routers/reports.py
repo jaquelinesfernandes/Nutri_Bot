@@ -69,6 +69,8 @@ def _resolve_period(period: str, created_at_date: date) -> tuple[date, date, str
     today = date.today()
     if period in ("semana", "week", "7dias"):
         return today - timedelta(days=7), today, "weekly"
+    if period in ("15dias", "quinzena"):
+        return today - timedelta(days=15), today, "biweekly"
     if period in ("mes", "mês", "month", "30dias"):
         return today.replace(day=1), today, "monthly"
     if period in ("3meses", "trimestre", "90dias", "quarter"):
@@ -105,7 +107,7 @@ async def generate_report(
     except ValueError:
         raise HTTPException(
             status_code=422,
-            detail="Período inválido. Use: semana, mes, 3meses ou total.",
+            detail="Período inválido. Use: semana, 15dias, mes, 3meses ou total.",
         )
 
     if start >= end:

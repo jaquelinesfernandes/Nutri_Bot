@@ -137,6 +137,7 @@
     width: 4px; align-self: stretch; flex-shrink: 0;
   }
   .report-accent.weekly    { background: linear-gradient(to bottom, #6366F1, #818CF8); }
+  .report-accent.biweekly  { background: linear-gradient(to bottom, #10B981, #34D399); }
   .report-accent.monthly   { background: linear-gradient(to bottom, #0EA5E9, #38BDF8); }
   .report-accent.quarterly { background: linear-gradient(to bottom, #A855F7, #C084FC); }
   .report-accent.custom    { background: linear-gradient(to bottom, #F59E0B, #FCD34D); }
@@ -152,6 +153,7 @@
     flex-shrink: 0;
   }
   .report-type-badge.weekly    { background: rgba(99,102,241,.12); }
+  .report-type-badge.biweekly  { background: rgba(16,185,129,.12); }
   .report-type-badge.monthly   { background: rgba(14,165,233,.12); }
   .report-type-badge.quarterly { background: rgba(168,85,247,.12); }
   .report-type-badge.custom    { background: rgba(245,158,11,.12); }
@@ -170,6 +172,7 @@
     padding: 2px 8px; border-radius: 20px;
   }
   .report-chip.weekly    { background: rgba(99,102,241,.1);  color: #6366F1; }
+  .report-chip.biweekly  { background: rgba(16,185,129,.1);  color: #059669; }
   .report-chip.monthly   { background: rgba(14,165,233,.1);  color: #0EA5E9; }
   .report-chip.quarterly { background: rgba(168,85,247,.1);  color: #A855F7; }
   .report-chip.custom    { background: rgba(245,158,11,.1);  color: #F59E0B; }
@@ -269,7 +272,7 @@
   }
   .modal-desc { font-size: 13px; color: var(--text-2); margin-bottom: 24px; line-height: 1.5; }
   .period-grid {
-    display: grid; grid-template-columns: 1fr 1fr;
+    display: grid; grid-template-columns: repeat(3, 1fr);
     gap: 10px; margin-bottom: 24px;
   }
   .period-btn {
@@ -387,6 +390,7 @@
     <div class="report-tabs" role="tablist" aria-label="Filtrar por período">
       <button class="report-tab active" data-filter="all" role="tab" aria-selected="true">Todos</button>
       <button class="report-tab" data-filter="weekly" role="tab" aria-selected="false">Semanal</button>
+      <button class="report-tab" data-filter="biweekly" role="tab" aria-selected="false">Quinzena</button>
       <button class="report-tab" data-filter="monthly" role="tab" aria-selected="false">Mensal</button>
       <button class="report-tab" data-filter="quarterly" role="tab" aria-selected="false">Trimestral</button>
     </div>
@@ -405,6 +409,11 @@
         <span class="period-btn-icon">📅</span>
         <span class="period-btn-label">Última semana</span>
         <span class="period-btn-sub">7 dias</span>
+      </button>
+      <button class="period-btn" data-period="15dias" onclick="selectPeriod(this)">
+        <span class="period-btn-icon">📋</span>
+        <span class="period-btn-label">Quinzena</span>
+        <span class="period-btn-sub">15 dias</span>
       </button>
       <button class="period-btn" data-period="mes" onclick="selectPeriod(this)">
         <span class="period-btn-icon">📆</span>
@@ -519,9 +528,10 @@
 <div class="reports-list" id="reportsList">
   {% set type_icons = {
     'weekly':    '📅',
+    'biweekly':  '📋',
     'monthly':   '📆',
     'quarterly': '📊',
-    'custom':    '📋'
+    'custom':    '📈'
   } %}
 
   {% for r in reports %}

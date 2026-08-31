@@ -401,8 +401,9 @@ async def relatorios(
         return s.strftime("%d/%m/%Y")
 
     _type_labels = {
-        "weekly": "Semanal", "monthly": "Mensal",
-        "quarterly": "Trimestral", "custom": "Personalizado",
+        "weekly": "Semanal", "biweekly": "Quinzena",
+        "monthly": "Mensal", "quarterly": "Trimestral",
+        "custom": "Personalizado",
     }
 
     reports = [
