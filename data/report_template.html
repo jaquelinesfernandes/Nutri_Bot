@@ -707,12 +707,14 @@ body {
     <span class="section-bar"></span>
     <span class="section-icon">📆</span> Período Detalhado
   </div>
+  {# Detecta se há linhas de múltiplos dias (mensal/trimestral) #}
+  {% set is_multi_day = days and days[0].chunk_days > 1 %}
   <table class="days-table">
     <thead>
       <tr>
         <th>Período</th>
         <th>Refeições</th>
-        <th>Kcal</th>
+        <th>{% if is_multi_day %}Kcal/dia (média){% else %}Kcal{% endif %}</th>
         <th>Progresso</th>
         <th>Status</th>
       </tr>
@@ -722,14 +724,26 @@ body {
       <tr>
         <td><span class="day-name">{{ day.label }}</span></td>
         <td>{{ day.meals_label }}</td>
-        <td><strong>{{ day.kcal }}</strong></td>
+        <td>
+          <strong>{{ day.kcal }}</strong>
+          {% if day.missing_days > 0 %}
+          <br><span style="font-size:6.5pt;color:#f59e0b;font-weight:600;">
+            ⚠ {{ day.missing_days }}d sem dados
+          </span>
+          {% endif %}
+        </td>
         <td>
           <div class="bar-wrap">
             <div class="bar-fill {{ day.bar_cls }}" style="width: {{ day.bar_pct }}%;"></div>
           </div>
           <span class="pct-label">{{ day.pct }}%</span>
         </td>
-        <td><span class="badge {{ day.badge_cls }}">{{ day.badge_lbl }}</span></td>
+        <td>
+          <span class="badge {{ day.badge_cls }}">{{ day.badge_lbl }}</span>
+          {% if day.missing_days > 0 %}
+          <br><span class="badge badge-miss" style="margin-top:2pt;font-size:6.5pt;">Regularidade</span>
+          {% endif %}
+        </td>
       </tr>
       {% endfor %}
     </tbody>

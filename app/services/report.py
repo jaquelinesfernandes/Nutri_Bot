@@ -126,12 +126,27 @@ def _period_label(start: date, end: date, period_type: str) -> str:
 
 
 def _build_row(
-    label: str, logs: list, goal_kcal: int, tz: ZoneInfo
+    label: str, logs: list, goal_kcal: int, tz: ZoneInfo, chunk_days: int = 1
 ) -> dict:
-    """Build a single row dict for the days table, from a list of MealLog objects."""
-    day_kcal = sum(l.total_calories_kcal for l in logs)
+    """Build a single row dict for the days table, from a list of MealLog objects.
+
+    For multi-day chunks (chunk_days > 1) uses the *average* daily kcal over days
+    that actually have data, excluding empty days from the denominator so the
+    percentage stays meaningful. Empty days are reported as ``missing_days``.
+    """
+    total_kcal = sum(l.total_calories_kcal for l in logs)
     meal_types = {l.meal_type for l in logs}
-    pct = int(day_kcal / goal_kcal * 100) if logs and goal_kcal else 0
+
+    # Unique days with at least one log in this chunk
+    days_with_data = len({l.logged_at.astimezone(tz).date() for l in logs}) if logs else 0
+
+    # Average daily kcal over days that have data (avoids ÷0 and avoids inflating pct)
+    avg_daily_kcal = total_kcal / days_with_data if days_with_data else 0.0
+
+    pct = int(avg_daily_kcal / goal_kcal * 100) if (logs and goal_kcal) else 0
+
+    # Missing days only meaningful when chunk spans > 1 day
+    missing_days = max(0, chunk_days - days_with_data) if chunk_days > 1 else 0
 
     if not logs:
         badge_cls, badge_lbl = "badge-miss", "Sem registro"
@@ -147,13 +162,16 @@ def _build_row(
 
     return {
         "label": label,
-        "kcal": f"{day_kcal:.0f}" if logs else "—",
+        "kcal": f"{avg_daily_kcal:.0f}" if logs else "—",
         "meals_label": meals_label,
         "pct": pct,
         "bar_pct": min(pct, 100),
         "bar_cls": _bar_class(pct),
         "badge_cls": badge_cls,
         "badge_lbl": badge_lbl,
+        "days_with_data": days_with_data,
+        "missing_days": missing_days,
+        "chunk_days": chunk_days,
     }
 
 
@@ -184,8 +202,9 @@ def _group_logs_weekly(
             l for l in all_logs
             if cursor <= l.logged_at.astimezone(tz).date() < chunk_end
         ]
+        chunk_days = (chunk_end - cursor).days
         label = f"Semana {week_num} ({cursor.strftime('%d/%m')}–{(chunk_end - timedelta(days=1)).strftime('%d/%m')})"
-        rows.append(_build_row(label, chunk_logs, goal_kcal, tz))
+        rows.append(_build_row(label, chunk_logs, goal_kcal, tz, chunk_days=chunk_days))
         cursor = chunk_end
         week_num += 1
     return rows
@@ -210,7 +229,9 @@ def _group_logs_monthly(
             if month_start <= l.logged_at.astimezone(tz).date() < actual_end
         ]
         label = f"{_MONTH_FULL_PT[month].capitalize()} {year}"
-        rows.append(_build_row(label, month_logs, goal_kcal, tz))
+        # chunk_days = actual days in [month_start, actual_end), não o mês completo
+        chunk_days_month = (actual_end - month_start).days
+        rows.append(_build_row(label, month_logs, goal_kcal, tz, chunk_days=chunk_days_month))
         month += 1
         if month > 12:
             month = 1
@@ -338,7 +359,7 @@ class ReportService:
         # Build table rows based on period granularity
         if period_type == "weekly":
             days_data = _group_logs_daily(list(logs), start_date, end_date, tz)
-            # Patch goal_kcal and recompute badge/bar for each row
+            # Patch goal_kcal and recompute badge/bar for each row (single-day rows)
             for row in days_data:
                 day = start_date + timedelta(days=days_data.index(row))
                 day_logs = [l for l in logs if l.logged_at.astimezone(tz).date() == day]
@@ -346,6 +367,10 @@ class ReportService:
                 row["pct"] = pct_day
                 row["bar_pct"] = min(pct_day, 100)
                 row["bar_cls"] = _bar_class(pct_day)
+                # single-day: sem conceito de dias faltantes
+                row["missing_days"] = 0
+                row["chunk_days"] = 1
+                row["days_with_data"] = 1 if day_logs else 0
                 if not day_logs:
                     row["badge_cls"], row["badge_lbl"] = "badge-miss", "Sem registro"
                 elif 80 <= pct_day <= 115:

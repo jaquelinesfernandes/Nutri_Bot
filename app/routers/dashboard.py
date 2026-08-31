@@ -249,13 +249,16 @@ async def dashboard(
     )
     meals = list(result.scalars().all())
 
-    total_kcal = sum(m.total_calories_kcal for m in meals)
-    total_prot = sum(m.total_protein_g for m in meals)
-    total_carb = sum(m.total_carb_g for m in meals)
-    total_fat  = sum(m.total_fat_g for m in meals)
-    goal_kcal = user.daily_calorie_goal
-    pct_kcal = (total_kcal / goal_kcal * 100) if goal_kcal else 0
-    pct_prot = (total_prot / (goal_kcal * 0.06) * 100) if goal_kcal else 0  # ~6% meta prot
+    total_kcal  = sum(m.total_calories_kcal for m in meals)
+    total_prot  = sum(m.total_protein_g for m in meals)
+    total_carb  = sum(m.total_carb_g for m in meals)
+    total_fat   = sum(m.total_fat_g for m in meals)
+    total_fiber = sum(m.total_fiber_g for m in meals)
+    goal_kcal   = user.daily_calorie_goal
+    goal_fiber  = 25   # DRI: 25 g/dia
+    pct_kcal    = (total_kcal / goal_kcal * 100) if goal_kcal else 0
+    pct_prot    = (total_prot / (goal_kcal * 0.06) * 100) if goal_kcal else 0
+    pct_fiber   = round(total_fiber / goal_fiber * 100) if goal_fiber else 0
 
     # Dados dos últimos 7 dias para gráfico
     week_data = []
@@ -272,7 +275,8 @@ async def dashboard(
         day_meals = list(r2.scalars().all())
         week_data.append({
             "label": d.strftime("%a %d/%m"),
-            "kcal": round(sum(m.total_calories_kcal for m in day_meals), 1),
+            "kcal":  round(sum(m.total_calories_kcal for m in day_meals), 1),
+            "fiber": round(sum(m.total_fiber_g for m in day_meals), 1),
         })
 
     br_weekdays = {"Mon":"Seg","Tue":"Ter","Wed":"Qua","Thu":"Qui","Fri":"Sex","Sat":"Sáb","Sun":"Dom"}
@@ -281,6 +285,12 @@ async def dashboard(
     months_pt = ["","jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"]
     today_label = f"{today.day} de {months_pt[today.month]} de {today.year}"
 
+    week_fiber = [w["fiber"] for w in week_data]
+    # Média de fibra dos últimos 7 dias (exclui dias sem dados do denominador)
+    fiber_days = [f for f in week_fiber if f > 0]
+    week_fiber_avg     = round(sum(fiber_days) / len(fiber_days), 1) if fiber_days else 0.0
+    week_fiber_avg_pct = round(week_fiber_avg / goal_fiber * 100) if goal_fiber else 0
+
     return templates.TemplateResponse(
         request=request, name="dashboard.html",
         context={
@@ -288,9 +298,14 @@ async def dashboard(
             "meals": meals, "meal_labels": _MEAL_LABELS,
             "total_kcal": total_kcal, "total_prot": total_prot,
             "total_carb": total_carb, "total_fat": total_fat,
-            "goal_kcal": goal_kcal, "pct_kcal": pct_kcal, "pct_prot": pct_prot,
+            "total_fiber": total_fiber,
+            "goal_kcal": goal_kcal, "goal_fiber": goal_fiber,
+            "pct_kcal": pct_kcal, "pct_prot": pct_prot, "pct_fiber": pct_fiber,
             "week_labels": week_labels,
-            "week_kcal": [w["kcal"] for w in week_data],
+            "week_kcal":  [w["kcal"]  for w in week_data],
+            "week_fiber": week_fiber,
+            "week_fiber_avg": week_fiber_avg,
+            "week_fiber_avg_pct": week_fiber_avg_pct,
             "now_hour": now.hour, "today_label": today_label,
         }
     )

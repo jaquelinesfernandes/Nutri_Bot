@@ -9,6 +9,8 @@
 {% set pct_prot2   = (total_prot / goal_prot_g * 100) | int if goal_prot_g else 0 %}
 {% set pct_carb    = (total_carb / goal_carb_g * 100) | int if goal_carb_g else 0 %}
 {% set pct_fat     = (total_fat  / goal_fat_g  * 100) | int if goal_fat_g  else 0 %}
+{# Fibra — meta fixa 25g/dia (DRI); valores vêm do router #}
+{% set pct_fiber_clamp = [pct_fiber, 100] | min %}
 {% set ring_pct    = [pct_kcal, 100] | min %}
 {% set dashoffset  = (414.69 * (1 - ring_pct / 100)) | round(2) %}
 {% set ring_cls    = 'r-fill-over' if pct_kcal > 110 else ('r-fill-warn' if pct_kcal > 100 else 'r-fill-ok') %}
@@ -214,6 +216,22 @@
       <svg class="macro-spark" id="spFat"></svg>
     </div>
 
+    <div class="card macro-card fiber">
+      <div class="macro-icon fiber">🌿</div>
+      <div class="macro-body">
+        <div class="macro-lbl">Fibra</div>
+        <div class="macro-num">{{ total_fiber | round(1) }}<small>g</small></div>
+        <div class="macro-sub">
+          Meta {{ goal_fiber }}g · <strong style="color:{% if pct_fiber >= 80 %}#16A34A{% elif pct_fiber >= 50 %}#ca8a04{% else %}#dc2626{% endif %}">{{ pct_fiber }}%</strong> hoje
+          · {{ week_fiber_avg_pct }}% (7d)
+        </div>
+        <div class="macro-mini-track">
+          <div class="macro-mini-fill" style="width:{{ pct_fiber_clamp }}%;background:linear-gradient(90deg,#16A34A,#4ADE80)"></div>
+        </div>
+      </div>
+      <svg class="macro-spark" id="spFiber"></svg>
+    </div>
+
   </div>
 </div>
 
@@ -327,6 +345,29 @@
         </div>
       </div>
 
+      <div class="mprog-item">
+        <div class="mprog-head">
+          <span class="mprog-name"><span class="mprog-dot" style="background:#16A34A"></span>Fibra</span>
+          <span class="mprog-meta">{{ total_fiber | round(1) }}g / {{ goal_fiber }}g</span>
+        </div>
+        <div class="mprog-tracks">
+          <div class="mprog-row">
+            <span class="mprog-row-label">Hoje</span>
+            <div class="mprog-track today">
+              <div class="mprog-fill" style="width:{{ pct_fiber_clamp }}%;background:linear-gradient(90deg,#16A34A,#4ADE80)"></div>
+            </div>
+            <span class="mprog-pct">{{ pct_fiber }}%</span>
+          </div>
+          <div class="mprog-row" style="margin-top:4px">
+            <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
+            <div class="mprog-track today" style="opacity:.6">
+              <div class="mprog-fill" style="width:{{ [week_fiber_avg_pct, 100]|min }}%;background:linear-gradient(90deg,#16A34A,#4ADE80);opacity:.75"></div>
+            </div>
+            <span class="mprog-pct" style="color:var(--text-3)">{{ week_fiber_avg_pct }}%</span>
+          </div>
+        </div>
+      </div>
+
     </div>
     <div class="mprog-legend">
       <span class="mprog-legend-item" style="font-size:11px;color:var(--text-3)">
@@ -398,9 +439,11 @@ function sparkline(id, data, color) {
       stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
     <circle cx="${lx}" cy="${ly}" r="2.8" fill="${color}"/>`;
 }
-sparkline('spProt', weekKcal, '#6366F1');
-sparkline('spCarb', weekKcal, '#0EA5E9');
-sparkline('spFat',  weekKcal, '#A855F7');
+const weekFiber = {{ week_fiber | tojson }};
+sparkline('spProt',  weekKcal,  '#6366F1');
+sparkline('spCarb',  weekKcal,  '#0EA5E9');
+sparkline('spFat',   weekKcal,  '#A855F7');
+sparkline('spFiber', weekFiber, '#16A34A');
 
 /* ── Canvas helper ──────────────────────────────────── */
 function setupCanvas(id) {
