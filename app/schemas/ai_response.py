@@ -37,7 +37,21 @@ class ReportSuggestion(BaseModel):
     priority: Literal["high", "medium", "low"] = "medium"
 
 
+class MenuMeal(BaseModel):
+    """Uma refeição dentro do cardápio sugerido pela IA."""
+    type: str           # "Café da manhã", "Almoço", "Jantar", etc.
+    foods: list[str]    # ["Arroz integral (4 col sopa)", "Feijão (1 concha)"]
+    kcal_estimate: int
+
+
+class MenuSuggestion(BaseModel):
+    """Cardápio sugerido para 1 dia, personalizado conforme o objetivo do usuário."""
+    title: str
+    meals: list[MenuMeal]
+
+
 class ReportSuggestionsResponse(BaseModel):
     highlights: list[str]
     suggestions: list[ReportSuggestion]
     weekly_insight: str
+    menu_suggestion: MenuSuggestion | None = None

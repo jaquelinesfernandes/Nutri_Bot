@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import json
 import logging
+from collections import Counter, defaultdict
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -14,6 +15,7 @@ from zoneinfo import ZoneInfo
 from jinja2 import Environment, FileSystemLoader
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.models.meal_log import MealLog
 from app.models.user import User
@@ -39,7 +41,49 @@ _MONTH_FULL_PT = [
     "", "janeiro", "fevereiro", "março", "abril", "maio", "junho",
     "julho", "agosto", "setembro", "outubro", "novembro", "dezembro",
 ]
+_MEAL_TYPE_LABELS = {
+    "breakfast":       "Café da manhã",
+    "morning_snack":   "Lanche da manhã",
+    "lunch":           "Almoço",
+    "afternoon_snack": "Lanche da tarde",
+    "dinner":          "Jantar",
+    "snack":           "Lanche",
+    "other":           "Outro",
+}
+_MEAL_ORDER = [
+    "breakfast", "morning_snack", "lunch", "afternoon_snack", "dinner", "snack", "other",
+]
 _TEMPLATE_DIR = Path(__file__).parent.parent.parent / "data"
+
+
+def _weekly_score(pct_days: int, pct_kcal: int, pct_protein: int) -> tuple[float, str, str]:
+    """Calcula nota semanal 0–10 com base em consistência, meta calórica e proteína.
+
+    Retorna (score, label, emoji).
+    """
+    def _s(p: int) -> float:
+        p = min(p, 130)  # ignora excesso extremo
+        if p == 0:
+            return 0.0
+        if p >= 80:
+            return 10.0
+        if p >= 70:
+            return 7.0
+        if p >= 50:
+            return 4.0
+        return 2.0
+
+    score = round(_s(pct_days) * 0.40 + _s(pct_kcal) * 0.35 + _s(pct_protein) * 0.25, 1)
+    score = min(score, 10.0)
+    if score >= 9.0:
+        return score, "Excelente", "🏆"
+    if score >= 7.0:
+        return score, "Muito bom", "⭐"
+    if score >= 5.0:
+        return score, "Bom", "👍"
+    if score >= 3.0:
+        return score, "Regular", "💪"
+    return score, "Continue!", "🌱"
 
 
 def _bar_class(pct: int) -> str:
@@ -197,12 +241,14 @@ class ReportService:
         end_dt = datetime(end_date.year, end_date.month, end_date.day, 0, 0, tzinfo=tz)
 
         result = await db.execute(
-            select(MealLog).where(
+            select(MealLog)
+            .where(
                 MealLog.user_id == user.id,
                 MealLog.logged_at >= start_dt,
                 MealLog.logged_at < end_dt,
                 MealLog.confirmed.is_(True),
             )
+            .options(selectinload(MealLog.food_items))
         )
         logs = result.scalars().all()
 
@@ -226,6 +272,55 @@ class ReportService:
         avg_carb = int(total_carb / n)
         avg_fat = int(total_fat / n)
 
+        # ── Ranking de alimentos e distribuição por tipo de refeição ─────────
+        food_freq: Counter = Counter()
+        food_kcal_map: dict[str, float] = defaultdict(float)
+        meal_kcal_map: dict[str, float] = defaultdict(float)
+        meal_count_map: dict[str, int] = defaultdict(int)
+        total_fiber = 0.0
+
+        for log in logs:
+            meal_kcal_map[log.meal_type] += log.total_calories_kcal
+            meal_count_map[log.meal_type] += 1
+            for item in getattr(log, "food_items", []):
+                key = item.name[:50]          # normaliza nomes longos
+                food_freq[key] += 1
+                food_kcal_map[key] += item.calories_kcal
+                total_fiber += item.fiber_g
+
+        # Top 8 alimentos por kcal total consumida no período
+        top_names = sorted(food_freq, key=lambda x: food_kcal_map[x], reverse=True)[:8]
+        max_food_kcal = food_kcal_map[top_names[0]] if top_names else 1.0
+        food_ranking = [
+            {
+                "name": name,
+                "count": food_freq[name],
+                "total_kcal": round(food_kcal_map[name]),
+                "pct": round(food_kcal_map[name] / total_kcal * 100) if total_kcal else 0,
+                "bar_pct": round(food_kcal_map[name] / max_food_kcal * 100),
+            }
+            for name in top_names
+        ]
+
+        # Distribuição calórica por tipo de refeição
+        meal_type_dist = [
+            {
+                "type": mtype,
+                "label": _MEAL_TYPE_LABELS[mtype],
+                "icon": _MEAL_ICONS[mtype],
+                "kcal": round(meal_kcal_map[mtype]),
+                "count": meal_count_map[mtype],
+                "pct": round(meal_kcal_map[mtype] / total_kcal * 100) if total_kcal else 0,
+            }
+            for mtype in _MEAL_ORDER
+            if meal_kcal_map.get(mtype, 0) > 0
+        ]
+
+        # Fibra
+        avg_fiber_g = round(total_fiber / n, 1) if n else 0.0
+        goal_fiber_g = 25    # DRI: 25g/dia
+        pct_fiber = _pct(avg_fiber_g, goal_fiber_g)
+
         # Macro goals (25% prot / 50% carb / 25% fat split)
         goal_protein_g = int(goal_kcal * 0.25 / 4)
         goal_carb_g = int(goal_kcal * 0.50 / 4)
@@ -236,6 +331,9 @@ class ReportService:
         pct_carb = _pct(avg_carb, goal_carb_g)
         pct_fat = _pct(avg_fat, goal_fat_g)
         pct_days = _pct(len(days_with_logs), total_days)
+
+        # Score da semana (depende dos pct calculados acima)
+        weekly_score, score_label, score_emoji = _weekly_score(pct_days, pct_kcal, pct_protein)
 
         # Build table rows based on period granularity
         if period_type == "weekly":
@@ -266,11 +364,15 @@ class ReportService:
             "avg_protein_g": avg_protein,
             "avg_carb_g": avg_carb,
             "avg_fat_g": avg_fat,
+            "avg_fiber_g": avg_fiber_g,
             "days_logged": len(days_with_logs),
             "goal_kcal": goal_kcal,
             "total_meals": len(logs),
             "period_type": period_type,
             "total_days": total_days,
+            # Contexto para o AI gerar cardápio mais relevante
+            "top_foods": [f["name"] for f in food_ranking[:5]],
+            "goal_type": user.goal_type or "manutenção",
         }
         user_context = {
             "name": user.first_name or "Usuário",
@@ -284,6 +386,7 @@ class ReportService:
             suggestions = [s.model_dump() for s in ai_result.suggestions]
             highlights = ai_result.highlights
             weekly_insight = ai_result.weekly_insight
+            menu_suggestion = ai_result.menu_suggestion
         except Exception as e:
             logger.warning(f"[REPORT] AI suggestions falhou: {e}")
             suggestions = [{
@@ -293,6 +396,7 @@ class ReportService:
             }]
             highlights = []
             weekly_insight = None
+            menu_suggestion = None
 
         period_label = _period_label(start_date, end_date, period_type)
 
@@ -301,30 +405,44 @@ class ReportService:
         html = template.render(
             user_name=user.first_name or "Usuário",
             week_label=period_label,
+            # KPIs básicos
             avg_kcal=avg_kcal,
             avg_protein_g=avg_protein,
             avg_carb_g=avg_carb,
             avg_fat_g=avg_fat,
+            avg_fiber_g=avg_fiber_g,
             goal_kcal=goal_kcal,
             goal_protein_g=goal_protein_g,
             goal_carb_g=goal_carb_g,
             goal_fat_g=goal_fat_g,
+            goal_fiber_g=goal_fiber_g,
             pct_kcal=pct_kcal,
             pct_protein=pct_protein,
             pct_carb=pct_carb,
             pct_fat=pct_fat,
+            pct_fiber=pct_fiber,
             pct_days=pct_days,
             bar_color_kcal=_bar_color(pct_kcal),
             bar_color_protein=_bar_color(pct_protein),
             bar_color_carb=_bar_color(pct_carb),
             bar_color_fat=_bar_color(pct_fat),
+            bar_color_fiber=_bar_color(pct_fiber),
             bar_color_days=_bar_color(pct_days),
             days_logged=len(days_with_logs),
             total_meals=len(logs),
             days=days_data,
+            # Score da semana
+            weekly_score=weekly_score,
+            score_label=score_label,
+            score_emoji=score_emoji,
+            # Análise por refeição e ranking de alimentos
+            meal_type_dist=meal_type_dist,
+            food_ranking=food_ranking,
+            # IA
             suggestions=suggestions,
             highlights=highlights,
             weekly_insight=weekly_insight,
+            menu_suggestion=menu_suggestion,
             generated_at=datetime.now(tz).strftime("%d/%m/%Y às %H:%M"),
         )
 

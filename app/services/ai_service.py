@@ -205,10 +205,14 @@ class AIService:
             "Você é um assistente de nutrição que analisa dados semanais e gera "
             "sugestões personalizadas, encorajadoras e práticas em português brasileiro. "
             "Tom: encorajador, nunca punitivo. Gere exatamente 3 sugestões acionáveis. "
+            "Gere também um cardápio sugerido para 1 dia completo, adequado ao objetivo e à meta calórica "
+            "do usuário, com alimentos comuns na dieta brasileira e medidas caseiras (ex: '4 col sopa'). "
+            "Inclua de 3 a 5 refeições (café da manhã, almoço, jantar e lanches conforme a meta calórica). "
             "Responda SOMENTE com JSON válido, sem texto adicional, sem markdown.\n"
             "ATENÇÃO: o campo category DEVE ser exatamente um destes valores (lowercase, sem acento): "
             "proteina, carboidrato, gordura, hidratacao, horario, variedade\n"
-            'SCHEMA: {"highlights":["string"],"suggestions":[{"category":"proteina|carboidrato|gordura|hidratacao|horario|variedade","text":"string","priority":"high|medium|low"}],"weekly_insight":"string"}'
+            'SCHEMA: {"highlights":["string"],"suggestions":[{"category":"proteina|carboidrato|gordura|hidratacao|horario|variedade","text":"string","priority":"high|medium|low"}],"weekly_insight":"string",'
+            '"menu_suggestion":{"title":"string","meals":[{"type":"string","foods":["string"],"kcal_estimate":number}]}}'
         )
         user_msg = (
             f"CONTEXTO DO USUÁRIO: {json.dumps(user_context, ensure_ascii=False)}\n"
@@ -218,7 +222,7 @@ class AIService:
         async def _call():
             response = await self._client.messages.create(
                 model=settings.anthropic_model,
-                max_tokens=600,
+                max_tokens=1500,
                 system=system,
                 messages=[{"role": "user", "content": user_msg}],
             )

@@ -57,6 +57,7 @@ class _FakeLog:
         self.total_fat_g = 15.0
         self.meal_type = meal_type
         self.confirmed = True
+        self.food_items: list = []   # selectinload esperado por generate_report
         self.logged_at = logged_at or datetime(
             2026, 6, 16, 12, 0, tzinfo=ZoneInfo("America/Sao_Paulo")
         )
@@ -77,6 +78,7 @@ def _mock_ai_suggestions() -> MagicMock:
     s.suggestions = []
     s.highlights = ["Boa semana!"]
     s.weekly_insight = "Continue assim."
+    s.menu_suggestion = None   # campo novo — opcional
     return s
 
 
@@ -152,6 +154,52 @@ class TestReportHelpers:
     def test_bar_color_red_above_115(self):
         from app.services.report import _bar_color
         assert _bar_color(120) == "#ef4444"
+
+    # ── _weekly_score ─────────────────────────────────────────────────────────
+
+    def test_weekly_score_excelente(self):
+        from app.services.report import _weekly_score
+        score, label, emoji = _weekly_score(100, 100, 100)
+        assert score == 10.0
+        assert label == "Excelente"
+        assert emoji == "🏆"
+
+    def test_weekly_score_muito_bom(self):
+        from app.services.report import _weekly_score
+        # dias=85% (10), kcal=85% (10), proteína=0% (0) → 10*0.4+10*0.35+0*0.25 = 7.5
+        score, label, emoji = _weekly_score(85, 85, 0)
+        assert score == 7.5
+        assert label == "Muito bom"
+        assert emoji == "⭐"
+
+    def test_weekly_score_bom(self):
+        from app.services.report import _weekly_score
+        # dias=50% (4), kcal=50% (4), proteína=80% (10) → 4*0.4+4*0.35+10*0.25 = 5.5
+        score, label, emoji = _weekly_score(50, 50, 80)
+        assert score == 5.5
+        assert label == "Bom"
+        assert emoji == "👍"
+
+    def test_weekly_score_regular(self):
+        from app.services.report import _weekly_score
+        # dias=50% (4), kcal=50% (4), proteína=0% (0) → 4*0.4+4*0.35+0*0.25 = 3.0
+        score, label, emoji = _weekly_score(50, 50, 0)
+        assert score == 3.0
+        assert label == "Regular"
+        assert emoji == "💪"
+
+    def test_weekly_score_zero(self):
+        from app.services.report import _weekly_score
+        score, label, emoji = _weekly_score(0, 0, 0)
+        assert score == 0.0
+        assert label == "Continue!"
+        assert emoji == "🌱"
+
+    def test_weekly_score_caps_at_10(self):
+        from app.services.report import _weekly_score
+        # Excesso (>130%) é tratado como 130 na escala
+        score, _, _ = _weekly_score(200, 200, 200)
+        assert score == 10.0
 
     # ── _period_label ─────────────────────────────────────────────────────────
 
