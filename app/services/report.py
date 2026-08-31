@@ -60,7 +60,7 @@ def _bar_color(pct: int) -> str:
     if pct == 0:
         return "#cbd5e1"
     if 80 <= pct <= 115:
-        return "#16a34a"
+        return "#6366F1"  # indigo — igual ao ok-c do painel
     if pct < 80:
         return "#f59e0b"
     return "#ef4444"

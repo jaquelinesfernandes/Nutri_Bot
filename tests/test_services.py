@@ -137,13 +137,13 @@ class TestReportHelpers:
         from app.services.report import _bar_color
         assert _bar_color(0) == "#cbd5e1"
 
-    def test_bar_color_green_80(self):
+    def test_bar_color_ok_80(self):
         from app.services.report import _bar_color
-        assert _bar_color(80) == "#16a34a"
+        assert _bar_color(80) == "#6366F1"  # índigo — paleta do painel
 
-    def test_bar_color_green_115(self):
+    def test_bar_color_ok_115(self):
         from app.services.report import _bar_color
-        assert _bar_color(115) == "#16a34a"
+        assert _bar_color(115) == "#6366F1"  # índigo — paleta do painel
 
     def test_bar_color_yellow_below_80(self):
         from app.services.report import _bar_color
