@@ -79,7 +79,6 @@ def _mock_ai_suggestions() -> MagicMock:
     s.suggestions = []
     s.highlights = ["Boa semana!"]
     s.weekly_insight = "Continue assim."
-    s.menu_suggestion = None   # campo novo — opcional
     return s
 
 

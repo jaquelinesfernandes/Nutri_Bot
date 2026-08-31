@@ -459,7 +459,6 @@ class ReportService:
             suggestions = [s.model_dump() for s in ai_result.suggestions]
             highlights = ai_result.highlights
             weekly_insight = ai_result.weekly_insight
-            menu_suggestion = ai_result.menu_suggestion
         except Exception as e:
             logger.warning(f"[REPORT] AI suggestions falhou: {e}")
             suggestions = [{
@@ -469,7 +468,6 @@ class ReportService:
             }]
             highlights = []
             weekly_insight = None
-            menu_suggestion = None
 
         period_label = _period_label(start_date, end_date, period_type)
 
@@ -518,7 +516,6 @@ class ReportService:
             suggestions=suggestions,
             highlights=highlights,
             weekly_insight=weekly_insight,
-            menu_suggestion=menu_suggestion,
             generated_at=datetime.now(tz).strftime("%d/%m/%Y às %H:%M"),
         )
 
