@@ -292,7 +292,7 @@
 
 <!-- ── Resumo do dia ────────────────────────────────────── -->
 <!-- ── Totais do dia ─────────────────────────────────────── -->
-<div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6" id="totalsGrid">
+<div class="grid grid-cols-3 md:grid-cols-5 gap-3 mb-6" id="totalsGrid">
   <div class="bg-white rounded-xl shadow-sm p-4">
     <p class="text-xs text-slate-400 mb-1">Calorias</p>
     <p class="text-xl font-bold text-slate-800" id="totKcal">
@@ -311,6 +311,10 @@
   <div class="bg-white rounded-xl shadow-sm p-4">
     <p class="text-xs text-slate-400 mb-1">Gordura</p>
     <p class="text-xl font-bold text-rose-400" id="totFat">{% if balance %}{{ balance.total_fat_g | int }}{% else %}0{% endif %}g</p>
+  </div>
+  <div class="bg-white rounded-xl shadow-sm p-4">
+    <p class="text-xs text-slate-400 mb-1">🌿 Fibra</p>
+    <p class="text-xl font-bold text-green-600" id="totFiber">{% if balance %}{{ balance.total_fiber_g | round(1) }}{% else %}0{% endif %}g</p>
   </div>
 </div>
 
@@ -343,6 +347,7 @@
           <th class="pb-1 font-medium text-right">Prot.</th>
           <th class="pb-1 font-medium text-right">Carb.</th>
           <th class="pb-1 font-medium text-right">Gord.</th>
+          <th class="pb-1 font-medium text-right" style="color:#16A34A">🌿 Fibra</th>
         </tr></thead>
         <tbody>
           {% for fi in meal.food_items %}
@@ -353,6 +358,7 @@
             <td class="py-1 text-right">{{ fi.protein_g | round(1) }}g</td>
             <td class="py-1 text-right">{{ fi.carb_g | round(1) }}g</td>
             <td class="py-1 text-right">{{ fi.fat_g | round(1) }}g</td>
+            <td class="py-1 text-right" style="color:#16A34A">{{ fi.fiber_g | round(1) }}g</td>
           </tr>
           {% endfor %}
         </tbody>
@@ -806,7 +812,7 @@
   /* ── Recalcula totais do dia no DOM ─────────────────────── */
   function recalcTotals(delta) {
     // delta = { kcal, prot, carb, fat }  (pode ser negativo para delete)
-    const ids = { kcal:'totKcal', prot:'totProt', carb:'totCarb', fat:'totFat' };
+    const ids = { kcal:'totKcal', prot:'totProt', carb:'totCarb', fat:'totFat', fiber:'totFiber' };
     for (const [key, id] of Object.entries(ids)) {
       const el = document.getElementById(id);
       if (!el) continue;
@@ -814,7 +820,7 @@
       const val = cur + (delta[key] || 0);
       // Preserva o "/ meta" que pode existir dentro de span
       const span = el.querySelector('span');
-      el.textContent = Math.round(val) + (key === 'kcal' ? '' : 'g');
+      el.textContent = (key === 'fiber' ? val.toFixed(1) : Math.round(val)) + (key === 'kcal' ? '' : 'g');
       if (span) el.appendChild(span);
     }
   }
@@ -835,6 +841,7 @@
             <th class="pb-1 font-medium text-right">Prot.</th>
             <th class="pb-1 font-medium text-right">Carb.</th>
             <th class="pb-1 font-medium text-right">Gord.</th>
+            <th class="pb-1 font-medium text-right" style="color:#16A34A">🌿 Fibra</th>
           </tr></thead>
           <tbody>
             ${meal.food_items.map(fi => `
@@ -845,6 +852,7 @@
                 <td class="py-1 text-right">${fi.protein_g.toFixed(1)}g</td>
                 <td class="py-1 text-right">${fi.carb_g.toFixed(1)}g</td>
                 <td class="py-1 text-right">${fi.fat_g.toFixed(1)}g</td>
+                <td class="py-1 text-right" style="color:#16A34A">${(fi.fiber_g ?? 0).toFixed(1)}g</td>
               </tr>`).join('')}
           </tbody>
         </table>`;
@@ -968,10 +976,11 @@
 
       // Atualiza totais
       recalcTotals({
-        kcal: meal.total_calories_kcal,
-        prot: meal.total_protein_g,
-        carb: meal.total_carb_g,
-        fat:  meal.total_fat_g,
+        kcal:  meal.total_calories_kcal,
+        prot:  meal.total_protein_g,
+        carb:  meal.total_carb_g,
+        fat:   meal.total_fat_g,
+        fiber: meal.total_fiber_g ?? 0,
       });
 
       closeModal();
@@ -995,7 +1004,7 @@
     const card = btn.closest('.meal-card');
 
     // Pega totais antes de remover
-    let kcal = 0, prot = 0, carb = 0, fat = 0;
+    let kcal = 0, prot = 0, carb = 0, fat = 0, fiber = 0;
     const kcalEl = card.querySelector('.font-bold.text-brand-600');
     if (kcalEl) kcal = parseFloat(kcalEl.textContent) || 0;
 
@@ -1004,9 +1013,10 @@
     rows.forEach(row => {
       const cells = row.querySelectorAll('td');
       if (cells.length >= 6) {
-        prot += parseFloat(cells[3].textContent) || 0;
-        carb += parseFloat(cells[4].textContent) || 0;
-        fat  += parseFloat(cells[5].textContent) || 0;
+        prot  += parseFloat(cells[3].textContent) || 0;
+        carb  += parseFloat(cells[4].textContent) || 0;
+        fat   += parseFloat(cells[5].textContent) || 0;
+        fiber += parseFloat(cells[6]?.textContent) || 0;
       }
     });
 
@@ -1046,7 +1056,7 @@
       }, 420);
 
       // Subtrai dos totais
-      recalcTotals({ kcal: -kcal, prot: -prot, carb: -carb, fat: -fat });
+      recalcTotals({ kcal: -kcal, prot: -prot, carb: -carb, fat: -fat, fiber: -fiber });
       showToast('🗑️ Refeição excluída.', false);
 
     } catch (err) {

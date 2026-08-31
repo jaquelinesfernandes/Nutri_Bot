@@ -222,8 +222,7 @@
         <div class="macro-lbl">Fibra</div>
         <div class="macro-num">{{ total_fiber | round(1) }}<small>g</small></div>
         <div class="macro-sub">
-          Meta {{ goal_fiber }}g · <strong style="color:{% if pct_fiber >= 80 %}#16A34A{% elif pct_fiber >= 50 %}#ca8a04{% else %}#dc2626{% endif %}">{{ pct_fiber }}%</strong> hoje
-          · {{ week_fiber_avg_pct }}% (7d)
+          Meta {{ goal_fiber }}g · {{ pct_fiber }}% atingido
         </div>
         <div class="macro-mini-track">
           <div class="macro-mini-fill" style="width:{{ pct_fiber_clamp }}%;background:linear-gradient(90deg,#16A34A,#4ADE80)"></div>

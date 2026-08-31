@@ -348,6 +348,7 @@ async def historico(
             total_protein_g=sum(m.total_protein_g for m in meals),
             total_carb_g=sum(m.total_carb_g for m in meals),
             total_fat_g=sum(m.total_fat_g for m in meals),
+            total_fiber_g=sum(getattr(m, "total_fiber_g", 0.0) for m in meals),
             goal_calories=user.daily_calorie_goal,
             remaining_calories=None,
             meals=[MealLogRead.model_validate(m) for m in meals],

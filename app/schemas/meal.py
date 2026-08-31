@@ -11,6 +11,7 @@ class FoodItemRead(BaseModel):
     protein_g: float
     carb_g: float
     fat_g: float
+    fiber_g: float = 0.0
     source: str
     confidence_score: float
 
@@ -25,6 +26,7 @@ class MealLogRead(BaseModel):
     total_protein_g: float
     total_carb_g: float
     total_fat_g: float
+    total_fiber_g: float = 0.0
     food_items: list[FoodItemRead]
 
     model_config = {"from_attributes": True}
@@ -36,6 +38,7 @@ class DailyBalance(BaseModel):
     total_protein_g: float
     total_carb_g: float
     total_fat_g: float
+    total_fiber_g: float = 0.0
     goal_calories: int | None
     remaining_calories: float | None
     meals: list[MealLogRead]
