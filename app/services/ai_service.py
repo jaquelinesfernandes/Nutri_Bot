@@ -62,6 +62,24 @@ REGRAS OBRIGATÓRIAS:
 SCHEMA:
 {"foods":[{"name":"string","original_term":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other","meal_time_hint":"string|null","unrecognized_terms":[],"date_offset":0,"date_explicit":null}"""
 
+SYSTEM_PROMPT_CORRECTION = """Você é um assistente especializado em nutrição brasileira.
+O usuário já identificou uma refeição, mas quer fazer ajustes específicos.
+Sua tarefa é atualizar a lista de alimentos com base na correção informada.
+
+REGRAS OBRIGATÓRIAS:
+1. Mantenha TODOS os itens que NÃO foram mencionados na correção.
+2. Altere APENAS os itens que o usuário mencionou (quantidade, nome, substituição).
+3. Adicione novos itens se o usuário pedir ("adicionar X", "mais X", "tinha X também").
+4. Remova itens apenas se o usuário disser explicitamente ("sem X", "não tinha X", "tirar X").
+5. Separe SEMPRE cada alimento em um item individual — NUNCA combine dois alimentos em um só.
+6. Use nomes simples no singular em português brasileiro.
+7. Para cada alimento, forneça estimativas nutricionais por 100g nos campos est_calories_kcal, est_protein_g, est_carb_g, est_fat_g.
+8. Responda SOMENTE com JSON válido, sem texto adicional, sem markdown.
+9. Preserve o meal_type original, exceto se o usuário mencionar explicitamente outra refeição.
+
+SCHEMA IDÊNTICO ao de extração normal:
+{"foods":[{"name":"string","original_term":"string","quantity_g":number,"taco_code":"string|null","confidence_score":number,"est_calories_kcal":number,"est_protein_g":number,"est_carb_g":number,"est_fat_g":number}],"meal_type":"breakfast|morning_snack|lunch|afternoon_snack|dinner|snack|other","meal_time_hint":"string|null","unrecognized_terms":[],"date_offset":0,"date_explicit":null}"""
+
 SYSTEM_PROMPT_VISION = """Você é um assistente especializado em nutrição brasileira com visão computacional.
 Analise a foto de uma refeição e identifique os alimentos presentes.
 
@@ -134,6 +152,53 @@ class AIService:
                 # Loga o raw para diagnóstico — ajuda a entender truncamento ou schema inválido
                 logger.error(
                     f"[AI] Falha ao parsear resposta da extração de texto. "
+                    f"stop_reason={response.stop_reason!r} "
+                    f"raw_preview={raw[:200]!r} "
+                    f"erro={parse_err}"
+                )
+                raise
+
+        return await self._call_with_retry(_call)
+
+    async def extract_foods_correction(
+        self,
+        original_items: list[dict],
+        correction_text: str,
+        meal_type: str = "other",
+    ) -> FoodExtractionResponse:
+        """Extrai alimentos aplicando uma correção sobre uma lista já identificada.
+
+        Envia para a IA tanto os itens originais quanto o texto de correção,
+        permitindo ajustes cirúrgicos sem perder o contexto da refeição.
+        """
+        items_text = "\n".join(
+            f"- {item['name']} ({item['quantity_g']:.0f}g)"
+            for item in original_items
+        )
+        user_message = (
+            f"Refeição já identificada (meal_type: {meal_type}):\n"
+            f"{items_text}\n\n"
+            f"Correção do usuário: {correction_text[:400]}"
+        )
+
+        async def _call():
+            response = await self._client.messages.create(
+                model=settings.anthropic_model,
+                max_tokens=1500,
+                system=SYSTEM_PROMPT_CORRECTION,
+                messages=[{"role": "user", "content": user_message}],
+            )
+            raw = response.content[0].text.strip()
+            if raw.startswith("```"):
+                raw = raw.split("```")[1]
+                if raw.startswith("json"):
+                    raw = raw[4:]
+                raw = raw.strip()
+            try:
+                return FoodExtractionResponse.model_validate_json(raw)
+            except Exception as parse_err:
+                logger.error(
+                    f"[AI] Falha ao parsear correção de refeição. "
                     f"stop_reason={response.stop_reason!r} "
                     f"raw_preview={raw[:200]!r} "
                     f"erro={parse_err}"

@@ -296,7 +296,11 @@ class TestConfirming:
         db = _make_db()
         result = await svc._handle_confirming(user, "não", db)
         assert user.conversation_state == "CORRECTING"
-        assert "corrij" in result.lower() or "correção" in result.lower()
+        # Nova UX: mostra itens numerados e pergunta o que ajustar
+        assert "ajustar" in result.lower() or "corrij" in result.lower() or "correção" in result.lower()
+        # state_data preservado com editing_mode=True para edição contextual
+        assert user.state_data is not None
+        assert user.state_data.get("editing_mode") is True
 
     @pytest.mark.asyncio
     async def test_resposta_ambigua(self, svc):
@@ -1197,6 +1201,149 @@ class TestCorrecaoPreservaTargetDate:
 
         # Deve permanecer apontando para ontem
         assert user.state_data.get("target_date") == yesterday.isoformat()
+
+
+class TestEdicaoPorItem:
+    """Testa o novo fluxo de edição por item ao dizer 'não'."""
+
+    def _state_com_itens(self):
+        return {
+            "raw_input_encrypted": "enc",
+            "meal_type": "lunch",
+            "input_type": "text",
+            "total_calories_kcal": 350.0,
+            "total_protein_g": 25.0,
+            "total_carb_g": 45.0,
+            "total_fat_g": 6.0,
+            "total_fiber_g": 3.0,
+            "editing_mode": True,
+            "food_items": [
+                {
+                    "name": "arroz", "original_term": "arroz", "quantity_g": 100,
+                    "calories_kcal": 130.0, "protein_g": 2.5, "carb_g": 28.0,
+                    "fat_g": 0.2, "fiber_g": 0.5, "source": "taco", "confidence_score": 0.9,
+                    "taco_code": "001",
+                },
+                {
+                    "name": "feijão", "original_term": "feijão", "quantity_g": 60,
+                    "calories_kcal": 97.0, "protein_g": 5.5, "carb_g": 17.0,
+                    "fat_g": 0.3, "fiber_g": 2.0, "source": "taco", "confidence_score": 0.9,
+                    "taco_code": "002",
+                },
+                {
+                    "name": "frango", "original_term": "frango grelhado", "quantity_g": 100,
+                    "calories_kcal": 123.0, "protein_g": 17.0, "carb_g": 0.0,
+                    "fat_g": 5.5, "fiber_g": 0.0, "source": "taco", "confidence_score": 0.95,
+                    "taco_code": "003",
+                },
+            ],
+        }
+
+    @pytest.mark.asyncio
+    async def test_nao_mostra_itens_numerados(self, svc):
+        """Ao dizer 'não', a resposta deve listar os itens numerados."""
+        user = _make_user(state="CONFIRMING", state_data=self._state_com_itens())
+        db = _make_db()
+        result = await svc._handle_confirming(user, "não", db)
+        assert user.conversation_state == "CORRECTING"
+        assert user.state_data.get("editing_mode") is True
+        # Deve listar os itens numerados
+        assert "1." in result
+        assert "2." in result
+        assert "3." in result
+
+    @pytest.mark.asyncio
+    async def test_remover_por_numero(self, svc):
+        """'remover 2' deve remover o segundo item sem chamar a IA."""
+        user = _make_user(state="CORRECTING", state_data=self._state_com_itens())
+        db = _make_db()
+        result = await svc._handle_correcting(user, "remover 2", db)
+        # Volta para CONFIRMING com 2 itens
+        assert user.conversation_state == "CONFIRMING"
+        assert len(user.state_data["food_items"]) == 2
+        # feijão foi removido
+        names = [fi["name"] for fi in user.state_data["food_items"]]
+        assert "feijão" not in names
+        assert "arroz" in names
+        assert "frango" in names
+        assert "🗑️" in result
+
+    @pytest.mark.asyncio
+    async def test_remover_por_sem(self, svc):
+        """'sem feijão' deve remover o item cujo nome bate."""
+        user = _make_user(state="CORRECTING", state_data=self._state_com_itens())
+        db = _make_db()
+        result = await svc._handle_correcting(user, "sem feijão", db)
+        assert user.conversation_state == "CONFIRMING"
+        names = [fi["name"] for fi in user.state_data["food_items"]]
+        assert "feijão" not in names
+
+    @pytest.mark.asyncio
+    async def test_remover_todos_descarta(self, svc):
+        """Remover o único item restante deve descartar a refeição."""
+        state = {**self._state_com_itens(), "food_items": [self._state_com_itens()["food_items"][0]]}
+        user = _make_user(state="CORRECTING", state_data=state)
+        db = _make_db()
+        result = await svc._handle_correcting(user, "remover 1", db)
+        assert user.conversation_state == "IDLE"
+        assert user.state_data is None
+        assert "descartei" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_correcao_com_contexto_usa_extract_correction(self, svc):
+        """Uma correção textual deve chamar extract_foods_correction com os itens originais."""
+        user = _make_user(state="CORRECTING", state_data=self._state_com_itens())
+        db = _make_db()
+
+        extraction = _make_extraction()
+        enriched = [_make_enriched("arroz integral", 120.0)]
+
+        with (
+            patch(
+                "app.services.ai_service.ai_service.extract_foods_correction",
+                new_callable=AsyncMock,
+                return_value=extraction,
+            ) as mock_corr,
+            patch("app.services.nutrition.nutrition_service.enrich_foods", return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            result = await svc._handle_correcting(user, "era arroz integral", db)
+
+        # Deve ter chamado extract_foods_correction, não extract_foods_from_text
+        mock_corr.assert_called_once()
+        call_args = mock_corr.call_args
+        # Primeiro argumento: lista de itens originais
+        assert isinstance(call_args[0][0], list)
+        assert len(call_args[0][0]) == 3  # 3 itens originais
+        # Segundo argumento: texto de correção
+        assert "arroz integral" in call_args[0][1]
+        # Resultado: volta para CONFIRMING
+        assert user.conversation_state == "CONFIRMING"
+
+    @pytest.mark.asyncio
+    async def test_correcao_sem_editing_mode_usa_extracao_simples(self, svc):
+        """Sem editing_mode (state_data antigo), cai no fallback _run_meal_extraction."""
+        user = _make_user(
+            state="CORRECTING",
+            state_data={"target_date": "2026-09-01", "meal_type": "lunch"},
+        )
+        db = _make_db()
+
+        extraction = _make_extraction()
+        enriched = [_make_enriched("feijão", 97.0)]
+
+        with (
+            patch(
+                "app.services.ai_service.ai_service.extract_foods_from_text",
+                new_callable=AsyncMock,
+                return_value=extraction,
+            ) as mock_text,
+            patch("app.services.nutrition.nutrition_service.enrich_foods", return_value=enriched),
+            patch("app.utils.crypto.encrypt", return_value="enc"),
+        ):
+            await svc._handle_correcting(user, "na verdade era feijão", db)
+
+        mock_text.assert_called_once()
 
 
 class TestFluxoCompletoBackdating:

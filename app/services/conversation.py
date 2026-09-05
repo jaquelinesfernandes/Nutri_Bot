@@ -371,11 +371,32 @@ class ConversationService:
             return await self._save_confirmed_meal(user, db)
 
         if any(w in normalized for w in DENY_WORDS):
+            food_items = pending.get("food_items", [])
             self._set_timed_state(user, "CORRECTING")
+            # Preserva todo o state_data + marca modo de edição por item
+            user.state_data = {**pending, "editing_mode": True}
+            flag_modified(user, "state_data")
             await db.commit()
+
+            if food_items:
+                numbered = "\n".join(
+                    f"{i + 1}. {fi['name']} ({fi['quantity_g']:.0f}g)"
+                    f" — {fi['calories_kcal']:.0f} kcal"
+                    for i, fi in enumerate(food_items)
+                )
+                return (
+                    f"✏️ *O que precisa ajustar?*\n\n"
+                    f"{numbered}\n\n"
+                    "Me diga o que está errado, por exemplo:\n"
+                    "• _'era arroz integral, não branco'_\n"
+                    "• _'o frango eram 200g'_\n"
+                    "• _'não tinha feijão'_\n"
+                    "• _'adicionar ovo cozido'_\n\n"
+                    "Ou descreva toda a refeição novamente."
+                )
             return (
-                "Tudo bem! ✏️ Me diga a correção.\n"
-                "Ex: 'era arroz integral, não branco' ou 'a porção era menor, uns 100g'"
+                "Tudo bem! ✏️ Me descreva a refeição novamente.\n"
+                "Ex: 'arroz integral, feijão e frango grelhado 150g'"
             )
 
         return (
@@ -386,7 +407,170 @@ class ConversationService:
         )
 
     async def _handle_correcting(self, user: User, text: str, db: AsyncSession) -> str:
+        from app.services.ai_service import ai_service
+        from app.services.nutrition import nutrition_service
+        from app.utils.crypto import encrypt
+
+        pending = user.state_data or {}
+        food_items: list[dict] = pending.get("food_items", [])
+        editing_mode: bool = pending.get("editing_mode", False)
+
+        # ── Modo de edição por item: temos os itens originais no state_data ──
+        if editing_mode and food_items:
+            # 1. Verificar se é um comando de remoção simples ("remover 2", "sem feijão")
+            removed = self._try_remove_item(text, food_items)
+            if removed is not None:
+                new_items, action_msg = removed
+                if not new_items:
+                    user.conversation_state = "IDLE"
+                    user.state_data = None
+                    await db.commit()
+                    return "Ok, descartei a refeição inteira. Me conta o que comeu quando quiser! 😊"
+                return await self._rebuild_confirming(user, db, pending, new_items, action_msg)
+
+            # 2. Para tudo mais: enviar à IA com contexto dos itens originais + correção
+            meal_type = pending.get("meal_type", "other")
+            try:
+                extraction = await ai_service.extract_foods_correction(
+                    food_items, text, meal_type
+                )
+            except Exception as e:
+                logger.warning(f"extract_foods_correction falhou, usando extração simples: {e}")
+                return await self._run_meal_extraction(text, user, db, is_correction=True)
+
+            if not extraction.foods:
+                return (
+                    "Não entendi a correção 🤔\n"
+                    "Tente ser mais específico, por ex: 'o arroz era integral' ou 'adicionar ovo'."
+                )
+
+            foods_raw = [
+                {
+                    "name": f.name,
+                    "quantity_g": f.quantity_g,
+                    "est_calories_kcal": f.est_calories_kcal,
+                    "est_protein_g": f.est_protein_g,
+                    "est_carb_g": f.est_carb_g,
+                    "est_fat_g": f.est_fat_g,
+                }
+                for f in extraction.foods
+            ]
+            enriched = nutrition_service.enrich_foods(foods_raw)
+            new_items_dicts = [
+                {
+                    "name": e.name,
+                    "original_term": e.original_term,
+                    "quantity_g": e.quantity_g,
+                    "calories_kcal": e.calories_kcal,
+                    "protein_g": e.protein_g,
+                    "carb_g": e.carb_g,
+                    "fat_g": e.fat_g,
+                    "fiber_g": e.fiber_g,
+                    "source": e.source,
+                    "confidence_score": e.confidence_score,
+                    "taco_code": e.taco_code,
+                }
+                for e in enriched
+            ]
+
+            # Preserva o raw_input original e o target_date
+            new_state = dict(pending)
+            new_state["meal_type"] = extraction.meal_type
+            new_state["raw_input_encrypted"] = encrypt(text)
+            return await self._rebuild_confirming(
+                user, db, new_state, new_items_dicts, "🔄 *Corrigi para:*"
+            )
+
+        # ── Fallback: sem itens salvos → reprocessa do zero ──────────────────
         return await self._run_meal_extraction(text, user, db, is_correction=True)
+
+    # ── Helpers de edição por item ────────────────────────────────────────────
+
+    _REMOVE_PATTERNS = re.compile(
+        r"^(?:remover?|tirar?|tira|sem|excluir?|apagar?|deletar?)\s+(\d+)$",
+        re.IGNORECASE,
+    )
+
+    def _try_remove_item(
+        self, text: str, food_items: list[dict]
+    ) -> tuple[list[dict], str] | None:
+        """Tenta parsear um comando de remoção simples.
+
+        Retorna (nova_lista, mensagem) se reconhecido, None caso contrário.
+        """
+        normalized = text.strip().lower()
+
+        # "remover 2", "tirar 1", "sem 3"
+        m = self._REMOVE_PATTERNS.match(normalized)
+        if m:
+            idx = int(m.group(1)) - 1  # converte para índice 0-based
+            if 0 <= idx < len(food_items):
+                removed_name = food_items[idx]["name"]
+                new_items = [fi for i, fi in enumerate(food_items) if i != idx]
+                return new_items, f"🗑️ *{removed_name}* removido."
+            # Número fora do intervalo → não reconhecido, deixa cair para IA
+            return None
+
+        # "sem feijão", "não tinha feijão" — busca por nome aproximado
+        sem_match = re.match(
+            r"^(?:sem|sem o|sem a|não tinha|nao tinha|tira o|tira a|tirar o|tirar a)\s+(.+)$",
+            normalized,
+        )
+        if sem_match:
+            term = sem_match.group(1).strip()
+            for i, fi in enumerate(food_items):
+                if term in fi["name"].lower() or fi["name"].lower() in term:
+                    removed_name = fi["name"]
+                    new_items = [item for j, item in enumerate(food_items) if j != i]
+                    return new_items, f"🗑️ *{removed_name}* removido."
+
+        return None
+
+    async def _rebuild_confirming(
+        self,
+        user: User,
+        db: AsyncSession,
+        pending: dict,
+        new_items: list[dict],
+        action_msg: str,
+    ) -> str:
+        """Recalcula totais, salva no estado CONFIRMING e monta a mensagem de confirmação."""
+        total_kcal = round(sum(fi["calories_kcal"] for fi in new_items), 1)
+        total_protein = round(sum(fi["protein_g"] for fi in new_items), 1)
+        total_carb = round(sum(fi["carb_g"] for fi in new_items), 1)
+        total_fat = round(sum(fi["fat_g"] for fi in new_items), 1)
+        total_fiber = round(sum(fi.get("fiber_g", 0) for fi in new_items), 1)
+
+        # Monta novo state_data sem o flag editing_mode
+        new_state: dict = {
+            k: v for k, v in pending.items() if k != "editing_mode"
+        }
+        new_state["food_items"] = new_items
+        new_state["total_calories_kcal"] = total_kcal
+        new_state["total_protein_g"] = total_protein
+        new_state["total_carb_g"] = total_carb
+        new_state["total_fat_g"] = total_fat
+        new_state["total_fiber_g"] = total_fiber
+
+        self._set_timed_state(user, "CONFIRMING")
+        user.state_data = new_state
+        flag_modified(user, "state_data")
+        await db.commit()
+
+        meal_type = new_state.get("meal_type", "other")
+        emoji = MEAL_EMOJI.get(meal_type, "🍽️")
+        foods_lines = "\n".join(
+            f"• {fi['name']} ({fi['quantity_g']:.0f}g) — {fi['calories_kcal']:.0f} kcal"
+            for fi in new_items
+        )
+        return (
+            f"{action_msg}\n\n"
+            f"{emoji} *Refeição atualizada:*\n\n"
+            f"{foods_lines}\n\n"
+            f"📊 *Total:* {total_kcal:.0f} kcal | "
+            f"P: {total_protein:.0f}g | C: {total_carb:.0f}g | G: {total_fat:.0f}g\n\n"
+            "✅ Está correto agora? Responda *sim* ou *não* para ajustar mais."
+        )
 
     async def _handle_deleting(self, user: User, text: str, db: AsyncSession) -> str:
         if text.strip() == "DELETAR":
