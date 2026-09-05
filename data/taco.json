@@ -826,5 +826,100 @@
     "per_100g": { "calories_kcal": 546, "protein_g": 7.3, "carb_g": 59.7, "fat_g": 30.7, "fiber_g": 2.7, "sodium_mg": 65.0 },
     "default_portion_g": 30,
     "source": "taco"
+  },
+
+  {
+    "code": "051",
+    "name": "Leite de vaca, desnatado",
+    "aliases": ["leite desnatado", "leite zero gordura", "leite magro", "leite desnatado uht"],
+    "category": "leite_derivados",
+    "per_100g": { "calories_kcal": 35, "protein_g": 3.3, "carb_g": 5.0, "fat_g": 0.1, "fiber_g": 0.0, "sodium_mg": 44.0 },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "052",
+    "name": "Leite de vaca, semidesnatado",
+    "aliases": ["leite semidesnatado", "leite semi", "leite 2%"],
+    "category": "leite_derivados",
+    "per_100g": { "calories_kcal": 47, "protein_g": 3.2, "carb_g": 4.7, "fat_g": 1.2, "fiber_g": 0.0, "sodium_mg": 44.0 },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "053",
+    "name": "Leite de soja",
+    "aliases": ["leite de soja", "leite vegetal de soja", "bebida de soja", "soy milk", "leite soja"],
+    "category": "leite_derivados",
+    "per_100g": { "calories_kcal": 37, "protein_g": 3.0, "carb_g": 3.5, "fat_g": 1.8, "fiber_g": 0.5, "sodium_mg": 51.0 },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "054",
+    "name": "Leite de aveia",
+    "aliases": ["leite de aveia", "leite vegetal de aveia", "bebida de aveia", "oat milk", "leite aveia"],
+    "category": "leite_derivados",
+    "per_100g": { "calories_kcal": 47, "protein_g": 1.0, "carb_g": 7.0, "fat_g": 1.5, "fiber_g": 0.3, "sodium_mg": 50.0 },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "055",
+    "name": "Leite de amêndoa",
+    "aliases": ["leite de amêndoa", "leite de amendoa", "leite vegetal de amêndoa", "bebida de amêndoa", "almond milk", "leite amendoa"],
+    "category": "leite_derivados",
+    "per_100g": { "calories_kcal": 25, "protein_g": 0.5, "carb_g": 3.5, "fat_g": 1.2, "fiber_g": 0.3, "sodium_mg": 55.0 },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "056",
+    "name": "Leite de coco, para beber",
+    "aliases": ["leite de coco", "leite vegetal de coco", "bebida de coco", "leite coco", "coconut milk drink"],
+    "category": "leite_derivados",
+    "per_100g": { "calories_kcal": 25, "protein_g": 0.2, "carb_g": 3.0, "fat_g": 1.0, "fiber_g": 0.0, "sodium_mg": 30.0 },
+    "default_portion_g": 200,
+    "source": "taco",
+    "_note": "Leite de coco para beber (caixinha/UHT), não o leite de coco culinário (190+ kcal/100g)"
+  },
+  {
+    "code": "057",
+    "name": "Achocolatado, pronto para beber",
+    "aliases": ["achocolatado", "leite com chocolate", "leite achocolatado", "toddynho", "nescau pronto", "nescau 2.0", "italac chocolate", "leite chocolatado"],
+    "category": "bebidas",
+    "per_100g": { "calories_kcal": 88, "protein_g": 3.0, "carb_g": 14.5, "fat_g": 1.8, "fiber_g": 0.0, "sodium_mg": 50.0 },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "058",
+    "name": "Leite com achocolatado em pó",
+    "aliases": ["leite com nescau", "leite com toddy", "leite com chocolate em pó", "chocolate quente", "leite morno com nescau", "leite com achocolatado"],
+    "category": "bebidas",
+    "per_100g": { "calories_kcal": 90, "protein_g": 3.1, "carb_g": 13.8, "fat_g": 2.1, "fiber_g": 0.0, "sodium_mg": 48.0 },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+
+  {
+    "code": "016",
+    "name": "Pipoca, estourada, simples",
+    "aliases": ["pipoca", "pipoca caseira", "pipoca simples", "pipoca sem manteiga", "pipoca salgada", "pipoca de panela", "milho de pipoca", "milho estourado", "pipoca no ar quente"],
+    "category": "lanches",
+    "per_100g": { "calories_kcal": 382, "protein_g": 12.6, "carb_g": 72.2, "fat_g": 4.0, "fiber_g": 10.6, "sodium_mg": 5.0 },
+    "default_portion_g": 40,
+    "source": "taco",
+    "_note": "382 kcal/100g (TACO 2011). Porção 40g ≈ 4 xícaras de pipoca estourada = 153 kcal. A pipoca é leve: 100g = um saco grande de cinema."
+  },
+  {
+    "code": "017",
+    "name": "Pipoca, micro-ondas, com manteiga",
+    "aliases": ["pipoca de micro-ondas", "pipoca microondas", "pipoca com manteiga", "pipoca de saquinho", "pipoca de micro ondas", "pop corn microondas", "pipoca amanteigada"],
+    "category": "lanches",
+    "per_100g": { "calories_kcal": 470, "protein_g": 7.5, "carb_g": 55.0, "fat_g": 24.0, "fiber_g": 7.0, "sodium_mg": 480.0 },
+    "default_portion_g": 50,
+    "source": "taco",
+    "_note": "470 kcal/100g (média USDA para microwave popcorn com manteiga). Saco padrão 85-100g = 400-470 kcal. Porção conservadora: 50g = 235 kcal."
   }
 ]

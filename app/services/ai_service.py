@@ -40,6 +40,10 @@ REGRAS OBRIGATÓRIAS:
    - legumes/verduras: 50g
    - oleaginosas (castanhas, nozes): 15g (punhado pequeno)
    - queijo fatiado: 20g (1 fatia)
+   - pipoca simples/caseira: 40g (4 xícaras estouradas ≈ 153 kcal)
+   - pipoca de micro-ondas: 50g (meia embalagem padrão ≈ 235 kcal)
+   - leite (integral, desnatado, soja, aveia, amêndoa, coco): 200g (1 copo ou xícara grande)
+   - achocolatado pronto (toddynho, nescau 2.0): 200g (1 caixinha ou copo)
 5. Para cada alimento, forneça estimativas nutricionais por 100g nos campos est_calories_kcal, est_protein_g, est_carb_g, est_fat_g.
 6. Responda SOMENTE com JSON válido, sem texto adicional, sem markdown.
 7. CLASSIFICAÇÃO DE REFEIÇÃO (meal_type):
