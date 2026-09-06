@@ -2,883 +2,2003 @@
   {
     "code": "001",
     "name": "Arroz, branco, cozido",
-    "aliases": ["arroz branco cozido", "arroz cozido", "arroz", "arroz branco"],
+    "aliases": [
+      "arroz branco cozido",
+      "arroz cozido",
+      "arroz",
+      "arroz branco"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 128, "protein_g": 2.5, "carb_g": 28.1, "fat_g": 0.2, "fiber_g": 1.6, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 128,
+      "protein_g": 2.5,
+      "carb_g": 28.1,
+      "fat_g": 0.2,
+      "fiber_g": 1.6,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 180,
     "source": "taco"
   },
   {
     "code": "002",
     "name": "Arroz, integral, cozido",
-    "aliases": ["arroz integral cozido", "arroz integral"],
+    "aliases": [
+      "arroz integral cozido",
+      "arroz integral"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 124, "protein_g": 2.6, "carb_g": 25.8, "fat_g": 1.0, "fiber_g": 2.7, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 124,
+      "protein_g": 2.6,
+      "carb_g": 25.8,
+      "fat_g": 1.0,
+      "fiber_g": 2.7,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 180,
     "source": "taco"
   },
   {
     "code": "010",
     "name": "Macarrão, cozido",
-    "aliases": ["macarrao", "macarrão", "espaguete", "massa", "macarrão cozido", "espaguete cozido", "talharim", "penne"],
+    "aliases": [
+      "macarrao",
+      "macarrão",
+      "espaguete",
+      "massa",
+      "macarrão cozido",
+      "espaguete cozido",
+      "talharim",
+      "penne"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 148, "protein_g": 4.9, "carb_g": 29.8, "fat_g": 0.9, "fiber_g": 1.8, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 148,
+      "protein_g": 4.9,
+      "carb_g": 29.8,
+      "fat_g": 0.9,
+      "fiber_g": 1.8,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "011",
     "name": "Farinha de mandioca, torrada",
-    "aliases": ["farinha mandioca", "farofa", "farinha de mandioca", "farinha"],
+    "aliases": [
+      "farinha mandioca",
+      "farofa",
+      "farinha de mandioca",
+      "farinha"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 361, "protein_g": 1.5, "carb_g": 87.9, "fat_g": 0.3, "fiber_g": 6.4, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 361,
+      "protein_g": 1.5,
+      "carb_g": 87.9,
+      "fat_g": 0.3,
+      "fiber_g": 6.4,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "012",
     "name": "Tapioca, hidratada",
-    "aliases": ["tapioca", "beiju"],
+    "aliases": [
+      "tapioca",
+      "beiju"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 131, "protein_g": 0.1, "carb_g": 32.5, "fat_g": 0.0, "fiber_g": 0.0, "sodium_mg": 0.0 },
+    "per_100g": {
+      "calories_kcal": 131,
+      "protein_g": 0.1,
+      "carb_g": 32.5,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 0.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "082",
     "name": "Feijão, carioca, cozido",
-    "aliases": ["feijão carioca cozido", "feijão carioca", "feijão", "feijao"],
+    "aliases": [
+      "feijão carioca cozido",
+      "feijão carioca",
+      "feijão",
+      "feijao"
+    ],
     "category": "leguminosas",
-    "per_100g": { "calories_kcal": 76, "protein_g": 4.8, "carb_g": 13.6, "fat_g": 0.5, "fiber_g": 8.5, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 76,
+      "protein_g": 4.8,
+      "carb_g": 13.6,
+      "fat_g": 0.5,
+      "fiber_g": 8.5,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 86,
     "source": "taco"
   },
   {
     "code": "083",
     "name": "Feijão, preto, cozido",
-    "aliases": ["feijão preto cozido", "feijão preto", "feijao preto"],
+    "aliases": [
+      "feijão preto cozido",
+      "feijão preto",
+      "feijao preto"
+    ],
     "category": "leguminosas",
-    "per_100g": { "calories_kcal": 77, "protein_g": 4.5, "carb_g": 14.0, "fat_g": 0.5, "fiber_g": 8.4, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 77,
+      "protein_g": 4.5,
+      "carb_g": 14.0,
+      "fat_g": 0.5,
+      "fiber_g": 8.4,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 86,
     "source": "taco"
   },
   {
     "code": "085",
     "name": "Lentilha, cozida",
-    "aliases": ["lentilha"],
+    "aliases": [
+      "lentilha"
+    ],
     "category": "leguminosas",
-    "per_100g": { "calories_kcal": 97, "protein_g": 7.8, "carb_g": 16.3, "fat_g": 0.5, "fiber_g": 7.9, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 97,
+      "protein_g": 7.8,
+      "carb_g": 16.3,
+      "fat_g": 0.5,
+      "fiber_g": 7.9,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "170",
     "name": "Frango, peito, sem pele, grelhado",
-    "aliases": ["frango grelhado", "frango peito grelhado", "peito de frango grelhado", "frango grelhado sem pele", "frango", "peito frango"],
+    "aliases": [
+      "frango grelhado",
+      "frango peito grelhado",
+      "peito de frango grelhado",
+      "frango grelhado sem pele",
+      "frango",
+      "peito frango"
+    ],
     "category": "carnes_aves",
-    "per_100g": { "calories_kcal": 163, "protein_g": 31.5, "carb_g": 0.0, "fat_g": 3.2, "fiber_g": 0.0, "sodium_mg": 73.0 },
+    "per_100g": {
+      "calories_kcal": 163,
+      "protein_g": 31.5,
+      "carb_g": 0.0,
+      "fat_g": 3.2,
+      "fiber_g": 0.0,
+      "sodium_mg": 73.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "175",
     "name": "Frango, coxa, com pele, assado",
-    "aliases": ["coxa frango", "sobrecoxa frango", "frango coxa", "frango assado"],
+    "aliases": [
+      "coxa frango",
+      "sobrecoxa frango",
+      "frango coxa",
+      "frango assado"
+    ],
     "category": "carnes_aves",
-    "per_100g": { "calories_kcal": 215, "protein_g": 24.5, "carb_g": 0.0, "fat_g": 12.6, "fiber_g": 0.0, "sodium_mg": 75.0 },
+    "per_100g": {
+      "calories_kcal": 215,
+      "protein_g": 24.5,
+      "carb_g": 0.0,
+      "fat_g": 12.6,
+      "fiber_g": 0.0,
+      "sodium_mg": 75.0
+    },
     "default_portion_g": 130,
     "source": "taco"
   },
   {
     "code": "200",
     "name": "Carne bovina, acém, moído, refogado",
-    "aliases": ["carne moída refogada", "carne moída", "carne bovina moída", "carne moida"],
+    "aliases": [
+      "carne moída refogada",
+      "carne moída",
+      "carne bovina moída",
+      "carne moida"
+    ],
     "category": "carnes_bovinas",
-    "per_100g": { "calories_kcal": 200, "protein_g": 25.3, "carb_g": 0.0, "fat_g": 10.4, "fiber_g": 0.0, "sodium_mg": 64.0 },
+    "per_100g": {
+      "calories_kcal": 200,
+      "protein_g": 25.3,
+      "carb_g": 0.0,
+      "fat_g": 10.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 64.0
+    },
     "default_portion_g": 120,
     "source": "taco"
   },
   {
     "code": "205",
     "name": "Costela bovina, assada",
-    "aliases": ["costela bovina", "costela", "costela de boi", "costela assada", "costela churrasco"],
+    "aliases": [
+      "costela bovina",
+      "costela",
+      "costela de boi",
+      "costela assada",
+      "costela churrasco"
+    ],
     "category": "carnes_bovinas",
-    "per_100g": { "calories_kcal": 240, "protein_g": 20.4, "carb_g": 0.0, "fat_g": 17.1, "fiber_g": 0.0, "sodium_mg": 64.0 },
+    "per_100g": {
+      "calories_kcal": 240,
+      "protein_g": 20.4,
+      "carb_g": 0.0,
+      "fat_g": 17.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 64.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "210",
     "name": "Carne bovina, picanha, grelhada",
-    "aliases": ["picanha", "picanha grelhada", "picanha churrasco"],
+    "aliases": [
+      "picanha",
+      "picanha grelhada",
+      "picanha churrasco"
+    ],
     "category": "carnes_bovinas",
-    "per_100g": { "calories_kcal": 229, "protein_g": 26.1, "carb_g": 0.0, "fat_g": 13.5, "fiber_g": 0.0, "sodium_mg": 58.0 },
+    "per_100g": {
+      "calories_kcal": 229,
+      "protein_g": 26.1,
+      "carb_g": 0.0,
+      "fat_g": 13.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 58.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "215",
     "name": "Carne bovina, filé mignon, grelhado",
-    "aliases": ["filé mignon", "file mignon", "mignon"],
+    "aliases": [
+      "filé mignon",
+      "file mignon",
+      "mignon"
+    ],
     "category": "carnes_bovinas",
-    "per_100g": { "calories_kcal": 219, "protein_g": 29.2, "carb_g": 0.0, "fat_g": 11.0, "fiber_g": 0.0, "sodium_mg": 55.0 },
+    "per_100g": {
+      "calories_kcal": 219,
+      "protein_g": 29.2,
+      "carb_g": 0.0,
+      "fat_g": 11.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 55.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "220",
     "name": "Linguiça, de porco, frita",
-    "aliases": ["linguiça", "linguica", "linguiça frita", "calabresa"],
+    "aliases": [
+      "linguiça",
+      "linguica",
+      "linguiça frita",
+      "calabresa"
+    ],
     "category": "carnes_processadas",
-    "per_100g": { "calories_kcal": 297, "protein_g": 14.0, "carb_g": 1.4, "fat_g": 25.8, "fiber_g": 0.0, "sodium_mg": 614.0 },
+    "per_100g": {
+      "calories_kcal": 297,
+      "protein_g": 14.0,
+      "carb_g": 1.4,
+      "fat_g": 25.8,
+      "fiber_g": 0.0,
+      "sodium_mg": 614.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "225",
     "name": "Presunto, fatiado",
-    "aliases": ["presunto", "presunto fatiado"],
+    "aliases": [
+      "presunto",
+      "presunto fatiado"
+    ],
     "category": "carnes_processadas",
-    "per_100g": { "calories_kcal": 103, "protein_g": 16.4, "carb_g": 1.5, "fat_g": 3.3, "fiber_g": 0.0, "sodium_mg": 1200.0 },
+    "per_100g": {
+      "calories_kcal": 103,
+      "protein_g": 16.4,
+      "carb_g": 1.5,
+      "fat_g": 3.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 1200.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "230",
     "name": "Sardinha, em conserva em óleo",
-    "aliases": ["sardinha", "sardinhas", "sardinha lata"],
+    "aliases": [
+      "sardinha",
+      "sardinhas",
+      "sardinha lata"
+    ],
     "category": "peixes",
-    "per_100g": { "calories_kcal": 197, "protein_g": 23.0, "carb_g": 0.0, "fat_g": 11.1, "fiber_g": 0.0, "sodium_mg": 450.0 },
+    "per_100g": {
+      "calories_kcal": 197,
+      "protein_g": 23.0,
+      "carb_g": 0.0,
+      "fat_g": 11.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 450.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "235",
     "name": "Tilápia, filé, grelhado",
-    "aliases": ["tilapia", "tilápia", "peixe grelhado", "peixe"],
+    "aliases": [
+      "tilapia",
+      "tilápia",
+      "peixe grelhado",
+      "peixe"
+    ],
     "category": "peixes",
-    "per_100g": { "calories_kcal": 128, "protein_g": 26.5, "carb_g": 0.0, "fat_g": 2.4, "fiber_g": 0.0, "sodium_mg": 56.0 },
+    "per_100g": {
+      "calories_kcal": 128,
+      "protein_g": 26.5,
+      "carb_g": 0.0,
+      "fat_g": 2.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 56.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "240",
     "name": "Camarão, cozido",
-    "aliases": ["camarão", "camarao", "camarões", "camarao cozido", "camarão grelhado", "camarão frito"],
+    "aliases": [
+      "camarão",
+      "camarao",
+      "camarões",
+      "camarao cozido",
+      "camarão grelhado",
+      "camarão frito"
+    ],
     "category": "frutos_do_mar",
-    "per_100g": { "calories_kcal": 90, "protein_g": 18.7, "carb_g": 0.8, "fat_g": 1.5, "fiber_g": 0.0, "sodium_mg": 209.0 },
+    "per_100g": {
+      "calories_kcal": 90,
+      "protein_g": 18.7,
+      "carb_g": 0.8,
+      "fat_g": 1.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 209.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "241",
     "name": "Bacalhau, dessalgado, cozido",
-    "aliases": ["bacalhau", "bacalhau cozido", "bacalhau dessalgado"],
+    "aliases": [
+      "bacalhau",
+      "bacalhau cozido",
+      "bacalhau dessalgado"
+    ],
     "category": "peixes",
-    "per_100g": { "calories_kcal": 136, "protein_g": 29.9, "carb_g": 0.0, "fat_g": 1.7, "fiber_g": 0.0, "sodium_mg": 450.0 },
+    "per_100g": {
+      "calories_kcal": 136,
+      "protein_g": 29.9,
+      "carb_g": 0.0,
+      "fat_g": 1.7,
+      "fiber_g": 0.0,
+      "sodium_mg": 450.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "250",
     "name": "Ovo de galinha, inteiro, cozido",
-    "aliases": ["ovo cozido", "ovo", "ovo inteiro cozido", "ovos cozidos", "ovo mexido", "ovo frito", "ovo estrelado", "ovos mexidos", "ovos fritos", "ovos"],
+    "aliases": [
+      "ovo cozido",
+      "ovo",
+      "ovo inteiro cozido",
+      "ovos cozidos",
+      "ovo mexido",
+      "ovo frito",
+      "ovo estrelado",
+      "ovos mexidos",
+      "ovos fritos",
+      "ovos"
+    ],
     "category": "ovos",
-    "per_100g": { "calories_kcal": 146, "protein_g": 13.3, "carb_g": 0.6, "fat_g": 9.5, "fiber_g": 0.0, "sodium_mg": 136.0 },
+    "per_100g": {
+      "calories_kcal": 146,
+      "protein_g": 13.3,
+      "carb_g": 0.6,
+      "fat_g": 9.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 136.0
+    },
     "default_portion_g": 50,
     "source": "taco"
   },
   {
     "code": "300",
     "name": "Queijo, mussarela",
-    "aliases": ["queijo mussarela", "mussarela", "mozarela", "queijo"],
+    "aliases": [
+      "queijo mussarela",
+      "mussarela",
+      "mozarela",
+      "queijo"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 300, "protein_g": 21.6, "carb_g": 2.4, "fat_g": 22.3, "fiber_g": 0.0, "sodium_mg": 600.0 },
+    "per_100g": {
+      "calories_kcal": 300,
+      "protein_g": 21.6,
+      "carb_g": 2.4,
+      "fat_g": 22.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 600.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "305",
     "name": "Queijo, minas frescal",
-    "aliases": ["queijo minas", "queijo minas frescal", "minas frescal"],
+    "aliases": [
+      "queijo minas",
+      "queijo minas frescal",
+      "minas frescal"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 264, "protein_g": 17.4, "carb_g": 3.0, "fat_g": 20.2, "fiber_g": 0.0, "sodium_mg": 490.0 },
+    "per_100g": {
+      "calories_kcal": 264,
+      "protein_g": 17.4,
+      "carb_g": 3.0,
+      "fat_g": 20.2,
+      "fiber_g": 0.0,
+      "sodium_mg": 490.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "310",
     "name": "Requeijão, cremoso",
-    "aliases": ["requeijão", "requeijao"],
+    "aliases": [
+      "requeijão",
+      "requeijao"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 254, "protein_g": 7.1, "carb_g": 2.7, "fat_g": 23.7, "fiber_g": 0.0, "sodium_mg": 630.0 },
+    "per_100g": {
+      "calories_kcal": 254,
+      "protein_g": 7.1,
+      "carb_g": 2.7,
+      "fat_g": 23.7,
+      "fiber_g": 0.0,
+      "sodium_mg": 630.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "315",
     "name": "Iogurte, integral",
-    "aliases": ["iogurte", "iogurte integral", "iogurte natural"],
+    "aliases": [
+      "iogurte",
+      "iogurte integral",
+      "iogurte natural"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 51, "protein_g": 3.5, "carb_g": 3.9, "fat_g": 2.3, "fiber_g": 0.0, "sodium_mg": 40.0 },
+    "per_100g": {
+      "calories_kcal": 51,
+      "protein_g": 3.5,
+      "carb_g": 3.9,
+      "fat_g": 2.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 40.0
+    },
     "default_portion_g": 170,
     "source": "taco"
   },
   {
     "code": "050",
     "name": "Leite de vaca, integral",
-    "aliases": ["leite integral", "leite", "leite de vaca"],
+    "aliases": [
+      "leite integral",
+      "leite",
+      "leite de vaca"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 61, "protein_g": 3.2, "carb_g": 4.5, "fat_g": 3.3, "fiber_g": 0.0, "sodium_mg": 44.0 },
+    "per_100g": {
+      "calories_kcal": 61,
+      "protein_g": 3.2,
+      "carb_g": 4.5,
+      "fat_g": 3.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 44.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "007",
     "name": "Manteiga, com sal",
-    "aliases": ["manteiga com sal", "manteiga", "manteiga salgada"],
+    "aliases": [
+      "manteiga com sal",
+      "manteiga",
+      "manteiga salgada"
+    ],
     "category": "gorduras",
-    "per_100g": { "calories_kcal": 717, "protein_g": 0.5, "carb_g": 0.0, "fat_g": 79.9, "fiber_g": 0.0, "sodium_mg": 710.0 },
+    "per_100g": {
+      "calories_kcal": 717,
+      "protein_g": 0.5,
+      "carb_g": 0.0,
+      "fat_g": 79.9,
+      "fiber_g": 0.0,
+      "sodium_mg": 710.0
+    },
     "default_portion_g": 10,
     "source": "taco"
   },
   {
     "code": "550",
     "name": "Castanha de caju, torrada",
-    "aliases": ["castanha de caju", "castanha caju", "caju torrado", "castanha"],
+    "aliases": [
+      "castanha de caju",
+      "castanha caju",
+      "caju torrado",
+      "castanha"
+    ],
     "category": "oleaginosas",
-    "per_100g": { "calories_kcal": 570, "protein_g": 18.5, "carb_g": 29.0, "fat_g": 43.9, "fiber_g": 3.7, "sodium_mg": 16.0 },
+    "per_100g": {
+      "calories_kcal": 570,
+      "protein_g": 18.5,
+      "carb_g": 29.0,
+      "fat_g": 43.9,
+      "fiber_g": 3.7,
+      "sodium_mg": 16.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "551",
     "name": "Castanha-do-pará",
-    "aliases": ["castanha do pará", "castanha do para", "castanha pará", "castanha para", "castanha amazonica"],
+    "aliases": [
+      "castanha do pará",
+      "castanha do para",
+      "castanha pará",
+      "castanha para",
+      "castanha amazonica"
+    ],
     "category": "oleaginosas",
-    "per_100g": { "calories_kcal": 643, "protein_g": 14.3, "carb_g": 12.3, "fat_g": 63.5, "fiber_g": 7.5, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 643,
+      "protein_g": 14.3,
+      "carb_g": 12.3,
+      "fat_g": 63.5,
+      "fiber_g": 7.5,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 15,
     "source": "taco"
   },
   {
     "code": "552",
     "name": "Amendoim, cru",
-    "aliases": ["amendoim", "amendoim cru", "amendoim torrado", "paçoca"],
+    "aliases": [
+      "amendoim",
+      "amendoim cru",
+      "amendoim torrado",
+      "paçoca"
+    ],
     "category": "oleaginosas",
-    "per_100g": { "calories_kcal": 567, "protein_g": 25.4, "carb_g": 20.3, "fat_g": 43.9, "fiber_g": 8.5, "sodium_mg": 18.0 },
+    "per_100g": {
+      "calories_kcal": 567,
+      "protein_g": 25.4,
+      "carb_g": 20.3,
+      "fat_g": 43.9,
+      "fiber_g": 8.5,
+      "sodium_mg": 18.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "553",
     "name": "Nozes",
-    "aliases": ["noz", "nozes", "nozes pecã", "pecan"],
+    "aliases": [
+      "noz",
+      "nozes",
+      "nozes pecã",
+      "pecan"
+    ],
     "category": "oleaginosas",
-    "per_100g": { "calories_kcal": 620, "protein_g": 15.2, "carb_g": 13.7, "fat_g": 59.4, "fiber_g": 6.7, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 620,
+      "protein_g": 15.2,
+      "carb_g": 13.7,
+      "fat_g": 59.4,
+      "fiber_g": 6.7,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "554",
     "name": "Amêndoa, torrada",
-    "aliases": ["amêndoa", "amendoa", "amêndoas"],
+    "aliases": [
+      "amêndoa",
+      "amendoa",
+      "amêndoas"
+    ],
     "category": "oleaginosas",
-    "per_100g": { "calories_kcal": 579, "protein_g": 21.3, "carb_g": 19.7, "fat_g": 47.4, "fiber_g": 12.5, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 579,
+      "protein_g": 21.3,
+      "carb_g": 19.7,
+      "fat_g": 47.4,
+      "fiber_g": 12.5,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "008",
     "name": "Azeite de oliva",
-    "aliases": ["azeite", "azeite oliva", "azeite de oliva"],
+    "aliases": [
+      "azeite",
+      "azeite oliva",
+      "azeite de oliva"
+    ],
     "category": "gorduras",
-    "per_100g": { "calories_kcal": 884, "protein_g": 0.0, "carb_g": 0.0, "fat_g": 100.0, "fiber_g": 0.0, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 884,
+      "protein_g": 0.0,
+      "carb_g": 0.0,
+      "fat_g": 100.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 10,
     "source": "taco"
   },
   {
     "code": "013",
     "name": "Aveia, flocos",
-    "aliases": ["aveia", "flocos de aveia", "aveia em flocos", "aveia flocos"],
+    "aliases": [
+      "aveia",
+      "flocos de aveia",
+      "aveia em flocos",
+      "aveia flocos"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 394, "protein_g": 14.5, "carb_g": 65.8, "fat_g": 7.6, "fiber_g": 10.1, "sodium_mg": 4.0 },
+    "per_100g": {
+      "calories_kcal": 394,
+      "protein_g": 14.5,
+      "carb_g": 65.8,
+      "fat_g": 7.6,
+      "fiber_g": 10.1,
+      "sodium_mg": 4.0
+    },
     "default_portion_g": 40,
     "source": "taco"
   },
   {
     "code": "014",
     "name": "Granola, tradicional",
-    "aliases": ["granola"],
+    "aliases": [
+      "granola"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 383, "protein_g": 9.7, "carb_g": 65.3, "fat_g": 10.1, "fiber_g": 6.5, "sodium_mg": 30.0 },
+    "per_100g": {
+      "calories_kcal": 383,
+      "protein_g": 9.7,
+      "carb_g": 65.3,
+      "fat_g": 10.1,
+      "fiber_g": 6.5,
+      "sodium_mg": 30.0
+    },
     "default_portion_g": 40,
     "source": "taco"
   },
   {
     "code": "015",
     "name": "Cuscuz paulista, cozido",
-    "aliases": ["cuscuz", "cuscus", "cuscuz paulista", "cuscuz de milho"],
+    "aliases": [
+      "cuscuz",
+      "cuscus",
+      "cuscuz paulista",
+      "cuscuz de milho"
+    ],
     "category": "cereais_graos",
-    "per_100g": { "calories_kcal": 120, "protein_g": 2.7, "carb_g": 25.6, "fat_g": 0.9, "fiber_g": 1.2, "sodium_mg": 3.0 },
+    "per_100g": {
+      "calories_kcal": 120,
+      "protein_g": 2.7,
+      "carb_g": 25.6,
+      "fat_g": 0.9,
+      "fiber_g": 1.2,
+      "sodium_mg": 3.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "342",
     "name": "Pão francês",
-    "aliases": ["pão francês", "pao frances", "pãozinho", "paozinho", "pão de sal"],
+    "aliases": [
+      "pão francês",
+      "pao frances",
+      "pãozinho",
+      "paozinho",
+      "pão de sal"
+    ],
     "category": "panificados",
-    "per_100g": { "calories_kcal": 300, "protein_g": 9.4, "carb_g": 58.6, "fat_g": 3.1, "fiber_g": 2.3, "sodium_mg": 604.0 },
+    "per_100g": {
+      "calories_kcal": 300,
+      "protein_g": 9.4,
+      "carb_g": 58.6,
+      "fat_g": 3.1,
+      "fiber_g": 2.3,
+      "sodium_mg": 604.0
+    },
     "default_portion_g": 50,
     "source": "taco"
   },
   {
     "code": "343",
     "name": "Pão de forma, integral",
-    "aliases": ["pão integral", "pao integral", "pão fatiado integral", "torrada integral"],
+    "aliases": [
+      "pão integral",
+      "pao integral",
+      "pão fatiado integral",
+      "torrada integral"
+    ],
     "category": "panificados",
-    "per_100g": { "calories_kcal": 253, "protein_g": 8.9, "carb_g": 45.1, "fat_g": 4.0, "fiber_g": 6.0, "sodium_mg": 380.0 },
+    "per_100g": {
+      "calories_kcal": 253,
+      "protein_g": 8.9,
+      "carb_g": 45.1,
+      "fat_g": 4.0,
+      "fiber_g": 6.0,
+      "sodium_mg": 380.0
+    },
     "default_portion_g": 50,
     "source": "taco"
   },
   {
     "code": "344",
     "name": "Pão de queijo",
-    "aliases": ["pao de queijo", "pão de queijo"],
+    "aliases": [
+      "pao de queijo",
+      "pão de queijo"
+    ],
     "category": "panificados",
-    "per_100g": { "calories_kcal": 287, "protein_g": 6.4, "carb_g": 39.0, "fat_g": 11.7, "fiber_g": 1.0, "sodium_mg": 292.0 },
+    "per_100g": {
+      "calories_kcal": 287,
+      "protein_g": 6.4,
+      "carb_g": 39.0,
+      "fat_g": 11.7,
+      "fiber_g": 1.0,
+      "sodium_mg": 292.0
+    },
     "default_portion_g": 40,
     "source": "taco"
   },
   {
     "code": "400",
     "name": "Banana, prata",
-    "aliases": ["banana prata", "banana", "banana nanica"],
+    "aliases": [
+      "banana prata",
+      "banana",
+      "banana nanica"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 98, "protein_g": 1.3, "carb_g": 26.0, "fat_g": 0.1, "fiber_g": 2.0, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 98,
+      "protein_g": 1.3,
+      "carb_g": 26.0,
+      "fat_g": 0.1,
+      "fiber_g": 2.0,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 90,
     "source": "taco"
   },
   {
     "code": "401",
     "name": "Maçã, fuji, com casca",
-    "aliases": ["maçã", "maca", "maçã fuji"],
+    "aliases": [
+      "maçã",
+      "maca",
+      "maçã fuji"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 56, "protein_g": 0.3, "carb_g": 15.2, "fat_g": 0.1, "fiber_g": 2.0, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 56,
+      "protein_g": 0.3,
+      "carb_g": 15.2,
+      "fat_g": 0.1,
+      "fiber_g": 2.0,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 130,
     "source": "taco"
   },
   {
     "code": "402",
     "name": "Laranja, pera",
-    "aliases": ["laranja", "laranja pera", "laranja bahia"],
+    "aliases": [
+      "laranja",
+      "laranja pera",
+      "laranja bahia"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 37, "protein_g": 1.0, "carb_g": 8.9, "fat_g": 0.1, "fiber_g": 0.8, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 37,
+      "protein_g": 1.0,
+      "carb_g": 8.9,
+      "fat_g": 0.1,
+      "fiber_g": 0.8,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 130,
     "source": "taco"
   },
   {
     "code": "403",
     "name": "Mamão, papaia",
-    "aliases": ["mamão", "mamao", "papaya", "mamão papaia"],
+    "aliases": [
+      "mamão",
+      "mamao",
+      "papaya",
+      "mamão papaia"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 40, "protein_g": 0.5, "carb_g": 10.4, "fat_g": 0.1, "fiber_g": 1.8, "sodium_mg": 3.0 },
+    "per_100g": {
+      "calories_kcal": 40,
+      "protein_g": 0.5,
+      "carb_g": 10.4,
+      "fat_g": 0.1,
+      "fiber_g": 1.8,
+      "sodium_mg": 3.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "404",
     "name": "Abacaxi",
-    "aliases": ["abacaxi"],
+    "aliases": [
+      "abacaxi"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 48, "protein_g": 0.9, "carb_g": 12.3, "fat_g": 0.1, "fiber_g": 1.0, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 48,
+      "protein_g": 0.9,
+      "carb_g": 12.3,
+      "fat_g": 0.1,
+      "fiber_g": 1.0,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "405",
     "name": "Uva, comum, preta",
-    "aliases": ["uva", "uvas", "uva preta", "uva verde"],
+    "aliases": [
+      "uva",
+      "uvas",
+      "uva preta",
+      "uva verde"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 69, "protein_g": 0.7, "carb_g": 17.9, "fat_g": 0.1, "fiber_g": 0.9, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 69,
+      "protein_g": 0.7,
+      "carb_g": 17.9,
+      "fat_g": 0.1,
+      "fiber_g": 0.9,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "406",
     "name": "Morango",
-    "aliases": ["morango", "morangos"],
+    "aliases": [
+      "morango",
+      "morangos"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 30, "protein_g": 0.9, "carb_g": 7.1, "fat_g": 0.3, "fiber_g": 2.0, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 30,
+      "protein_g": 0.9,
+      "carb_g": 7.1,
+      "fat_g": 0.3,
+      "fiber_g": 2.0,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "407",
     "name": "Açaí, polpa",
-    "aliases": ["açaí", "acai", "polpa de açaí"],
+    "aliases": [
+      "açaí",
+      "acai",
+      "polpa de açaí"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 58, "protein_g": 1.2, "carb_g": 6.4, "fat_g": 3.1, "fiber_g": 2.6, "sodium_mg": 28.0 },
+    "per_100g": {
+      "calories_kcal": 58,
+      "protein_g": 1.2,
+      "carb_g": 6.4,
+      "fat_g": 3.1,
+      "fiber_g": 2.6,
+      "sodium_mg": 28.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "430",
     "name": "Abóbora, cozida",
-    "aliases": ["abóbora", "abobora", "abóbora cozida", "abóbora refogada", "abobrinha", "abobora cabotia", "abóbora cabotiá"],
+    "aliases": [
+      "abóbora",
+      "abobora",
+      "abóbora cozida",
+      "abóbora refogada",
+      "abobrinha",
+      "abobora cabotia",
+      "abóbora cabotiá"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 26, "protein_g": 1.2, "carb_g": 5.5, "fat_g": 0.1, "fiber_g": 1.2, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 26,
+      "protein_g": 1.2,
+      "carb_g": 5.5,
+      "fat_g": 0.1,
+      "fiber_g": 1.2,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "431",
     "name": "Alface, crespa, crua",
-    "aliases": ["alface", "alface crespa", "alface americana"],
+    "aliases": [
+      "alface",
+      "alface crespa",
+      "alface americana"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 11, "protein_g": 1.3, "carb_g": 2.2, "fat_g": 0.2, "fiber_g": 1.8, "sodium_mg": 10.0 },
+    "per_100g": {
+      "calories_kcal": 11,
+      "protein_g": 1.3,
+      "carb_g": 2.2,
+      "fat_g": 0.2,
+      "fiber_g": 1.8,
+      "sodium_mg": 10.0
+    },
     "default_portion_g": 40,
     "source": "taco"
   },
   {
     "code": "432",
     "name": "Cenoura, crua",
-    "aliases": ["cenoura", "cenoura crua", "cenoura ralada"],
+    "aliases": [
+      "cenoura",
+      "cenoura crua",
+      "cenoura ralada"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 34, "protein_g": 1.3, "carb_g": 7.5, "fat_g": 0.1, "fiber_g": 3.2, "sodium_mg": 77.0 },
+    "per_100g": {
+      "calories_kcal": 34,
+      "protein_g": 1.3,
+      "carb_g": 7.5,
+      "fat_g": 0.1,
+      "fiber_g": 3.2,
+      "sodium_mg": 77.0
+    },
     "default_portion_g": 80,
     "source": "taco"
   },
   {
     "code": "433",
     "name": "Beterraba, crua",
-    "aliases": ["beterraba", "beterraba crua", "beterraba cozida"],
+    "aliases": [
+      "beterraba",
+      "beterraba crua",
+      "beterraba cozida"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 31, "protein_g": 1.6, "carb_g": 6.4, "fat_g": 0.1, "fiber_g": 2.8, "sodium_mg": 49.0 },
+    "per_100g": {
+      "calories_kcal": 31,
+      "protein_g": 1.6,
+      "carb_g": 6.4,
+      "fat_g": 0.1,
+      "fiber_g": 2.8,
+      "sodium_mg": 49.0
+    },
     "default_portion_g": 80,
     "source": "taco"
   },
   {
     "code": "434",
     "name": "Couve, refogada",
-    "aliases": ["couve", "couve refogada", "couve mineira"],
+    "aliases": [
+      "couve",
+      "couve refogada",
+      "couve mineira"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 36, "protein_g": 2.4, "carb_g": 4.5, "fat_g": 1.2, "fiber_g": 2.0, "sodium_mg": 15.0 },
+    "per_100g": {
+      "calories_kcal": 36,
+      "protein_g": 2.4,
+      "carb_g": 4.5,
+      "fat_g": 1.2,
+      "fiber_g": 2.0,
+      "sodium_mg": 15.0
+    },
     "default_portion_g": 50,
     "source": "taco"
   },
   {
     "code": "435",
     "name": "Salada mista crua",
-    "aliases": ["salada mista crua", "salada", "saladinha", "alface tomate"],
+    "aliases": [
+      "salada mista crua",
+      "salada",
+      "saladinha",
+      "alface tomate"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 13, "protein_g": 0.9, "carb_g": 2.8, "fat_g": 0.1, "fiber_g": 1.5, "sodium_mg": 15.0 },
+    "per_100g": {
+      "calories_kcal": 13,
+      "protein_g": 0.9,
+      "carb_g": 2.8,
+      "fat_g": 0.1,
+      "fiber_g": 1.5,
+      "sodium_mg": 15.0
+    },
     "default_portion_g": 80,
     "source": "taco"
   },
   {
     "code": "436",
     "name": "Brócolis, cozido",
-    "aliases": ["brócolis", "brocolis", "brócoli"],
+    "aliases": [
+      "brócolis",
+      "brocolis",
+      "brócoli"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 25, "protein_g": 3.7, "carb_g": 3.3, "fat_g": 0.4, "fiber_g": 3.4, "sodium_mg": 20.0 },
+    "per_100g": {
+      "calories_kcal": 25,
+      "protein_g": 3.7,
+      "carb_g": 3.3,
+      "fat_g": 0.4,
+      "fiber_g": 3.4,
+      "sodium_mg": 20.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "437",
     "name": "Cebola, crua",
-    "aliases": ["cebola", "cebola crua"],
+    "aliases": [
+      "cebola",
+      "cebola crua"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 35, "protein_g": 1.2, "carb_g": 8.1, "fat_g": 0.1, "fiber_g": 1.7, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 35,
+      "protein_g": 1.2,
+      "carb_g": 8.1,
+      "fat_g": 0.1,
+      "fiber_g": 1.7,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 50,
     "source": "taco"
   },
   {
     "code": "438",
     "name": "Pepino, com casca",
-    "aliases": ["pepino", "pepino cru"],
+    "aliases": [
+      "pepino",
+      "pepino cru"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 13, "protein_g": 0.7, "carb_g": 2.9, "fat_g": 0.1, "fiber_g": 0.5, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 13,
+      "protein_g": 0.7,
+      "carb_g": 2.9,
+      "fat_g": 0.1,
+      "fiber_g": 0.5,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "439",
     "name": "Milho, cozido",
-    "aliases": ["milho", "milho cozido", "milho verde"],
+    "aliases": [
+      "milho",
+      "milho cozido",
+      "milho verde"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 91, "protein_g": 2.7, "carb_g": 20.1, "fat_g": 1.2, "fiber_g": 2.8, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 91,
+      "protein_g": 2.7,
+      "carb_g": 20.1,
+      "fat_g": 1.2,
+      "fiber_g": 2.8,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "440",
     "name": "Tomate, cru",
-    "aliases": ["tomate cru", "tomate", "tomatinho"],
+    "aliases": [
+      "tomate cru",
+      "tomate",
+      "tomatinho"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 15, "protein_g": 0.9, "carb_g": 3.1, "fat_g": 0.2, "fiber_g": 1.2, "sodium_mg": 4.0 },
+    "per_100g": {
+      "calories_kcal": 15,
+      "protein_g": 0.9,
+      "carb_g": 3.1,
+      "fat_g": 0.2,
+      "fiber_g": 1.2,
+      "sodium_mg": 4.0
+    },
     "default_portion_g": 70,
     "source": "taco"
   },
   {
     "code": "500",
     "name": "Batata, inglesa, cozida",
-    "aliases": ["batata cozida", "batata", "batata inglesa"],
+    "aliases": [
+      "batata cozida",
+      "batata",
+      "batata inglesa"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 52, "protein_g": 1.2, "carb_g": 11.9, "fat_g": 0.1, "fiber_g": 1.3, "sodium_mg": 3.0 },
+    "per_100g": {
+      "calories_kcal": 52,
+      "protein_g": 1.2,
+      "carb_g": 11.9,
+      "fat_g": 0.1,
+      "fiber_g": 1.3,
+      "sodium_mg": 3.0
+    },
     "default_portion_g": 120,
     "source": "taco"
   },
   {
     "code": "501",
     "name": "Batata-doce, cozida",
-    "aliases": ["batata doce", "batata-doce", "batata doce cozida"],
+    "aliases": [
+      "batata doce",
+      "batata-doce",
+      "batata doce cozida"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 77, "protein_g": 0.6, "carb_g": 18.4, "fat_g": 0.1, "fiber_g": 2.2, "sodium_mg": 37.0 },
+    "per_100g": {
+      "calories_kcal": 77,
+      "protein_g": 0.6,
+      "carb_g": 18.4,
+      "fat_g": 0.1,
+      "fiber_g": 2.2,
+      "sodium_mg": 37.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "600",
     "name": "Café, infusão",
-    "aliases": ["café", "cafe", "café preto", "cafezinho", "café sem açúcar"],
+    "aliases": [
+      "café",
+      "cafe",
+      "café preto",
+      "cafezinho",
+      "café sem açúcar"
+    ],
     "category": "bebidas",
-    "per_100g": { "calories_kcal": 2, "protein_g": 0.3, "carb_g": 0.0, "fat_g": 0.1, "fiber_g": 0.0, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 2,
+      "protein_g": 0.3,
+      "carb_g": 0.0,
+      "fat_g": 0.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 50,
     "source": "taco"
   },
   {
     "code": "601",
     "name": "Café com leite",
-    "aliases": ["café com leite", "cafe com leite", "pingado"],
+    "aliases": [
+      "café com leite",
+      "cafe com leite",
+      "pingado"
+    ],
     "category": "bebidas",
-    "per_100g": { "calories_kcal": 36, "protein_g": 1.9, "carb_g": 2.7, "fat_g": 1.9, "fiber_g": 0.0, "sodium_mg": 26.0 },
+    "per_100g": {
+      "calories_kcal": 36,
+      "protein_g": 1.9,
+      "carb_g": 2.7,
+      "fat_g": 1.9,
+      "fiber_g": 0.0,
+      "sodium_mg": 26.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "602",
     "name": "Suco de maracujá",
-    "aliases": ["suco maracuja", "suco de maracujá", "maracujá"],
+    "aliases": [
+      "suco maracuja",
+      "suco de maracujá",
+      "maracujá"
+    ],
     "category": "bebidas",
-    "per_100g": { "calories_kcal": 49, "protein_g": 0.7, "carb_g": 12.5, "fat_g": 0.1, "fiber_g": 0.4, "sodium_mg": 28.0 },
+    "per_100g": {
+      "calories_kcal": 49,
+      "protein_g": 0.7,
+      "carb_g": 12.5,
+      "fat_g": 0.1,
+      "fiber_g": 0.4,
+      "sodium_mg": 28.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "441",
     "name": "Palmito, em conserva",
-    "aliases": ["palmito", "palmito em conserva", "palmito pupunha", "palmito juçara"],
+    "aliases": [
+      "palmito",
+      "palmito em conserva",
+      "palmito pupunha",
+      "palmito juçara"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 28, "protein_g": 2.0, "carb_g": 4.7, "fat_g": 0.3, "fiber_g": 2.6, "sodium_mg": 450.0 },
+    "per_100g": {
+      "calories_kcal": 28,
+      "protein_g": 2.0,
+      "carb_g": 4.7,
+      "fat_g": 0.3,
+      "fiber_g": 2.6,
+      "sodium_mg": 450.0
+    },
     "default_portion_g": 80,
     "source": "taco"
   },
   {
     "code": "442",
     "name": "Salsa, crua",
-    "aliases": ["salsa", "salsinha", "cheiro-verde", "cheiro verde", "salsa fresca", "salsa picada"],
+    "aliases": [
+      "salsa",
+      "salsinha",
+      "cheiro-verde",
+      "cheiro verde",
+      "salsa fresca",
+      "salsa picada"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 49, "protein_g": 3.7, "carb_g": 7.3, "fat_g": 0.9, "fiber_g": 3.3, "sodium_mg": 30.0 },
+    "per_100g": {
+      "calories_kcal": 49,
+      "protein_g": 3.7,
+      "carb_g": 7.3,
+      "fat_g": 0.9,
+      "fiber_g": 3.3,
+      "sodium_mg": 30.0
+    },
     "default_portion_g": 10,
     "source": "taco"
   },
   {
     "code": "443",
     "name": "Coentro, cru",
-    "aliases": ["coentro", "coentro fresco", "coentro picado"],
+    "aliases": [
+      "coentro",
+      "coentro fresco",
+      "coentro picado"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 23, "protein_g": 2.1, "carb_g": 3.7, "fat_g": 0.5, "fiber_g": 2.8, "sodium_mg": 46.0 },
+    "per_100g": {
+      "calories_kcal": 23,
+      "protein_g": 2.1,
+      "carb_g": 3.7,
+      "fat_g": 0.5,
+      "fiber_g": 2.8,
+      "sodium_mg": 46.0
+    },
     "default_portion_g": 10,
     "source": "taco"
   },
   {
     "code": "444",
     "name": "Alho, cru",
-    "aliases": ["alho", "alho cru", "alho picado", "alho amassado"],
+    "aliases": [
+      "alho",
+      "alho cru",
+      "alho picado",
+      "alho amassado"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 149, "protein_g": 6.6, "carb_g": 33.1, "fat_g": 0.2, "fiber_g": 1.3, "sodium_mg": 17.0 },
+    "per_100g": {
+      "calories_kcal": 149,
+      "protein_g": 6.6,
+      "carb_g": 33.1,
+      "fat_g": 0.2,
+      "fiber_g": 1.3,
+      "sodium_mg": 17.0
+    },
     "default_portion_g": 5,
     "source": "taco"
   },
   {
     "code": "445",
     "name": "Cebolinha, crua",
-    "aliases": ["cebolinha", "cebolinha crua", "cebolinha verde", "cebolinha picada"],
+    "aliases": [
+      "cebolinha",
+      "cebolinha crua",
+      "cebolinha verde",
+      "cebolinha picada"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 34, "protein_g": 2.1, "carb_g": 6.6, "fat_g": 0.4, "fiber_g": 2.1, "sodium_mg": 7.0 },
+    "per_100g": {
+      "calories_kcal": 34,
+      "protein_g": 2.1,
+      "carb_g": 6.6,
+      "fat_g": 0.4,
+      "fiber_g": 2.1,
+      "sodium_mg": 7.0
+    },
     "default_portion_g": 10,
     "source": "taco"
   },
   {
     "code": "446",
     "name": "Pimentão, verde",
-    "aliases": ["pimentão", "pimentao", "pimentão verde", "pimentão vermelho", "pimentão amarelo"],
+    "aliases": [
+      "pimentão",
+      "pimentao",
+      "pimentão verde",
+      "pimentão vermelho",
+      "pimentão amarelo"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 21, "protein_g": 0.9, "carb_g": 4.7, "fat_g": 0.2, "fiber_g": 1.4, "sodium_mg": 3.0 },
+    "per_100g": {
+      "calories_kcal": 21,
+      "protein_g": 0.9,
+      "carb_g": 4.7,
+      "fat_g": 0.2,
+      "fiber_g": 1.4,
+      "sodium_mg": 3.0
+    },
     "default_portion_g": 80,
     "source": "taco"
   },
   {
     "code": "447",
     "name": "Berinjela, crua",
-    "aliases": ["berinjela", "berinjela crua"],
+    "aliases": [
+      "berinjela",
+      "berinjela crua"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 24, "protein_g": 1.2, "carb_g": 5.5, "fat_g": 0.2, "fiber_g": 2.5, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 24,
+      "protein_g": 1.2,
+      "carb_g": 5.5,
+      "fat_g": 0.2,
+      "fiber_g": 2.5,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "448",
     "name": "Abobrinha, crua",
-    "aliases": ["abobrinha", "abobrinha italiana", "zucchini"],
+    "aliases": [
+      "abobrinha",
+      "abobrinha italiana",
+      "zucchini"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 18, "protein_g": 1.1, "carb_g": 3.4, "fat_g": 0.2, "fiber_g": 1.2, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 18,
+      "protein_g": 1.1,
+      "carb_g": 3.4,
+      "fat_g": 0.2,
+      "fiber_g": 1.2,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "449",
     "name": "Chuchu, cozido",
-    "aliases": ["chuchu", "chuchu cozido"],
+    "aliases": [
+      "chuchu",
+      "chuchu cozido"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 25, "protein_g": 0.9, "carb_g": 5.9, "fat_g": 0.1, "fiber_g": 1.6, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 25,
+      "protein_g": 0.9,
+      "carb_g": 5.9,
+      "fat_g": 0.1,
+      "fiber_g": 1.6,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "450",
     "name": "Quiabo, cozido",
-    "aliases": ["quiabo", "quiabo cozido"],
+    "aliases": [
+      "quiabo",
+      "quiabo cozido"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 25, "protein_g": 2.1, "carb_g": 4.5, "fat_g": 0.1, "fiber_g": 3.0, "sodium_mg": 7.0 },
+    "per_100g": {
+      "calories_kcal": 25,
+      "protein_g": 2.1,
+      "carb_g": 4.5,
+      "fat_g": 0.1,
+      "fiber_g": 3.0,
+      "sodium_mg": 7.0
+    },
     "default_portion_g": 80,
     "source": "taco"
   },
   {
     "code": "451",
     "name": "Mandioca, cozida",
-    "aliases": ["mandioca", "aipim", "aipim cozido", "mandioca cozida", "macaxeira"],
+    "aliases": [
+      "mandioca",
+      "aipim",
+      "aipim cozido",
+      "mandioca cozida",
+      "macaxeira"
+    ],
     "category": "hortalicas",
-    "per_100g": { "calories_kcal": 125, "protein_g": 0.6, "carb_g": 30.1, "fat_g": 0.3, "fiber_g": 1.9, "sodium_mg": 9.0 },
+    "per_100g": {
+      "calories_kcal": 125,
+      "protein_g": 0.6,
+      "carb_g": 30.1,
+      "fat_g": 0.3,
+      "fiber_g": 1.9,
+      "sodium_mg": 9.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "408",
     "name": "Abacate",
-    "aliases": ["abacate", "avocado"],
+    "aliases": [
+      "abacate",
+      "avocado"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 96, "protein_g": 1.2, "carb_g": 6.0, "fat_g": 8.4, "fiber_g": 6.3, "sodium_mg": 4.0 },
+    "per_100g": {
+      "calories_kcal": 96,
+      "protein_g": 1.2,
+      "carb_g": 6.0,
+      "fat_g": 8.4,
+      "fiber_g": 6.3,
+      "sodium_mg": 4.0
+    },
     "default_portion_g": 120,
     "source": "taco"
   },
   {
     "code": "409",
     "name": "Manga, tommy",
-    "aliases": ["manga", "manga tommy", "manga palmer"],
+    "aliases": [
+      "manga",
+      "manga tommy",
+      "manga palmer"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 64, "protein_g": 0.9, "carb_g": 16.4, "fat_g": 0.2, "fiber_g": 1.8, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 64,
+      "protein_g": 0.9,
+      "carb_g": 16.4,
+      "fat_g": 0.2,
+      "fiber_g": 1.8,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "410",
     "name": "Goiaba, vermelha",
-    "aliases": ["goiaba", "goiaba vermelha"],
+    "aliases": [
+      "goiaba",
+      "goiaba vermelha"
+    ],
     "category": "frutas",
-    "per_100g": { "calories_kcal": 54, "protein_g": 2.3, "carb_g": 12.1, "fat_g": 0.6, "fiber_g": 6.2, "sodium_mg": 2.0 },
+    "per_100g": {
+      "calories_kcal": 54,
+      "protein_g": 2.3,
+      "carb_g": 12.1,
+      "fat_g": 0.6,
+      "fiber_g": 6.2,
+      "sodium_mg": 2.0
+    },
     "default_portion_g": 100,
     "source": "taco"
   },
   {
     "code": "320",
     "name": "Queijo, coalho",
-    "aliases": ["queijo coalho", "queijo de coalho", "coalho"],
+    "aliases": [
+      "queijo coalho",
+      "queijo de coalho",
+      "coalho"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 287, "protein_g": 23.6, "carb_g": 0.6, "fat_g": 20.6, "fiber_g": 0.0, "sodium_mg": 700.0 },
+    "per_100g": {
+      "calories_kcal": 287,
+      "protein_g": 23.6,
+      "carb_g": 0.6,
+      "fat_g": 20.6,
+      "fiber_g": 0.0,
+      "sodium_mg": 700.0
+    },
     "default_portion_g": 40,
     "source": "taco"
   },
   {
     "code": "321",
     "name": "Queijo, prato",
-    "aliases": ["queijo prato", "queijo fatiado"],
+    "aliases": [
+      "queijo prato",
+      "queijo fatiado"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 364, "protein_g": 24.1, "carb_g": 1.1, "fat_g": 29.4, "fiber_g": 0.0, "sodium_mg": 620.0 },
+    "per_100g": {
+      "calories_kcal": 364,
+      "protein_g": 24.1,
+      "carb_g": 1.1,
+      "fat_g": 29.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 620.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "325",
     "name": "Creme de leite",
-    "aliases": ["creme de leite", "nata"],
+    "aliases": [
+      "creme de leite",
+      "nata"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 312, "protein_g": 2.1, "carb_g": 4.0, "fat_g": 32.3, "fiber_g": 0.0, "sodium_mg": 35.0 },
+    "per_100g": {
+      "calories_kcal": 312,
+      "protein_g": 2.1,
+      "carb_g": 4.0,
+      "fat_g": 32.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 35.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
   {
     "code": "326",
     "name": "Leite condensado",
-    "aliases": ["leite condensado"],
+    "aliases": [
+      "leite condensado"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 334, "protein_g": 7.9, "carb_g": 55.3, "fat_g": 9.0, "fiber_g": 0.0, "sodium_mg": 107.0 },
+    "per_100g": {
+      "calories_kcal": 334,
+      "protein_g": 7.9,
+      "carb_g": 55.3,
+      "fat_g": 9.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 107.0
+    },
     "default_portion_g": 40,
     "source": "taco"
   },
   {
     "code": "009",
     "name": "Maionese",
-    "aliases": ["maionese", "mayo"],
+    "aliases": [
+      "maionese",
+      "mayo"
+    ],
     "category": "gorduras",
-    "per_100g": { "calories_kcal": 656, "protein_g": 1.4, "carb_g": 3.9, "fat_g": 70.6, "fiber_g": 0.0, "sodium_mg": 590.0 },
+    "per_100g": {
+      "calories_kcal": 656,
+      "protein_g": 1.4,
+      "carb_g": 3.9,
+      "fat_g": 70.6,
+      "fiber_g": 0.0,
+      "sodium_mg": 590.0
+    },
     "default_portion_g": 20,
     "source": "taco"
   },
   {
     "code": "010b",
     "name": "Molho de tomate",
-    "aliases": ["molho de tomate", "molho tomate", "extrato de tomate", "molho vermelho"],
+    "aliases": [
+      "molho de tomate",
+      "molho tomate",
+      "extrato de tomate",
+      "molho vermelho"
+    ],
     "category": "condimentos",
-    "per_100g": { "calories_kcal": 41, "protein_g": 1.5, "carb_g": 7.8, "fat_g": 0.7, "fiber_g": 1.2, "sodium_mg": 570.0 },
+    "per_100g": {
+      "calories_kcal": 41,
+      "protein_g": 1.5,
+      "carb_g": 7.8,
+      "fat_g": 0.7,
+      "fiber_g": 1.2,
+      "sodium_mg": 570.0
+    },
     "default_portion_g": 60,
     "source": "taco"
   },
   {
     "code": "011b",
     "name": "Açúcar, refinado",
-    "aliases": ["açúcar", "acucar", "açúcar branco", "açucar refinado"],
+    "aliases": [
+      "açúcar",
+      "acucar",
+      "açúcar branco",
+      "açucar refinado"
+    ],
     "category": "condimentos",
-    "per_100g": { "calories_kcal": 387, "protein_g": 0.0, "carb_g": 99.9, "fat_g": 0.0, "fiber_g": 0.0, "sodium_mg": 1.0 },
+    "per_100g": {
+      "calories_kcal": 387,
+      "protein_g": 0.0,
+      "carb_g": 99.9,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 1.0
+    },
     "default_portion_g": 10,
     "source": "taco"
   },
   {
     "code": "012b",
     "name": "Mel",
-    "aliases": ["mel", "mel de abelha"],
+    "aliases": [
+      "mel",
+      "mel de abelha"
+    ],
     "category": "condimentos",
-    "per_100g": { "calories_kcal": 304, "protein_g": 0.3, "carb_g": 82.4, "fat_g": 0.0, "fiber_g": 0.0, "sodium_mg": 4.0 },
+    "per_100g": {
+      "calories_kcal": 304,
+      "protein_g": 0.3,
+      "carb_g": 82.4,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 4.0
+    },
     "default_portion_g": 15,
     "source": "taco"
   },
   {
     "code": "245",
     "name": "Carne de sol, assada",
-    "aliases": ["carne de sol", "carne sol", "carne seca", "charque"],
+    "aliases": [
+      "carne de sol",
+      "carne sol",
+      "carne seca",
+      "charque"
+    ],
     "category": "carnes_bovinas",
-    "per_100g": { "calories_kcal": 283, "protein_g": 30.0, "carb_g": 0.0, "fat_g": 18.0, "fiber_g": 0.0, "sodium_mg": 1200.0 },
+    "per_100g": {
+      "calories_kcal": 283,
+      "protein_g": 30.0,
+      "carb_g": 0.0,
+      "fat_g": 18.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 1200.0
+    },
     "default_portion_g": 120,
     "source": "taco"
   },
   {
     "code": "250b",
     "name": "Pernil suíno, assado",
-    "aliases": ["pernil", "pernil suino", "pernil assado", "pernil de porco"],
+    "aliases": [
+      "pernil",
+      "pernil suino",
+      "pernil assado",
+      "pernil de porco"
+    ],
     "category": "carnes_suinas",
-    "per_100g": { "calories_kcal": 254, "protein_g": 24.4, "carb_g": 0.8, "fat_g": 16.7, "fiber_g": 0.0, "sodium_mg": 65.0 },
+    "per_100g": {
+      "calories_kcal": 254,
+      "protein_g": 24.4,
+      "carb_g": 0.8,
+      "fat_g": 16.7,
+      "fiber_g": 0.0,
+      "sodium_mg": 65.0
+    },
     "default_portion_g": 150,
     "source": "taco"
   },
   {
     "code": "251",
     "name": "Bisteca suína, grelhada",
-    "aliases": ["bisteca", "bisteca suína", "costelinha de porco", "costelinha"],
+    "aliases": [
+      "bisteca",
+      "bisteca suína",
+      "costelinha de porco",
+      "costelinha"
+    ],
     "category": "carnes_suinas",
-    "per_100g": { "calories_kcal": 230, "protein_g": 22.5, "carb_g": 0.0, "fat_g": 15.1, "fiber_g": 0.0, "sodium_mg": 65.0 },
+    "per_100g": {
+      "calories_kcal": 230,
+      "protein_g": 22.5,
+      "carb_g": 0.0,
+      "fat_g": 15.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 65.0
+    },
     "default_portion_g": 130,
     "source": "taco"
   },
   {
     "code": "700",
     "name": "Feijoada",
-    "aliases": ["feijoada"],
+    "aliases": [
+      "feijoada"
+    ],
     "category": "pratos_tipicos",
-    "per_100g": { "calories_kcal": 170, "protein_g": 10.8, "carb_g": 11.2, "fat_g": 8.7, "fiber_g": 4.5, "sodium_mg": 380.0 },
+    "per_100g": {
+      "calories_kcal": 170,
+      "protein_g": 10.8,
+      "carb_g": 11.2,
+      "fat_g": 8.7,
+      "fiber_g": 4.5,
+      "sodium_mg": 380.0
+    },
     "default_portion_g": 300,
     "source": "taco"
   },
   {
     "code": "701",
     "name": "Vinagrete",
-    "aliases": ["vinagrete", "molho vinagrete"],
+    "aliases": [
+      "vinagrete",
+      "molho vinagrete"
+    ],
     "category": "pratos_tipicos",
-    "per_100g": { "calories_kcal": 30, "protein_g": 0.5, "carb_g": 3.2, "fat_g": 1.8, "fiber_g": 0.8, "sodium_mg": 180.0 },
+    "per_100g": {
+      "calories_kcal": 30,
+      "protein_g": 0.5,
+      "carb_g": 3.2,
+      "fat_g": 1.8,
+      "fiber_g": 0.8,
+      "sodium_mg": 180.0
+    },
     "default_portion_g": 60,
     "source": "taco"
   },
   {
     "code": "800",
     "name": "Brigadeiro",
-    "aliases": ["brigadeiro", "brigadeiro de chocolate"],
+    "aliases": [
+      "brigadeiro",
+      "brigadeiro de chocolate"
+    ],
     "category": "doces",
-    "per_100g": { "calories_kcal": 400, "protein_g": 5.2, "carb_g": 65.0, "fat_g": 13.5, "fiber_g": 0.5, "sodium_mg": 80.0 },
+    "per_100g": {
+      "calories_kcal": 400,
+      "protein_g": 5.2,
+      "carb_g": 65.0,
+      "fat_g": 13.5,
+      "fiber_g": 0.5,
+      "sodium_mg": 80.0
+    },
     "default_portion_g": 15,
     "source": "taco"
   },
   {
     "code": "801",
     "name": "Chocolate ao leite",
-    "aliases": ["chocolate", "chocolate ao leite", "barra de chocolate"],
+    "aliases": [
+      "chocolate",
+      "chocolate ao leite",
+      "barra de chocolate"
+    ],
     "category": "doces",
-    "per_100g": { "calories_kcal": 546, "protein_g": 7.3, "carb_g": 59.7, "fat_g": 30.7, "fiber_g": 2.7, "sodium_mg": 65.0 },
+    "per_100g": {
+      "calories_kcal": 546,
+      "protein_g": 7.3,
+      "carb_g": 59.7,
+      "fat_g": 30.7,
+      "fiber_g": 2.7,
+      "sodium_mg": 65.0
+    },
     "default_portion_g": 30,
     "source": "taco"
   },
-
   {
     "code": "051",
     "name": "Leite de vaca, desnatado",
-    "aliases": ["leite desnatado", "leite zero gordura", "leite magro", "leite desnatado uht"],
+    "aliases": [
+      "leite desnatado",
+      "leite zero gordura",
+      "leite magro",
+      "leite desnatado uht"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 35, "protein_g": 3.3, "carb_g": 5.0, "fat_g": 0.1, "fiber_g": 0.0, "sodium_mg": 44.0 },
+    "per_100g": {
+      "calories_kcal": 35,
+      "protein_g": 3.3,
+      "carb_g": 5.0,
+      "fat_g": 0.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 44.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "052",
     "name": "Leite de vaca, semidesnatado",
-    "aliases": ["leite semidesnatado", "leite semi", "leite 2%"],
+    "aliases": [
+      "leite semidesnatado",
+      "leite semi",
+      "leite 2%"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 47, "protein_g": 3.2, "carb_g": 4.7, "fat_g": 1.2, "fiber_g": 0.0, "sodium_mg": 44.0 },
+    "per_100g": {
+      "calories_kcal": 47,
+      "protein_g": 3.2,
+      "carb_g": 4.7,
+      "fat_g": 1.2,
+      "fiber_g": 0.0,
+      "sodium_mg": 44.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "053",
     "name": "Leite de soja",
-    "aliases": ["leite de soja", "leite vegetal de soja", "bebida de soja", "soy milk", "leite soja"],
+    "aliases": [
+      "leite de soja",
+      "leite vegetal de soja",
+      "bebida de soja",
+      "soy milk",
+      "leite soja"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 37, "protein_g": 3.0, "carb_g": 3.5, "fat_g": 1.8, "fiber_g": 0.5, "sodium_mg": 51.0 },
+    "per_100g": {
+      "calories_kcal": 37,
+      "protein_g": 3.0,
+      "carb_g": 3.5,
+      "fat_g": 1.8,
+      "fiber_g": 0.5,
+      "sodium_mg": 51.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "054",
     "name": "Leite de aveia",
-    "aliases": ["leite de aveia", "leite vegetal de aveia", "bebida de aveia", "oat milk", "leite aveia"],
+    "aliases": [
+      "leite de aveia",
+      "leite vegetal de aveia",
+      "bebida de aveia",
+      "oat milk",
+      "leite aveia"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 47, "protein_g": 1.0, "carb_g": 7.0, "fat_g": 1.5, "fiber_g": 0.3, "sodium_mg": 50.0 },
+    "per_100g": {
+      "calories_kcal": 47,
+      "protein_g": 1.0,
+      "carb_g": 7.0,
+      "fat_g": 1.5,
+      "fiber_g": 0.3,
+      "sodium_mg": 50.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "055",
     "name": "Leite de amêndoa",
-    "aliases": ["leite de amêndoa", "leite de amendoa", "leite vegetal de amêndoa", "bebida de amêndoa", "almond milk", "leite amendoa"],
+    "aliases": [
+      "leite de amêndoa",
+      "leite de amendoa",
+      "leite vegetal de amêndoa",
+      "bebida de amêndoa",
+      "almond milk",
+      "leite amendoa"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 25, "protein_g": 0.5, "carb_g": 3.5, "fat_g": 1.2, "fiber_g": 0.3, "sodium_mg": 55.0 },
+    "per_100g": {
+      "calories_kcal": 25,
+      "protein_g": 0.5,
+      "carb_g": 3.5,
+      "fat_g": 1.2,
+      "fiber_g": 0.3,
+      "sodium_mg": 55.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "056",
     "name": "Leite de coco, para beber",
-    "aliases": ["leite de coco", "leite vegetal de coco", "bebida de coco", "leite coco", "coconut milk drink"],
+    "aliases": [
+      "leite de coco",
+      "leite vegetal de coco",
+      "bebida de coco",
+      "leite coco",
+      "coconut milk drink"
+    ],
     "category": "leite_derivados",
-    "per_100g": { "calories_kcal": 25, "protein_g": 0.2, "carb_g": 3.0, "fat_g": 1.0, "fiber_g": 0.0, "sodium_mg": 30.0 },
+    "per_100g": {
+      "calories_kcal": 25,
+      "protein_g": 0.2,
+      "carb_g": 3.0,
+      "fat_g": 1.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 30.0
+    },
     "default_portion_g": 200,
     "source": "taco",
     "_note": "Leite de coco para beber (caixinha/UHT), não o leite de coco culinário (190+ kcal/100g)"
@@ -886,28 +2006,74 @@
   {
     "code": "057",
     "name": "Achocolatado, pronto para beber",
-    "aliases": ["achocolatado", "leite com chocolate", "leite achocolatado", "toddynho", "nescau pronto", "nescau 2.0", "italac chocolate", "leite chocolatado"],
+    "aliases": [
+      "achocolatado",
+      "leite com chocolate",
+      "leite achocolatado",
+      "toddynho",
+      "nescau pronto",
+      "nescau 2.0",
+      "italac chocolate",
+      "leite chocolatado"
+    ],
     "category": "bebidas",
-    "per_100g": { "calories_kcal": 88, "protein_g": 3.0, "carb_g": 14.5, "fat_g": 1.8, "fiber_g": 0.0, "sodium_mg": 50.0 },
+    "per_100g": {
+      "calories_kcal": 88,
+      "protein_g": 3.0,
+      "carb_g": 14.5,
+      "fat_g": 1.8,
+      "fiber_g": 0.0,
+      "sodium_mg": 50.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
   {
     "code": "058",
     "name": "Leite com achocolatado em pó",
-    "aliases": ["leite com nescau", "leite com toddy", "leite com chocolate em pó", "chocolate quente", "leite morno com nescau", "leite com achocolatado"],
+    "aliases": [
+      "leite com nescau",
+      "leite com toddy",
+      "leite com chocolate em pó",
+      "chocolate quente",
+      "leite morno com nescau",
+      "leite com achocolatado"
+    ],
     "category": "bebidas",
-    "per_100g": { "calories_kcal": 90, "protein_g": 3.1, "carb_g": 13.8, "fat_g": 2.1, "fiber_g": 0.0, "sodium_mg": 48.0 },
+    "per_100g": {
+      "calories_kcal": 90,
+      "protein_g": 3.1,
+      "carb_g": 13.8,
+      "fat_g": 2.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 48.0
+    },
     "default_portion_g": 200,
     "source": "taco"
   },
-
   {
     "code": "016",
     "name": "Pipoca, estourada, simples",
-    "aliases": ["pipoca", "pipoca caseira", "pipoca simples", "pipoca sem manteiga", "pipoca salgada", "pipoca de panela", "milho de pipoca", "milho estourado", "pipoca no ar quente"],
+    "aliases": [
+      "pipoca",
+      "pipoca caseira",
+      "pipoca simples",
+      "pipoca sem manteiga",
+      "pipoca salgada",
+      "pipoca de panela",
+      "milho de pipoca",
+      "milho estourado",
+      "pipoca no ar quente"
+    ],
     "category": "lanches",
-    "per_100g": { "calories_kcal": 382, "protein_g": 12.6, "carb_g": 72.2, "fat_g": 4.0, "fiber_g": 10.6, "sodium_mg": 5.0 },
+    "per_100g": {
+      "calories_kcal": 382,
+      "protein_g": 12.6,
+      "carb_g": 72.2,
+      "fat_g": 4.0,
+      "fiber_g": 10.6,
+      "sodium_mg": 5.0
+    },
     "default_portion_g": 40,
     "source": "taco",
     "_note": "382 kcal/100g (TACO 2011). Porção 40g ≈ 4 xícaras de pipoca estourada = 153 kcal. A pipoca é leve: 100g = um saco grande de cinema."
@@ -915,11 +2081,3721 @@
   {
     "code": "017",
     "name": "Pipoca, micro-ondas, com manteiga",
-    "aliases": ["pipoca de micro-ondas", "pipoca microondas", "pipoca com manteiga", "pipoca de saquinho", "pipoca de micro ondas", "pop corn microondas", "pipoca amanteigada"],
+    "aliases": [
+      "pipoca de micro-ondas",
+      "pipoca microondas",
+      "pipoca com manteiga",
+      "pipoca de saquinho",
+      "pipoca de micro ondas",
+      "pop corn microondas",
+      "pipoca amanteigada"
+    ],
     "category": "lanches",
-    "per_100g": { "calories_kcal": 470, "protein_g": 7.5, "carb_g": 55.0, "fat_g": 24.0, "fiber_g": 7.0, "sodium_mg": 480.0 },
+    "per_100g": {
+      "calories_kcal": 470,
+      "protein_g": 7.5,
+      "carb_g": 55.0,
+      "fat_g": 24.0,
+      "fiber_g": 7.0,
+      "sodium_mg": 480.0
+    },
     "default_portion_g": 50,
     "source": "taco",
     "_note": "470 kcal/100g (média USDA para microwave popcorn com manteiga). Saco padrão 85-100g = 400-470 kcal. Porção conservadora: 50g = 235 kcal."
+  },
+  {
+    "code": "003",
+    "name": "Arroz, parboilizado, cozido",
+    "aliases": [
+      "arroz parboilizado",
+      "arroz paraboilizado cozido"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 130,
+      "protein_g": 2.6,
+      "carb_g": 28.0,
+      "fat_g": 0.3,
+      "fiber_g": 1.9,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 180,
+    "source": "taco"
+  },
+  {
+    "code": "004",
+    "name": "Arroz, integral, cru",
+    "aliases": [
+      "arroz integral cru"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 361,
+      "protein_g": 7.1,
+      "carb_g": 77.7,
+      "fat_g": 1.9,
+      "fiber_g": 4.5,
+      "sodium_mg": 3.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "005",
+    "name": "Macarrão, integral, cozido",
+    "aliases": [
+      "massa integral cozida",
+      "espaguete integral",
+      "macarrao integral"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 140,
+      "protein_g": 5.3,
+      "carb_g": 26.4,
+      "fat_g": 1.1,
+      "fiber_g": 3.8,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "006",
+    "name": "Farinha de trigo, crua",
+    "aliases": [
+      "farinha de trigo",
+      "trigo farinha",
+      "farinha branca"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 360,
+      "protein_g": 9.8,
+      "carb_g": 75.1,
+      "fat_g": 1.4,
+      "fiber_g": 2.3,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "018",
+    "name": "Milho, verde, cozido",
+    "aliases": [
+      "milho verde",
+      "milho cozido",
+      "espiga de milho"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 87,
+      "protein_g": 3.2,
+      "carb_g": 17.3,
+      "fat_g": 1.2,
+      "fiber_g": 2.0,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "019",
+    "name": "Polenta, cozida",
+    "aliases": [
+      "angu",
+      "polenta"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 71,
+      "protein_g": 1.4,
+      "carb_g": 14.8,
+      "fat_g": 0.3,
+      "fiber_g": 0.8,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "020",
+    "name": "Canjica, branca, cozida",
+    "aliases": [
+      "canjica cozida",
+      "canjicao",
+      "mugunza"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 133,
+      "protein_g": 2.8,
+      "carb_g": 29.4,
+      "fat_g": 0.4,
+      "fiber_g": 1.4,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "021",
+    "name": "Pipoca, estourada",
+    "aliases": [
+      "pipoca",
+      "popcorn"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 376,
+      "protein_g": 12.0,
+      "carb_g": 74.0,
+      "fat_g": 4.5,
+      "fiber_g": 14.5,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "022",
+    "name": "Amido de milho",
+    "aliases": [
+      "amido milho",
+      "maisena",
+      "maizena",
+      "amido de milho"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 363,
+      "protein_g": 0.3,
+      "carb_g": 89.1,
+      "fat_g": 0.1,
+      "fiber_g": 0.7,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 20,
+    "source": "taco"
+  },
+  {
+    "code": "023",
+    "name": "Quinoa, cozida",
+    "aliases": [
+      "quinoa"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 120,
+      "protein_g": 4.4,
+      "carb_g": 21.3,
+      "fat_g": 1.9,
+      "fiber_g": 2.8,
+      "sodium_mg": 7.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "024",
+    "name": "Biscoito, cream cracker",
+    "aliases": [
+      "cream cracker",
+      "biscoito cream cracker",
+      "bolacha cream cracker"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 430,
+      "protein_g": 9.7,
+      "carb_g": 69.5,
+      "fat_g": 11.5,
+      "fiber_g": 1.3,
+      "sodium_mg": 620.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "025",
+    "name": "Biscoito, Maria",
+    "aliases": [
+      "biscoito maria",
+      "bolacha maria"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 420,
+      "protein_g": 6.8,
+      "carb_g": 73.0,
+      "fat_g": 11.0,
+      "fiber_g": 1.6,
+      "sodium_mg": 350.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "026",
+    "name": "Biscoito, Maisena",
+    "aliases": [
+      "biscoito maisena",
+      "bolacha maisena",
+      "biscoito maizena"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 433,
+      "protein_g": 6.4,
+      "carb_g": 73.2,
+      "fat_g": 12.4,
+      "fiber_g": 0.5,
+      "sodium_mg": 280.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "027",
+    "name": "Cereal matinal, flocos de milho",
+    "aliases": [
+      "corn flakes",
+      "cornflakes",
+      "flocos de milho cereais",
+      "cereal matinal"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 370,
+      "protein_g": 7.5,
+      "carb_g": 81.5,
+      "fat_g": 0.6,
+      "fiber_g": 2.0,
+      "sodium_mg": 450.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "028",
+    "name": "Barra de cereal, mista",
+    "aliases": [
+      "barra de cereal",
+      "barrinha de cereal"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 389,
+      "protein_g": 7.0,
+      "carb_g": 66.0,
+      "fat_g": 12.0,
+      "fiber_g": 4.0,
+      "sodium_mg": 190.0
+    },
+    "default_portion_g": 25,
+    "source": "taco"
+  },
+  {
+    "code": "086",
+    "name": "Feijão, fradinho, cozido",
+    "aliases": [
+      "feijao fradinho",
+      "feijao de corda cozido",
+      "caupi cozido"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 76,
+      "protein_g": 4.9,
+      "carb_g": 13.2,
+      "fat_g": 0.7,
+      "fiber_g": 8.0,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 140,
+    "source": "taco"
+  },
+  {
+    "code": "087",
+    "name": "Feijão, branco, cozido",
+    "aliases": [
+      "feijao branco cozido",
+      "feijao cannellini"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 73,
+      "protein_g": 5.0,
+      "carb_g": 12.6,
+      "fat_g": 0.5,
+      "fiber_g": 7.0,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 140,
+    "source": "taco"
+  },
+  {
+    "code": "088",
+    "name": "Grão-de-bico, cozido",
+    "aliases": [
+      "grao de bico",
+      "grão de bico cozido",
+      "chickpea"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 164,
+      "protein_g": 8.9,
+      "carb_g": 27.4,
+      "fat_g": 2.6,
+      "fiber_g": 6.0,
+      "sodium_mg": 7.0
+    },
+    "default_portion_g": 140,
+    "source": "taco"
+  },
+  {
+    "code": "089",
+    "name": "Ervilha, seca, cozida",
+    "aliases": [
+      "ervilha seca cozida",
+      "ervilha cozida"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 90,
+      "protein_g": 5.4,
+      "carb_g": 16.0,
+      "fat_g": 0.4,
+      "fiber_g": 6.5,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 140,
+    "source": "taco"
+  },
+  {
+    "code": "090",
+    "name": "Soja, cozida",
+    "aliases": [
+      "soja cozida"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 141,
+      "protein_g": 14.6,
+      "carb_g": 9.8,
+      "fat_g": 6.5,
+      "fiber_g": 7.0,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 140,
+    "source": "taco"
+  },
+  {
+    "code": "091",
+    "name": "Proteína de soja texturizada, hidratada",
+    "aliases": [
+      "pst",
+      "carne de soja",
+      "proteina de soja"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 99,
+      "protein_g": 14.8,
+      "carb_g": 9.0,
+      "fat_g": 0.3,
+      "fiber_g": 4.5,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "092",
+    "name": "Tofu, firme",
+    "aliases": [
+      "tofu",
+      "queijo de soja"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 76,
+      "protein_g": 8.0,
+      "carb_g": 1.9,
+      "fat_g": 4.8,
+      "fiber_g": 0.3,
+      "sodium_mg": 7.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "093",
+    "name": "Feijão-verde, cozido",
+    "aliases": [
+      "feijao verde cozido",
+      "vagem feijao verde"
+    ],
+    "category": "leguminosas",
+    "per_100g": {
+      "calories_kcal": 35,
+      "protein_g": 2.4,
+      "carb_g": 6.4,
+      "fat_g": 0.3,
+      "fiber_g": 3.4,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "452",
+    "name": "Aspargo, cozido",
+    "aliases": [
+      "aspargo cozido",
+      "aspargos"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 19,
+      "protein_g": 2.2,
+      "carb_g": 2.0,
+      "fat_g": 0.3,
+      "fiber_g": 1.3,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "453",
+    "name": "Acelga, crua",
+    "aliases": [
+      "acelga"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 20,
+      "protein_g": 1.9,
+      "carb_g": 3.3,
+      "fat_g": 0.2,
+      "fiber_g": 1.8,
+      "sodium_mg": 213.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "454",
+    "name": "Agrião, cru",
+    "aliases": [
+      "agriao"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 20,
+      "protein_g": 2.1,
+      "carb_g": 2.4,
+      "fat_g": 0.4,
+      "fiber_g": 0.9,
+      "sodium_mg": 14.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "455",
+    "name": "Espinafre, cozido",
+    "aliases": [
+      "espinafre cozido",
+      "espinafre"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 28,
+      "protein_g": 3.0,
+      "carb_g": 3.8,
+      "fat_g": 0.5,
+      "fiber_g": 2.6,
+      "sodium_mg": 70.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "456",
+    "name": "Couve-flor, cozida",
+    "aliases": [
+      "couve flor cozida",
+      "couve-flor"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 21,
+      "protein_g": 2.2,
+      "carb_g": 3.4,
+      "fat_g": 0.2,
+      "fiber_g": 1.6,
+      "sodium_mg": 15.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "457",
+    "name": "Repolho, cru",
+    "aliases": [
+      "repolho",
+      "repolho cru"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 15,
+      "protein_g": 0.9,
+      "carb_g": 3.0,
+      "fat_g": 0.1,
+      "fiber_g": 1.0,
+      "sodium_mg": 13.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "458",
+    "name": "Vagem, cozida",
+    "aliases": [
+      "vagem cozida",
+      "vagem",
+      "feijao vagem"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 28,
+      "protein_g": 1.9,
+      "carb_g": 5.5,
+      "fat_g": 0.2,
+      "fiber_g": 3.1,
+      "sodium_mg": 3.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "459",
+    "name": "Pimentão, vermelho, cru",
+    "aliases": [
+      "pimentao vermelho",
+      "pimenta vermelha"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 28,
+      "protein_g": 0.9,
+      "carb_g": 6.3,
+      "fat_g": 0.2,
+      "fiber_g": 1.6,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "460",
+    "name": "Pimentão, amarelo, cru",
+    "aliases": [
+      "pimentao amarelo"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 26,
+      "protein_g": 1.0,
+      "carb_g": 5.7,
+      "fat_g": 0.2,
+      "fiber_g": 1.2,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "461",
+    "name": "Nabo, cru",
+    "aliases": [
+      "nabo"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 23,
+      "protein_g": 1.2,
+      "carb_g": 4.3,
+      "fat_g": 0.2,
+      "fiber_g": 1.6,
+      "sodium_mg": 67.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "462",
+    "name": "Rabanete, cru",
+    "aliases": [
+      "rabanete"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 17,
+      "protein_g": 0.7,
+      "carb_g": 3.4,
+      "fat_g": 0.1,
+      "fiber_g": 1.9,
+      "sodium_mg": 39.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "463",
+    "name": "Rúcula, crua",
+    "aliases": [
+      "rucula",
+      "rúcula"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 25,
+      "protein_g": 2.6,
+      "carb_g": 3.7,
+      "fat_g": 0.7,
+      "fiber_g": 1.6,
+      "sodium_mg": 27.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "464",
+    "name": "Salsão, cru",
+    "aliases": [
+      "salsao",
+      "aipo"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 16,
+      "protein_g": 0.9,
+      "carb_g": 2.9,
+      "fat_g": 0.1,
+      "fiber_g": 1.3,
+      "sodium_mg": 80.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "465",
+    "name": "Jiló, cru",
+    "aliases": [
+      "jilo"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 26,
+      "protein_g": 1.6,
+      "carb_g": 4.6,
+      "fat_g": 0.3,
+      "fiber_g": 1.9,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "466",
+    "name": "Maxixe, cozido",
+    "aliases": [
+      "maxixe cozido",
+      "maxixe"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 24,
+      "protein_g": 1.5,
+      "carb_g": 4.0,
+      "fat_g": 0.4,
+      "fiber_g": 1.8,
+      "sodium_mg": 3.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "467",
+    "name": "Inhame, cozido",
+    "aliases": [
+      "inhame cozido",
+      "inhame"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 96,
+      "protein_g": 2.0,
+      "carb_g": 22.9,
+      "fat_g": 0.1,
+      "fiber_g": 4.1,
+      "sodium_mg": 9.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "468",
+    "name": "Cará, cozido",
+    "aliases": [
+      "cara cozido",
+      "cará"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 107,
+      "protein_g": 2.0,
+      "carb_g": 25.5,
+      "fat_g": 0.2,
+      "fiber_g": 2.0,
+      "sodium_mg": 9.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "469",
+    "name": "Alface, americana, crua",
+    "aliases": [
+      "alface americana",
+      "alface lisa",
+      "alface crespa"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 11,
+      "protein_g": 1.0,
+      "carb_g": 1.9,
+      "fat_g": 0.1,
+      "fiber_g": 0.9,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 40,
+    "source": "taco"
+  },
+  {
+    "code": "470",
+    "name": "Ervilha, fresca, crua",
+    "aliases": [
+      "ervilha fresca",
+      "ervilha verde"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 42,
+      "protein_g": 2.8,
+      "carb_g": 7.6,
+      "fat_g": 0.2,
+      "fiber_g": 2.5,
+      "sodium_mg": 3.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "471",
+    "name": "Milho, em conserva",
+    "aliases": [
+      "milho em lata",
+      "milho conserva"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 57,
+      "protein_g": 1.7,
+      "carb_g": 12.5,
+      "fat_g": 0.6,
+      "fiber_g": 1.5,
+      "sodium_mg": 250.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "472",
+    "name": "Mandioquinha, cozida",
+    "aliases": [
+      "batata baroa",
+      "mandioquinha",
+      "batata salsa"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 94,
+      "protein_g": 1.8,
+      "carb_g": 22.1,
+      "fat_g": 0.1,
+      "fiber_g": 2.2,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "473",
+    "name": "Alho-poró, cru",
+    "aliases": [
+      "alho poro",
+      "porro"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 29,
+      "protein_g": 1.5,
+      "carb_g": 5.9,
+      "fat_g": 0.2,
+      "fiber_g": 1.8,
+      "sodium_mg": 20.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "474",
+    "name": "Gengibre, cru",
+    "aliases": [
+      "gengibre"
+    ],
+    "category": "hortalicas",
+    "per_100g": {
+      "calories_kcal": 56,
+      "protein_g": 1.7,
+      "carb_g": 11.7,
+      "fat_g": 0.8,
+      "fiber_g": 2.0,
+      "sodium_mg": 13.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "411",
+    "name": "Banana, nanica",
+    "aliases": [
+      "banana nanica",
+      "banana dagua"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 89,
+      "protein_g": 1.3,
+      "carb_g": 22.8,
+      "fat_g": 0.1,
+      "fiber_g": 1.9,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 90,
+    "source": "taco"
+  },
+  {
+    "code": "412",
+    "name": "Banana, maçã",
+    "aliases": [
+      "banana maca",
+      "banana maca verde"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 97,
+      "protein_g": 1.3,
+      "carb_g": 24.9,
+      "fat_g": 0.1,
+      "fiber_g": 1.9,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 70,
+    "source": "taco"
+  },
+  {
+    "code": "413",
+    "name": "Caju",
+    "aliases": [
+      "caju",
+      "cajú"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 43,
+      "protein_g": 0.9,
+      "carb_g": 9.9,
+      "fat_g": 0.3,
+      "fiber_g": 1.7,
+      "sodium_mg": 4.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "414",
+    "name": "Caqui",
+    "aliases": [
+      "caqui"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 71,
+      "protein_g": 0.8,
+      "carb_g": 18.4,
+      "fat_g": 0.2,
+      "fiber_g": 2.7,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "415",
+    "name": "Coco, seco, ralado",
+    "aliases": [
+      "coco seco",
+      "coco ralado",
+      "coco"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 354,
+      "protein_g": 3.2,
+      "carb_g": 15.3,
+      "fat_g": 33.5,
+      "fiber_g": 14.3,
+      "sodium_mg": 20.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "416",
+    "name": "Goiaba, branca",
+    "aliases": [
+      "goiaba branca"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 54,
+      "protein_g": 2.3,
+      "carb_g": 9.9,
+      "fat_g": 0.6,
+      "fiber_g": 6.2,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "417",
+    "name": "Graviola",
+    "aliases": [
+      "graviola"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 62,
+      "protein_g": 1.0,
+      "carb_g": 14.9,
+      "fat_g": 0.3,
+      "fiber_g": 2.0,
+      "sodium_mg": 27.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "418",
+    "name": "Jabuticaba",
+    "aliases": [
+      "jabuticaba"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 58,
+      "protein_g": 0.7,
+      "carb_g": 14.7,
+      "fat_g": 0.1,
+      "fiber_g": 1.9,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "419",
+    "name": "Laranja, lima",
+    "aliases": [
+      "laranja lima"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 35,
+      "protein_g": 0.7,
+      "carb_g": 8.9,
+      "fat_g": 0.1,
+      "fiber_g": 0.9,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 130,
+    "source": "taco"
+  },
+  {
+    "code": "420",
+    "name": "Limão, tahiti",
+    "aliases": [
+      "limao tahiti",
+      "limão",
+      "limao"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 30,
+      "protein_g": 0.8,
+      "carb_g": 7.4,
+      "fat_g": 0.1,
+      "fiber_g": 2.4,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 60,
+    "source": "taco"
+  },
+  {
+    "code": "421",
+    "name": "Maracujá, amarelo, polpa",
+    "aliases": [
+      "maracuja",
+      "maracujá"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 68,
+      "protein_g": 2.0,
+      "carb_g": 13.4,
+      "fat_g": 0.5,
+      "fiber_g": 1.9,
+      "sodium_mg": 28.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "422",
+    "name": "Melancia",
+    "aliases": [
+      "melancia"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 30,
+      "protein_g": 0.6,
+      "carb_g": 7.5,
+      "fat_g": 0.1,
+      "fiber_g": 0.3,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "423",
+    "name": "Melão",
+    "aliases": [
+      "melao",
+      "melão"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 29,
+      "protein_g": 0.7,
+      "carb_g": 7.0,
+      "fat_g": 0.1,
+      "fiber_g": 0.4,
+      "sodium_mg": 16.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "424",
+    "name": "Pêra",
+    "aliases": [
+      "pera",
+      "pêra"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 55,
+      "protein_g": 0.4,
+      "carb_g": 14.2,
+      "fat_g": 0.1,
+      "fiber_g": 2.2,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 130,
+    "source": "taco"
+  },
+  {
+    "code": "425",
+    "name": "Pêssego",
+    "aliases": [
+      "pessego",
+      "pêssego"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 43,
+      "protein_g": 0.9,
+      "carb_g": 10.5,
+      "fat_g": 0.1,
+      "fiber_g": 1.7,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "426",
+    "name": "Pitanga",
+    "aliases": [
+      "pitanga"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 36,
+      "protein_g": 0.5,
+      "carb_g": 9.0,
+      "fat_g": 0.2,
+      "fiber_g": 0.6,
+      "sodium_mg": 3.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "427",
+    "name": "Cupuaçu, polpa",
+    "aliases": [
+      "cupuacu",
+      "cupuaçu"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 49,
+      "protein_g": 1.4,
+      "carb_g": 11.0,
+      "fat_g": 0.3,
+      "fiber_g": 2.5,
+      "sodium_mg": 10.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "428",
+    "name": "Carambola",
+    "aliases": [
+      "carambola",
+      "starfruit"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 38,
+      "protein_g": 0.6,
+      "carb_g": 9.0,
+      "fat_g": 0.2,
+      "fiber_g": 2.9,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "429",
+    "name": "Jaca, polpa",
+    "aliases": [
+      "jaca"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 95,
+      "protein_g": 1.4,
+      "carb_g": 23.4,
+      "fat_g": 0.2,
+      "fiber_g": 1.8,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "430b",
+    "name": "Manga, palmer",
+    "aliases": [
+      "manga palmer",
+      "manga"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 59,
+      "protein_g": 0.6,
+      "carb_g": 15.2,
+      "fat_g": 0.1,
+      "fiber_g": 1.6,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "431b",
+    "name": "Uva, itália, verde",
+    "aliases": [
+      "uva italia",
+      "uva verde",
+      "uva"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 69,
+      "protein_g": 0.7,
+      "carb_g": 17.0,
+      "fat_g": 0.1,
+      "fiber_g": 0.9,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "432b",
+    "name": "Kiwi",
+    "aliases": [
+      "kiwi"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 61,
+      "protein_g": 1.1,
+      "carb_g": 14.7,
+      "fat_g": 0.5,
+      "fiber_g": 3.0,
+      "sodium_mg": 3.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "433b",
+    "name": "Abacaxi, em calda, em conserva",
+    "aliases": [
+      "abacaxi em calda",
+      "abacaxi conserva"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 66,
+      "protein_g": 0.4,
+      "carb_g": 17.1,
+      "fat_g": 0.1,
+      "fiber_g": 0.6,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "434b",
+    "name": "Tâmara, seca",
+    "aliases": [
+      "tamara",
+      "tâmara"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 282,
+      "protein_g": 2.4,
+      "carb_g": 72.9,
+      "fat_g": 0.3,
+      "fiber_g": 8.7,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "435b",
+    "name": "Ameixa seca",
+    "aliases": [
+      "ameixa seca",
+      "ameixa"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 239,
+      "protein_g": 2.2,
+      "carb_g": 62.7,
+      "fat_g": 0.4,
+      "fiber_g": 7.1,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "436b",
+    "name": "Uva passa",
+    "aliases": [
+      "uva passa",
+      "passas"
+    ],
+    "category": "frutas",
+    "per_100g": {
+      "calories_kcal": 299,
+      "protein_g": 3.1,
+      "carb_g": 79.0,
+      "fat_g": 0.5,
+      "fiber_g": 3.7,
+      "sodium_mg": 11.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "201",
+    "name": "Carne bovina, alcatra, grelhada",
+    "aliases": [
+      "alcatra grelhada",
+      "alcatra"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 219,
+      "protein_g": 30.7,
+      "carb_g": 0.0,
+      "fat_g": 10.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 56.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "202",
+    "name": "Carne bovina, contrafilé, grelhado",
+    "aliases": [
+      "contrafile grelhado",
+      "contrafilé"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 266,
+      "protein_g": 30.0,
+      "carb_g": 0.0,
+      "fat_g": 16.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 57.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "203",
+    "name": "Carne bovina, coxão mole, cozido",
+    "aliases": [
+      "coxao mole cozido",
+      "coxão mole"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 195,
+      "protein_g": 29.2,
+      "carb_g": 0.0,
+      "fat_g": 8.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 58.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "204",
+    "name": "Carne bovina, patinho, moído, cozido",
+    "aliases": [
+      "patinho moido",
+      "carne moida magra"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 170,
+      "protein_g": 24.9,
+      "carb_g": 0.0,
+      "fat_g": 7.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 48.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "206",
+    "name": "Carne bovina, músculo, cozido",
+    "aliases": [
+      "musculo bovino cozido",
+      "músculo"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 186,
+      "protein_g": 29.0,
+      "carb_g": 0.0,
+      "fat_g": 7.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 52.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "207",
+    "name": "Carne bovina, fraldinha, cozida",
+    "aliases": [
+      "fraldinha cozida",
+      "fraldinha"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 240,
+      "protein_g": 28.0,
+      "carb_g": 0.0,
+      "fat_g": 13.8,
+      "fiber_g": 0.0,
+      "sodium_mg": 55.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "208",
+    "name": "Fígado bovino, cozido",
+    "aliases": [
+      "figado bovino",
+      "figado de boi"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 165,
+      "protein_g": 26.1,
+      "carb_g": 2.4,
+      "fat_g": 5.2,
+      "fiber_g": 0.0,
+      "sodium_mg": 73.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "209",
+    "name": "Coração bovino, cozido",
+    "aliases": [
+      "coracao bovino",
+      "coração de boi"
+    ],
+    "category": "carnes_bovinas",
+    "per_100g": {
+      "calories_kcal": 163,
+      "protein_g": 27.7,
+      "carb_g": 0.0,
+      "fat_g": 5.6,
+      "fiber_g": 0.0,
+      "sodium_mg": 72.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "252",
+    "name": "Lombo suíno, grelhado",
+    "aliases": [
+      "lombo suino grelhado",
+      "lombo de porco"
+    ],
+    "category": "carnes_suinas",
+    "per_100g": {
+      "calories_kcal": 254,
+      "protein_g": 29.5,
+      "carb_g": 0.0,
+      "fat_g": 15.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 57.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "253",
+    "name": "Costela suína, assada",
+    "aliases": [
+      "costela de porco assada",
+      "costela suina"
+    ],
+    "category": "carnes_suinas",
+    "per_100g": {
+      "calories_kcal": 370,
+      "protein_g": 22.0,
+      "carb_g": 0.0,
+      "fat_g": 31.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 62.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "254",
+    "name": "Bacon, frito",
+    "aliases": [
+      "bacon"
+    ],
+    "category": "carnes_suinas",
+    "per_100g": {
+      "calories_kcal": 541,
+      "protein_g": 10.8,
+      "carb_g": 0.6,
+      "fat_g": 55.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 1600.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "171",
+    "name": "Frango, peito, sem pele, cozido",
+    "aliases": [
+      "peito de frango cozido",
+      "peito frango"
+    ],
+    "category": "carnes_aves",
+    "per_100g": {
+      "calories_kcal": 159,
+      "protein_g": 31.5,
+      "carb_g": 0.0,
+      "fat_g": 3.2,
+      "fiber_g": 0.0,
+      "sodium_mg": 72.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "172",
+    "name": "Frango, asa, com pele, assada",
+    "aliases": [
+      "asa de frango assada",
+      "asa frango"
+    ],
+    "category": "carnes_aves",
+    "per_100g": {
+      "calories_kcal": 284,
+      "protein_g": 26.5,
+      "carb_g": 0.0,
+      "fat_g": 18.8,
+      "fiber_g": 0.0,
+      "sodium_mg": 77.0
+    },
+    "default_portion_g": 70,
+    "source": "taco"
+  },
+  {
+    "code": "173",
+    "name": "Frango, inteiro, assado",
+    "aliases": [
+      "frango inteiro assado",
+      "frango assado"
+    ],
+    "category": "carnes_aves",
+    "per_100g": {
+      "calories_kcal": 248,
+      "protein_g": 25.5,
+      "carb_g": 0.0,
+      "fat_g": 16.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 74.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "174",
+    "name": "Peru, peito, cozido",
+    "aliases": [
+      "peru cozido",
+      "peito de peru"
+    ],
+    "category": "carnes_aves",
+    "per_100g": {
+      "calories_kcal": 159,
+      "protein_g": 28.9,
+      "carb_g": 0.0,
+      "fat_g": 4.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 64.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "176",
+    "name": "Frango, sobrecoxa, sem pele, assada",
+    "aliases": [
+      "sobrecoxa frango",
+      "sobrecoxa de frango"
+    ],
+    "category": "carnes_aves",
+    "per_100g": {
+      "calories_kcal": 215,
+      "protein_g": 26.0,
+      "carb_g": 0.0,
+      "fat_g": 12.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 73.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "231",
+    "name": "Atum, em conserva em água",
+    "aliases": [
+      "atum em agua",
+      "atum em lata",
+      "atum"
+    ],
+    "category": "peixes",
+    "per_100g": {
+      "calories_kcal": 132,
+      "protein_g": 28.0,
+      "carb_g": 0.0,
+      "fat_g": 2.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 310.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "232",
+    "name": "Salmão, grelhado",
+    "aliases": [
+      "salmao grelhado",
+      "salmão"
+    ],
+    "category": "peixes",
+    "per_100g": {
+      "calories_kcal": 245,
+      "protein_g": 27.0,
+      "carb_g": 0.0,
+      "fat_g": 14.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 50.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "233",
+    "name": "Merluza, cozida",
+    "aliases": [
+      "merluza cozida",
+      "merluza"
+    ],
+    "category": "peixes",
+    "per_100g": {
+      "calories_kcal": 91,
+      "protein_g": 20.1,
+      "carb_g": 0.0,
+      "fat_g": 1.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 77.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "234",
+    "name": "Pescada, cozida",
+    "aliases": [
+      "pescada cozida",
+      "pescada"
+    ],
+    "category": "peixes",
+    "per_100g": {
+      "calories_kcal": 108,
+      "protein_g": 19.7,
+      "carb_g": 0.0,
+      "fat_g": 3.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 55.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "236",
+    "name": "Pintado, cozido",
+    "aliases": [
+      "pintado cozido",
+      "pintado"
+    ],
+    "category": "peixes",
+    "per_100g": {
+      "calories_kcal": 108,
+      "protein_g": 18.0,
+      "carb_g": 0.0,
+      "fat_g": 3.8,
+      "fiber_g": 0.0,
+      "sodium_mg": 60.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "237",
+    "name": "Dourado, grelhado",
+    "aliases": [
+      "dourado grelhado",
+      "dourado peixe"
+    ],
+    "category": "peixes",
+    "per_100g": {
+      "calories_kcal": 104,
+      "protein_g": 20.0,
+      "carb_g": 0.0,
+      "fat_g": 2.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 52.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "238",
+    "name": "Polvo, cozido",
+    "aliases": [
+      "polvo cozido",
+      "polvo"
+    ],
+    "category": "frutos_do_mar",
+    "per_100g": {
+      "calories_kcal": 82,
+      "protein_g": 14.9,
+      "carb_g": 2.2,
+      "fat_g": 1.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 230.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "239",
+    "name": "Lula, frita",
+    "aliases": [
+      "lula frita",
+      "lula"
+    ],
+    "category": "frutos_do_mar",
+    "per_100g": {
+      "calories_kcal": 175,
+      "protein_g": 15.6,
+      "carb_g": 8.0,
+      "fat_g": 8.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 260.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "242",
+    "name": "Lagosta, cozida",
+    "aliases": [
+      "lagosta cozida",
+      "lagosta"
+    ],
+    "category": "frutos_do_mar",
+    "per_100g": {
+      "calories_kcal": 90,
+      "protein_g": 18.8,
+      "carb_g": 0.0,
+      "fat_g": 0.9,
+      "fiber_g": 0.0,
+      "sodium_mg": 190.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "243",
+    "name": "Caranguejo, cozido",
+    "aliases": [
+      "caranguejo cozido",
+      "caranguejo"
+    ],
+    "category": "frutos_do_mar",
+    "per_100g": {
+      "calories_kcal": 84,
+      "protein_g": 16.3,
+      "carb_g": 0.0,
+      "fat_g": 1.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 370.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "244",
+    "name": "Mariscos, cozidos",
+    "aliases": [
+      "mariscos cozidos",
+      "mariscos",
+      "mexilhao"
+    ],
+    "category": "frutos_do_mar",
+    "per_100g": {
+      "calories_kcal": 75,
+      "protein_g": 11.1,
+      "carb_g": 4.2,
+      "fat_g": 1.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 300.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "316",
+    "name": "Iogurte, desnatado",
+    "aliases": [
+      "iogurte desnatado",
+      "iogurte light"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 43,
+      "protein_g": 4.1,
+      "carb_g": 5.8,
+      "fat_g": 0.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 54.0
+    },
+    "default_portion_g": 170,
+    "source": "taco"
+  },
+  {
+    "code": "317",
+    "name": "Leite de vaca, desnatado",
+    "aliases": [
+      "leite desnatado",
+      "leite zero gordura"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 36,
+      "protein_g": 3.6,
+      "carb_g": 5.1,
+      "fat_g": 0.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 49.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "318",
+    "name": "Leite de vaca, semidesnatado",
+    "aliases": [
+      "leite semidesnatado",
+      "leite semi"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 47,
+      "protein_g": 3.4,
+      "carb_g": 4.8,
+      "fat_g": 1.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 49.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "319",
+    "name": "Queijo, ricota",
+    "aliases": [
+      "ricota",
+      "queijo ricota"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 152,
+      "protein_g": 11.4,
+      "carb_g": 2.6,
+      "fat_g": 10.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 84.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "322",
+    "name": "Queijo, cottage",
+    "aliases": [
+      "cottage",
+      "queijo cottage"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 98,
+      "protein_g": 12.0,
+      "carb_g": 3.0,
+      "fat_g": 4.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 370.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "323",
+    "name": "Queijo, parmesão, ralado",
+    "aliases": [
+      "parmesao ralado",
+      "queijo parmesão ralado",
+      "parmesão"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 442,
+      "protein_g": 35.8,
+      "carb_g": 0.0,
+      "fat_g": 32.6,
+      "fiber_g": 0.0,
+      "sodium_mg": 1960.0
+    },
+    "default_portion_g": 15,
+    "source": "taco"
+  },
+  {
+    "code": "324",
+    "name": "Queijo, gorgonzola",
+    "aliases": [
+      "gorgonzola",
+      "queijo gorgonzola"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 353,
+      "protein_g": 21.5,
+      "carb_g": 0.0,
+      "fat_g": 29.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 1400.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "327",
+    "name": "Leite em pó, integral",
+    "aliases": [
+      "leite em po integral",
+      "leite po"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 494,
+      "protein_g": 26.4,
+      "carb_g": 37.3,
+      "fat_g": 27.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 380.0
+    },
+    "default_portion_g": 25,
+    "source": "taco"
+  },
+  {
+    "code": "328",
+    "name": "Leite de coco",
+    "aliases": [
+      "leite de coco",
+      "leite coco"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 197,
+      "protein_g": 2.0,
+      "carb_g": 2.8,
+      "fat_g": 20.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 15.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "329",
+    "name": "Iogurte, grego, integral",
+    "aliases": [
+      "iogurte grego",
+      "yogurt grego"
+    ],
+    "category": "leite_derivados",
+    "per_100g": {
+      "calories_kcal": 97,
+      "protein_g": 9.0,
+      "carb_g": 3.6,
+      "fat_g": 5.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 50.0
+    },
+    "default_portion_g": 130,
+    "source": "taco"
+  },
+  {
+    "code": "251b",
+    "name": "Ovo de galinha, frito",
+    "aliases": [
+      "ovo frito",
+      "ovos fritos"
+    ],
+    "category": "ovos",
+    "per_100g": {
+      "calories_kcal": 195,
+      "protein_g": 13.6,
+      "carb_g": 0.4,
+      "fat_g": 15.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 168.0
+    },
+    "default_portion_g": 60,
+    "source": "taco"
+  },
+  {
+    "code": "252b",
+    "name": "Clara de ovo, cozida",
+    "aliases": [
+      "clara de ovo cozida",
+      "clara cozida",
+      "clara"
+    ],
+    "category": "ovos",
+    "per_100g": {
+      "calories_kcal": 52,
+      "protein_g": 11.0,
+      "carb_g": 0.8,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 166.0
+    },
+    "default_portion_g": 40,
+    "source": "taco"
+  },
+  {
+    "code": "253b",
+    "name": "Ovo de galinha, mexido",
+    "aliases": [
+      "ovo mexido",
+      "ovos mexidos",
+      "ovo estrelado"
+    ],
+    "category": "ovos",
+    "per_100g": {
+      "calories_kcal": 188,
+      "protein_g": 13.1,
+      "carb_g": 1.2,
+      "fat_g": 14.4,
+      "fiber_g": 0.0,
+      "sodium_mg": 145.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "030",
+    "name": "Óleo de soja",
+    "aliases": [
+      "oleo de soja",
+      "oleo vegetal"
+    ],
+    "category": "gorduras",
+    "per_100g": {
+      "calories_kcal": 884,
+      "protein_g": 0.0,
+      "carb_g": 0.0,
+      "fat_g": 100.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "031",
+    "name": "Óleo de coco",
+    "aliases": [
+      "oleo de coco"
+    ],
+    "category": "gorduras",
+    "per_100g": {
+      "calories_kcal": 884,
+      "protein_g": 0.0,
+      "carb_g": 0.0,
+      "fat_g": 100.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "032",
+    "name": "Óleo de canola",
+    "aliases": [
+      "oleo de canola"
+    ],
+    "category": "gorduras",
+    "per_100g": {
+      "calories_kcal": 884,
+      "protein_g": 0.0,
+      "carb_g": 0.0,
+      "fat_g": 100.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "033",
+    "name": "Óleo de milho",
+    "aliases": [
+      "oleo de milho"
+    ],
+    "category": "gorduras",
+    "per_100g": {
+      "calories_kcal": 884,
+      "protein_g": 0.0,
+      "carb_g": 0.0,
+      "fat_g": 100.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 0.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "034",
+    "name": "Margarina, sem sal",
+    "aliases": [
+      "margarina",
+      "margarina sem sal"
+    ],
+    "category": "gorduras",
+    "per_100g": {
+      "calories_kcal": 718,
+      "protein_g": 0.1,
+      "carb_g": 0.0,
+      "fat_g": 80.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "035",
+    "name": "Creme vegetal",
+    "aliases": [
+      "creme vegetal"
+    ],
+    "category": "gorduras",
+    "per_100g": {
+      "calories_kcal": 520,
+      "protein_g": 0.1,
+      "carb_g": 0.0,
+      "fat_g": 58.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 380.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "555",
+    "name": "Pistache, torrado",
+    "aliases": [
+      "pistache",
+      "pistache torrado"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 562,
+      "protein_g": 20.6,
+      "carb_g": 28.0,
+      "fat_g": 45.4,
+      "fiber_g": 10.6,
+      "sodium_mg": 6.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "556",
+    "name": "Avelã, torrada",
+    "aliases": [
+      "avela torrada",
+      "avelã"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 628,
+      "protein_g": 14.1,
+      "carb_g": 16.7,
+      "fat_g": 60.8,
+      "fiber_g": 9.7,
+      "sodium_mg": 2.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "557",
+    "name": "Semente de chia",
+    "aliases": [
+      "chia",
+      "semente de chia"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 486,
+      "protein_g": 16.5,
+      "carb_g": 42.1,
+      "fat_g": 30.7,
+      "fiber_g": 34.4,
+      "sodium_mg": 16.0
+    },
+    "default_portion_g": 15,
+    "source": "taco"
+  },
+  {
+    "code": "558",
+    "name": "Semente de linhaça, dourada",
+    "aliases": [
+      "linhaca",
+      "linhaça dourada",
+      "semente de linhaca"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 497,
+      "protein_g": 18.3,
+      "carb_g": 28.9,
+      "fat_g": 42.2,
+      "fiber_g": 27.3,
+      "sodium_mg": 30.0
+    },
+    "default_portion_g": 15,
+    "source": "taco"
+  },
+  {
+    "code": "559",
+    "name": "Gergelim, branco",
+    "aliases": [
+      "gergelim",
+      "sesamo"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 573,
+      "protein_g": 17.0,
+      "carb_g": 23.4,
+      "fat_g": 49.7,
+      "fiber_g": 11.8,
+      "sodium_mg": 8.0
+    },
+    "default_portion_g": 15,
+    "source": "taco"
+  },
+  {
+    "code": "560",
+    "name": "Semente de girassol",
+    "aliases": [
+      "semente de girassol",
+      "girassol"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 582,
+      "protein_g": 20.8,
+      "carb_g": 20.0,
+      "fat_g": 51.5,
+      "fiber_g": 8.6,
+      "sodium_mg": 3.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "561",
+    "name": "Semente de abóbora, torrada",
+    "aliases": [
+      "semente de abobora",
+      "pepita"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 541,
+      "protein_g": 24.5,
+      "carb_g": 17.8,
+      "fat_g": 45.8,
+      "fiber_g": 6.0,
+      "sodium_mg": 7.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "562",
+    "name": "Amendoim, torrado, sem sal",
+    "aliases": [
+      "amendoim torrado",
+      "amendoim",
+      "pasta de amendoim"
+    ],
+    "category": "oleaginosas",
+    "per_100g": {
+      "calories_kcal": 581,
+      "protein_g": 26.0,
+      "carb_g": 16.0,
+      "fat_g": 49.0,
+      "fiber_g": 8.0,
+      "sodium_mg": 7.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "603",
+    "name": "Água de coco",
+    "aliases": [
+      "agua de coco"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 19,
+      "protein_g": 0.7,
+      "carb_g": 3.7,
+      "fat_g": 0.2,
+      "fiber_g": 0.0,
+      "sodium_mg": 105.0
+    },
+    "default_portion_g": 300,
+    "source": "taco"
+  },
+  {
+    "code": "604",
+    "name": "Suco de laranja, natural",
+    "aliases": [
+      "suco de laranja",
+      "suco laranja natural"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 44,
+      "protein_g": 0.9,
+      "carb_g": 10.7,
+      "fat_g": 0.1,
+      "fiber_g": 0.3,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "605",
+    "name": "Suco de acerola, natural",
+    "aliases": [
+      "suco de acerola",
+      "acerola"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 38,
+      "protein_g": 0.6,
+      "carb_g": 9.3,
+      "fat_g": 0.3,
+      "fiber_g": 1.3,
+      "sodium_mg": 7.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "606",
+    "name": "Refrigerante, cola",
+    "aliases": [
+      "coca cola",
+      "refrigerante cola",
+      "coca-cola",
+      "pepsi"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 37,
+      "protein_g": 0.0,
+      "carb_g": 9.6,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 11.0
+    },
+    "default_portion_g": 350,
+    "source": "taco"
+  },
+  {
+    "code": "607",
+    "name": "Refrigerante, cola, zero",
+    "aliases": [
+      "coca zero",
+      "refrigerante zero",
+      "diet cola"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 0,
+      "protein_g": 0.0,
+      "carb_g": 0.0,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 14.0
+    },
+    "default_portion_g": 350,
+    "source": "taco"
+  },
+  {
+    "code": "608",
+    "name": "Cerveja, lata",
+    "aliases": [
+      "cerveja",
+      "beer"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 44,
+      "protein_g": 0.5,
+      "carb_g": 3.6,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 4.0
+    },
+    "default_portion_g": 350,
+    "source": "taco"
+  },
+  {
+    "code": "609",
+    "name": "Vinho, tinto seco",
+    "aliases": [
+      "vinho tinto",
+      "vinho"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 85,
+      "protein_g": 0.2,
+      "carb_g": 2.6,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "610",
+    "name": "Chá verde, infusão",
+    "aliases": [
+      "cha verde",
+      "chá verde"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 1,
+      "protein_g": 0.0,
+      "carb_g": 0.2,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "611",
+    "name": "Achocolatado, líquido",
+    "aliases": [
+      "achocolatado",
+      "chocolate liquido",
+      "toddy",
+      "nescau"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 75,
+      "protein_g": 3.5,
+      "carb_g": 12.0,
+      "fat_g": 1.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 60.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "612",
+    "name": "Suco de uva, integral",
+    "aliases": [
+      "suco de uva",
+      "suco uva"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 62,
+      "protein_g": 0.5,
+      "carb_g": 15.4,
+      "fat_g": 0.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "613",
+    "name": "Energético",
+    "aliases": [
+      "energetico",
+      "red bull",
+      "energy drink"
+    ],
+    "category": "bebidas",
+    "per_100g": {
+      "calories_kcal": 45,
+      "protein_g": 0.0,
+      "carb_g": 11.0,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 40.0
+    },
+    "default_portion_g": 250,
+    "source": "taco"
+  },
+  {
+    "code": "802",
+    "name": "Açúcar, refinado",
+    "aliases": [
+      "acucar refinado",
+      "açúcar branco",
+      "acucar"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 387,
+      "protein_g": 0.0,
+      "carb_g": 99.6,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 1.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "803",
+    "name": "Açúcar, mascavo",
+    "aliases": [
+      "acucar mascavo",
+      "açúcar mascavo"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 363,
+      "protein_g": 1.0,
+      "carb_g": 93.1,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 30.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "804",
+    "name": "Mel, abelha",
+    "aliases": [
+      "mel de abelha",
+      "mel"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 309,
+      "protein_g": 0.3,
+      "carb_g": 82.4,
+      "fat_g": 0.0,
+      "fiber_g": 0.2,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 20,
+    "source": "taco"
+  },
+  {
+    "code": "805",
+    "name": "Rapadura",
+    "aliases": [
+      "rapadura"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 363,
+      "protein_g": 0.9,
+      "carb_g": 93.5,
+      "fat_g": 0.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 14.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "806",
+    "name": "Chocolate, amargo, 70% cacau",
+    "aliases": [
+      "chocolate amargo",
+      "chocolate 70%",
+      "chocolate meio amargo"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 517,
+      "protein_g": 8.1,
+      "carb_g": 45.0,
+      "fat_g": 37.0,
+      "fiber_g": 11.0,
+      "sodium_mg": 6.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "807",
+    "name": "Pudim de leite",
+    "aliases": [
+      "pudim",
+      "pudim de leite"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 166,
+      "protein_g": 4.7,
+      "carb_g": 27.0,
+      "fat_g": 4.5,
+      "fiber_g": 0.0,
+      "sodium_mg": 90.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "808",
+    "name": "Goiabada",
+    "aliases": [
+      "goiabada",
+      "goiabada cascao"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 286,
+      "protein_g": 0.5,
+      "carb_g": 74.5,
+      "fat_g": 0.3,
+      "fiber_g": 2.3,
+      "sodium_mg": 30.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "809",
+    "name": "Doce de leite",
+    "aliases": [
+      "doce de leite"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 276,
+      "protein_g": 7.0,
+      "carb_g": 54.0,
+      "fat_g": 4.7,
+      "fiber_g": 0.0,
+      "sodium_mg": 120.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "810",
+    "name": "Sorvete, creme",
+    "aliases": [
+      "sorvete de creme",
+      "sorvete"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 181,
+      "protein_g": 3.5,
+      "carb_g": 24.0,
+      "fat_g": 8.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 75.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "811",
+    "name": "Geleia de frutas",
+    "aliases": [
+      "geleia",
+      "geleia de frutas"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 221,
+      "protein_g": 0.5,
+      "carb_g": 55.0,
+      "fat_g": 0.1,
+      "fiber_g": 0.5,
+      "sodium_mg": 18.0
+    },
+    "default_portion_g": 20,
+    "source": "taco"
+  },
+  {
+    "code": "812",
+    "name": "Pé de moleque",
+    "aliases": [
+      "pe de moleque",
+      "pé de moleque"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 498,
+      "protein_g": 12.0,
+      "carb_g": 55.0,
+      "fat_g": 25.0,
+      "fiber_g": 3.5,
+      "sodium_mg": 50.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "813",
+    "name": "Canjica, doce",
+    "aliases": [
+      "canjica doce",
+      "mugunza doce"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 180,
+      "protein_g": 3.5,
+      "carb_g": 35.0,
+      "fat_g": 3.5,
+      "fiber_g": 0.8,
+      "sodium_mg": 30.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "036",
+    "name": "Ketchup",
+    "aliases": [
+      "ketchup",
+      "catchup"
+    ],
+    "category": "condimentos",
+    "per_100g": {
+      "calories_kcal": 100,
+      "protein_g": 1.4,
+      "carb_g": 22.2,
+      "fat_g": 0.6,
+      "fiber_g": 0.5,
+      "sodium_mg": 950.0
+    },
+    "default_portion_g": 15,
+    "source": "taco"
+  },
+  {
+    "code": "037",
+    "name": "Mostarda",
+    "aliases": [
+      "mostarda"
+    ],
+    "category": "condimentos",
+    "per_100g": {
+      "calories_kcal": 100,
+      "protein_g": 6.3,
+      "carb_g": 8.0,
+      "fat_g": 6.3,
+      "fiber_g": 5.0,
+      "sodium_mg": 1080.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "038",
+    "name": "Shoyu",
+    "aliases": [
+      "shoyu",
+      "molho de soja",
+      "soja molho"
+    ],
+    "category": "condimentos",
+    "per_100g": {
+      "calories_kcal": 60,
+      "protein_g": 5.7,
+      "carb_g": 8.2,
+      "fat_g": 0.1,
+      "fiber_g": 0.4,
+      "sodium_mg": 5700.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "039",
+    "name": "Sal, refinado",
+    "aliases": [
+      "sal",
+      "sal refinado"
+    ],
+    "category": "condimentos",
+    "per_100g": {
+      "calories_kcal": 0,
+      "protein_g": 0.0,
+      "carb_g": 0.0,
+      "fat_g": 0.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 39300.0
+    },
+    "default_portion_g": 5,
+    "source": "taco"
+  },
+  {
+    "code": "040",
+    "name": "Maionese, light",
+    "aliases": [
+      "maionese light"
+    ],
+    "category": "condimentos",
+    "per_100g": {
+      "calories_kcal": 315,
+      "protein_g": 1.1,
+      "carb_g": 5.4,
+      "fat_g": 32.7,
+      "fiber_g": 0.0,
+      "sodium_mg": 680.0
+    },
+    "default_portion_g": 15,
+    "source": "taco"
+  },
+  {
+    "code": "041",
+    "name": "Molho inglês",
+    "aliases": [
+      "molho ingles",
+      "worcestershire"
+    ],
+    "category": "condimentos",
+    "per_100g": {
+      "calories_kcal": 78,
+      "protein_g": 1.6,
+      "carb_g": 19.0,
+      "fat_g": 0.1,
+      "fiber_g": 0.0,
+      "sodium_mg": 980.0
+    },
+    "default_portion_g": 10,
+    "source": "taco"
+  },
+  {
+    "code": "255",
+    "name": "Salsicha, cozida",
+    "aliases": [
+      "salsicha cozida",
+      "salsicha"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 246,
+      "protein_g": 12.0,
+      "carb_g": 2.7,
+      "fat_g": 21.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 1100.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "256",
+    "name": "Linguiça, calabresa, frita",
+    "aliases": [
+      "linguica calabresa",
+      "calabresa"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 332,
+      "protein_g": 15.0,
+      "carb_g": 3.0,
+      "fat_g": 29.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 1060.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "257",
+    "name": "Mortadela",
+    "aliases": [
+      "mortadela"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 284,
+      "protein_g": 14.2,
+      "carb_g": 5.2,
+      "fat_g": 23.6,
+      "fiber_g": 0.0,
+      "sodium_mg": 1100.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "258",
+    "name": "Salame, italiano",
+    "aliases": [
+      "salame",
+      "salame italiano"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 370,
+      "protein_g": 25.0,
+      "carb_g": 1.5,
+      "fat_g": 30.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 1500.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "259",
+    "name": "Presunto de peru",
+    "aliases": [
+      "peito de peru fatiado",
+      "presunto de peru"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 119,
+      "protein_g": 18.0,
+      "carb_g": 2.5,
+      "fat_g": 4.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 750.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "260",
+    "name": "Carne seca, dessalgada, cozida",
+    "aliases": [
+      "carne seca cozida",
+      "carne de sol cozida",
+      "charque cozido"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 327,
+      "protein_g": 52.0,
+      "carb_g": 0.0,
+      "fat_g": 13.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 650.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "261",
+    "name": "Linguiça, toscana, frita",
+    "aliases": [
+      "linguica toscana",
+      "toscana"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 286,
+      "protein_g": 16.0,
+      "carb_g": 1.8,
+      "fat_g": 24.3,
+      "fiber_g": 0.0,
+      "sodium_mg": 870.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "262",
+    "name": "Frango, empanado, frito",
+    "aliases": [
+      "frango empanado",
+      "nugget frango",
+      "nuggets"
+    ],
+    "category": "carnes_processadas",
+    "per_100g": {
+      "calories_kcal": 268,
+      "protein_g": 20.0,
+      "carb_g": 14.0,
+      "fat_g": 15.0,
+      "fiber_g": 0.5,
+      "sodium_mg": 650.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "345",
+    "name": "Pão de forma, branco",
+    "aliases": [
+      "pao de forma branco",
+      "pão de forma"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 264,
+      "protein_g": 8.0,
+      "carb_g": 49.0,
+      "fat_g": 3.5,
+      "fiber_g": 2.0,
+      "sodium_mg": 480.0
+    },
+    "default_portion_g": 50,
+    "source": "taco"
+  },
+  {
+    "code": "346",
+    "name": "Pão, ciabatta",
+    "aliases": [
+      "ciabatta",
+      "pao ciabatta"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 265,
+      "protein_g": 9.0,
+      "carb_g": 50.0,
+      "fat_g": 2.5,
+      "fiber_g": 2.0,
+      "sodium_mg": 480.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "347",
+    "name": "Torrada, tradicional",
+    "aliases": [
+      "torrada",
+      "torrada tradicional"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 390,
+      "protein_g": 11.5,
+      "carb_g": 71.0,
+      "fat_g": 5.0,
+      "fiber_g": 3.0,
+      "sodium_mg": 550.0
+    },
+    "default_portion_g": 20,
+    "source": "taco"
+  },
+  {
+    "code": "348",
+    "name": "Croissant",
+    "aliases": [
+      "croissant"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 406,
+      "protein_g": 8.2,
+      "carb_g": 46.0,
+      "fat_g": 21.0,
+      "fiber_g": 1.8,
+      "sodium_mg": 500.0
+    },
+    "default_portion_g": 60,
+    "source": "taco"
+  },
+  {
+    "code": "349",
+    "name": "Broa de milho",
+    "aliases": [
+      "broa de milho",
+      "broa"
+    ],
+    "category": "panificados",
+    "per_100g": {
+      "calories_kcal": 318,
+      "protein_g": 7.5,
+      "carb_g": 55.0,
+      "fat_g": 7.5,
+      "fiber_g": 2.5,
+      "sodium_mg": 400.0
+    },
+    "default_portion_g": 60,
+    "source": "taco"
+  },
+  {
+    "code": "702",
+    "name": "Arroz com feijão",
+    "aliases": [
+      "arroz e feijao",
+      "arroz com feijao",
+      "prato basico"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 138,
+      "protein_g": 5.0,
+      "carb_g": 25.8,
+      "fat_g": 1.6,
+      "fiber_g": 3.0,
+      "sodium_mg": 5.0
+    },
+    "default_portion_g": 300,
+    "source": "taco"
+  },
+  {
+    "code": "703",
+    "name": "Moqueca de peixe",
+    "aliases": [
+      "moqueca de peixe",
+      "moqueca"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 98,
+      "protein_g": 8.0,
+      "carb_g": 5.0,
+      "fat_g": 5.3,
+      "fiber_g": 1.0,
+      "sodium_mg": 320.0
+    },
+    "default_portion_g": 250,
+    "source": "taco"
+  },
+  {
+    "code": "704",
+    "name": "Coxinha de frango",
+    "aliases": [
+      "coxinha",
+      "coxinha de frango"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 294,
+      "protein_g": 10.0,
+      "carb_g": 35.0,
+      "fat_g": 12.5,
+      "fiber_g": 1.0,
+      "sodium_mg": 380.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "705",
+    "name": "Frango xadrez",
+    "aliases": [
+      "frango xadrez",
+      "chicken stir fry"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 140,
+      "protein_g": 16.0,
+      "carb_g": 8.0,
+      "fat_g": 5.0,
+      "fiber_g": 1.0,
+      "sodium_mg": 380.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "706",
+    "name": "Strogonoff de frango",
+    "aliases": [
+      "strogonoff de frango",
+      "estrogonofe de frango"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 141,
+      "protein_g": 12.0,
+      "carb_g": 6.0,
+      "fat_g": 7.5,
+      "fiber_g": 0.5,
+      "sodium_mg": 320.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "707",
+    "name": "Strogonoff de carne",
+    "aliases": [
+      "strogonoff de carne",
+      "estrogonofe de carne"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 182,
+      "protein_g": 13.0,
+      "carb_g": 5.5,
+      "fat_g": 11.5,
+      "fiber_g": 0.3,
+      "sodium_mg": 380.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "708",
+    "name": "Lasanha, à bolonhesa",
+    "aliases": [
+      "lasanha bolonhesa",
+      "lasanha",
+      "lasanha de carne"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 184,
+      "protein_g": 10.0,
+      "carb_g": 18.0,
+      "fat_g": 7.5,
+      "fiber_g": 1.0,
+      "sodium_mg": 350.0
+    },
+    "default_portion_g": 250,
+    "source": "taco"
+  },
+  {
+    "code": "709",
+    "name": "Pizza, calabresa, fatia",
+    "aliases": [
+      "pizza calabresa",
+      "pizza"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 233,
+      "protein_g": 11.0,
+      "carb_g": 25.0,
+      "fat_g": 10.0,
+      "fiber_g": 1.5,
+      "sodium_mg": 580.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "710",
+    "name": "Hambúrguer bovino",
+    "aliases": [
+      "hamburguer",
+      "hamburguer bovino",
+      "burger"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 263,
+      "protein_g": 17.0,
+      "carb_g": 13.0,
+      "fat_g": 16.0,
+      "fiber_g": 0.5,
+      "sodium_mg": 420.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "711",
+    "name": "Batata frita",
+    "aliases": [
+      "batata frita",
+      "fritas"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 270,
+      "protein_g": 3.5,
+      "carb_g": 35.0,
+      "fat_g": 13.0,
+      "fiber_g": 2.5,
+      "sodium_mg": 180.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "712",
+    "name": "Purê de batata",
+    "aliases": [
+      "pure de batata",
+      "purê de batata"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 108,
+      "protein_g": 2.0,
+      "carb_g": 19.0,
+      "fat_g": 2.5,
+      "fiber_g": 1.0,
+      "sodium_mg": 180.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "713",
+    "name": "Sopa de feijão",
+    "aliases": [
+      "sopa de feijao",
+      "sopa feijao"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 78,
+      "protein_g": 3.5,
+      "carb_g": 13.5,
+      "fat_g": 1.0,
+      "fiber_g": 3.0,
+      "sodium_mg": 240.0
+    },
+    "default_portion_g": 300,
+    "source": "taco"
+  },
+  {
+    "code": "714",
+    "name": "Caldo verde",
+    "aliases": [
+      "caldo verde"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 48,
+      "protein_g": 2.0,
+      "carb_g": 8.0,
+      "fat_g": 1.0,
+      "fiber_g": 1.5,
+      "sodium_mg": 280.0
+    },
+    "default_portion_g": 300,
+    "source": "taco"
+  },
+  {
+    "code": "715",
+    "name": "Bobó de camarão",
+    "aliases": [
+      "bobo de camarao",
+      "bobó de camarão"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 148,
+      "protein_g": 8.0,
+      "carb_g": 14.0,
+      "fat_g": 6.5,
+      "fiber_g": 2.0,
+      "sodium_mg": 350.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "716",
+    "name": "Escondidinho de carne seca",
+    "aliases": [
+      "escondidinho",
+      "escondidinho de carne seca"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 148,
+      "protein_g": 10.0,
+      "carb_g": 18.0,
+      "fat_g": 4.0,
+      "fiber_g": 1.8,
+      "sodium_mg": 310.0
+    },
+    "default_portion_g": 250,
+    "source": "taco"
+  },
+  {
+    "code": "717",
+    "name": "Tapioca com queijo",
+    "aliases": [
+      "tapioca com queijo",
+      "tapioca recheada"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 218,
+      "protein_g": 6.5,
+      "carb_g": 38.0,
+      "fat_g": 5.0,
+      "fiber_g": 0.5,
+      "sodium_mg": 210.0
+    },
+    "default_portion_g": 120,
+    "source": "taco"
+  },
+  {
+    "code": "718",
+    "name": "Mingau de aveia",
+    "aliases": [
+      "mingau de aveia",
+      "mingau"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 95,
+      "protein_g": 3.5,
+      "carb_g": 16.0,
+      "fat_g": 2.0,
+      "fiber_g": 1.5,
+      "sodium_mg": 30.0
+    },
+    "default_portion_g": 250,
+    "source": "taco"
+  },
+  {
+    "code": "719b",
+    "name": "Virado à paulista",
+    "aliases": [
+      "virado a paulista",
+      "virado paulista"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 175,
+      "protein_g": 8.0,
+      "carb_g": 22.0,
+      "fat_g": 6.0,
+      "fiber_g": 3.5,
+      "sodium_mg": 250.0
+    },
+    "default_portion_g": 300,
+    "source": "taco"
+  },
+  {
+    "code": "720b",
+    "name": "Acarajé",
+    "aliases": [
+      "acaraje",
+      "acarajé"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 269,
+      "protein_g": 8.0,
+      "carb_g": 31.0,
+      "fat_g": 12.0,
+      "fiber_g": 2.8,
+      "sodium_mg": 350.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "721b",
+    "name": "Vatapá",
+    "aliases": [
+      "vatapa",
+      "vatapá"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 163,
+      "protein_g": 7.0,
+      "carb_g": 15.0,
+      "fat_g": 9.0,
+      "fiber_g": 1.5,
+      "sodium_mg": 380.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "722b",
+    "name": "Bolinho de bacalhau",
+    "aliases": [
+      "bolinho de bacalhau",
+      "pastel de bacalhau"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 211,
+      "protein_g": 12.0,
+      "carb_g": 20.0,
+      "fat_g": 9.0,
+      "fiber_g": 1.0,
+      "sodium_mg": 480.0
+    },
+    "default_portion_g": 60,
+    "source": "taco"
+  },
+  {
+    "code": "723b",
+    "name": "Bolo de cenoura com cobertura",
+    "aliases": [
+      "bolo de cenoura",
+      "bolo cenoura"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 329,
+      "protein_g": 4.5,
+      "carb_g": 50.0,
+      "fat_g": 12.0,
+      "fiber_g": 1.5,
+      "sodium_mg": 230.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "724b",
+    "name": "Mousse de maracujá",
+    "aliases": [
+      "mousse de maracuja",
+      "mousse"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 162,
+      "protein_g": 3.5,
+      "carb_g": 20.0,
+      "fat_g": 7.5,
+      "fiber_g": 0.5,
+      "sodium_mg": 50.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "725b",
+    "name": "Salpicão de frango",
+    "aliases": [
+      "salpicao de frango",
+      "salpicão"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 175,
+      "protein_g": 11.0,
+      "carb_g": 8.0,
+      "fat_g": 11.0,
+      "fiber_g": 1.5,
+      "sodium_mg": 280.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "900",
+    "name": "Whey protein, concentrado",
+    "aliases": [
+      "whey protein",
+      "proteina do soro do leite"
+    ],
+    "category": "industrializados",
+    "per_100g": {
+      "calories_kcal": 380,
+      "protein_g": 80.0,
+      "carb_g": 5.0,
+      "fat_g": 4.0,
+      "fiber_g": 0.0,
+      "sodium_mg": 200.0
+    },
+    "default_portion_g": 30,
+    "source": "taco"
+  },
+  {
+    "code": "475",
+    "name": "Açaí, tigela, com granola e banana",
+    "aliases": [
+      "tigela de acai",
+      "acai tigela",
+      "bowl de acai"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 151,
+      "protein_g": 2.8,
+      "carb_g": 26.5,
+      "fat_g": 4.0,
+      "fiber_g": 3.2,
+      "sodium_mg": 20.0
+    },
+    "default_portion_g": 300,
+    "source": "taco"
   }
 ]
