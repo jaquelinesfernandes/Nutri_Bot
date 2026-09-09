@@ -23,9 +23,9 @@ Desafios:
 
 | Base | Arquivo | Itens | Fonte |
 |------|---------|-------|-------|
-| TACO | `data/taco.json` | 296 | UNICAMP — Tabela Brasileira de Composição de Alimentos |
+| TACO | `data/taco.json` | 306 | UNICAMP — Tabela Brasileira de Composição de Alimentos (incl. 10 itens fast food) |
 | TBCA | `data/tbca.json` | 1.994 | USP/FoRC — Tabela Brasileira de Composição de Alimentos |
-| USDA | `data/usda.json` | 3 | USDA FoodData Central (subset complementar) |
+| USDA | `data/usda.json` | 25 | USDA FoodData Central (produtos importados/internacionais consumidos no Brasil) |
 
 A **TBCA** foi coletada via web scraping de [tbca.net.br](https://www.tbca.net.br) pelo script `scripts/scrape_tbca.py` (o site não oferece download direto). Os links intermediários ficam em `data/tbca_raw.json`.
 
@@ -111,7 +111,7 @@ Nome do Claude: "frango grelhado sem pele"
                         ▼
             ┌─────────────────────────────────┐
             │  Camada 1: Cache de aliases      │
-            │  2.679 entradas normalizadas     │
+            │  2.669 entradas normalizadas     │
             │  (TACO + TBCA + USDA em memória) │
             │  Lookup O(1) por dict Python     │
             └────────┬────────────────────────┘
@@ -120,7 +120,7 @@ Nome do Claude: "frango grelhado sem pele"
             ┌─────────────────────────────────┐
             │  Camada 2: RapidFuzz TACO        │
             │  token_sort_ratio ≥ 80           │
-            │  296 itens UNICAMP               │
+            │  306 itens UNICAMP               │
             └────────┬────────────────────────┘
                      │ miss (score < 80)
                      ▼
@@ -255,12 +255,12 @@ Medidos em Python 3.13, base TACO completa (~6.000 itens):
 |--------|----------------------|
 | Cache top 100 | < 0.01ms |
 | Alias match | ~0.5ms |
-| RapidFuzz TACO (296 itens) | ~2ms |
+| RapidFuzz TACO (306 itens) | ~2ms |
 | RapidFuzz TBCA (1.994 itens) | ~12ms (adicional) |
-| RapidFuzz USDA (3 itens) | < 0.1ms (adicional) |
+| RapidFuzz USDA (25 itens) | < 0.5ms (adicional) |
 | **Total (caso ruim: até USDA)** | **~15ms** |
 
-Aceitável considerando que o gargalo real é a chamada ao Claude API (~0,3–1s). O lookup nutricional representa < 3% do tempo total de resposta. A TBCA sendo maior (1.994 vs 296 itens) adiciona ~10ms — negligível.
+Aceitável considerando que o gargalo real é a chamada ao Claude API (~0,3–1s). O lookup nutricional representa < 3% do tempo total de resposta. A TBCA sendo maior (1.994 vs 306 itens) adiciona ~10ms — negligível.
 
 ---
 

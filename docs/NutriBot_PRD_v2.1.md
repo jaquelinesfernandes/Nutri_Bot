@@ -64,7 +64,7 @@ NutriBot é um **assistente de saúde conversacional B2C com potencial B2B**, op
 | Plataforma B2B nutricionista | ✅ (Fase 2) | ❌ | ❌ | ✅ | ❌ |
 | Preço entrada | Freemium | Freemium | Freemium | Pago | Gratuito |
 
-**Vantagem defensável:** Canal WhatsApp + bases TACO/UNICAMP e TBCA/USP-FoRC (2.290+ alimentos brasileiros) + NLP em PT-BR coloquial. Nenhum concorrente direto combina os três.
+**Vantagem defensável:** Canal WhatsApp + bases TACO/UNICAMP e TBCA/USP-FoRC + USDA (2.325+ alimentos, sendo 2.300 brasileiros) + NLP em PT-BR coloquial. Nenhum concorrente direto combina os três.
 
 ---
 
@@ -776,7 +776,7 @@ O Brasil tem 4 fusos horários oficiais. Alertas e o relatório semanal enviados
 | Hosting | Railway | Deploy via GitHub; custo ~US$ 5–20/mês |
 | Pagamento | Mercado Pago Subscriptions API | Padrão BR; suporta Pix + cartão + recorrência |
 | Monitoramento de erros | Sentry | SDK Python; alerta por e-mail em erro crítico |
-| Dados nutricionais | TACO/UNICAMP + TBCA/USP-FoRC + USDA (JSON local) | Sem latência de API externa; custo zero; 2.290+ alimentos brasileiros |
+| Dados nutricionais | TACO/UNICAMP + TBCA/USP-FoRC + USDA (JSON local) | Sem latência de API externa; custo zero; 2.325+ alimentos (306 TACO + 1.994 TBCA + 25 USDA) |
 
 ### 14.2 Fluxo de Processamento
 
@@ -886,7 +886,7 @@ O usuário pode tentar manipular o GPT enviando texto como: *"Ignore as instruç
 | Retry em 429 | Exponential backoff: 3s, 6s, 12s (3 tentativas) | APScheduler fila com retry |
 | Custo por registro | ~US$ 0,005–0,02 | Cache de alimentos comuns (arroz, feijão, frango) reduz até 30% das chamadas |
 
-**Cache de alimentos comuns:** Todos os aliases das bases TACO (296 itens), TBCA (1.994 itens) e USDA são pré-indexados em memória ao subir a aplicação (2.679 entradas de cache), dispensando chamadas à IA para alimentos conhecidos. Os 100 top aliases garantem lookup O(1) por busca exata normalizada.
+**Cache de alimentos comuns:** Todos os aliases das bases TACO (306 itens), TBCA (1.994 itens) e USDA (25 itens) são pré-indexados em memória ao subir a aplicação (~2.669 entradas de cache), dispensando chamadas à IA para alimentos conhecidos. Os top aliases garantem lookup O(1) por busca exata normalizada.
 
 ### 16.2 Telegram Bot API
 

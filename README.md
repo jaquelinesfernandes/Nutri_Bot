@@ -20,7 +20,7 @@ O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de f
 **Diferenciais frente a apps tradicionais (MyFitnessPal, YAZIO):**
 
 - 📱 Funciona **dentro do WhatsApp e Telegram** — sem instalação
-- 🇧🇷 Base nutricional **TACO + TBCA** — duas tabelas brasileiras com cobertura combinada de 2.290+ alimentos
+- 🇧🇷 Base nutricional **TACO + TBCA + USDA** — cobertura combinada de 2.325+ alimentos (306 TACO + 1.994 TBCA + 25 USDA)
 - 🗣️ Entende **português coloquial** — "tomei um caldinho de feijão" funciona
 - 📸 Identifica alimentos por **foto** (Claude Vision)
 - 🎙️ Transcreve **áudios** de voz (Whisper)
@@ -34,7 +34,7 @@ O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de f
 | Funcionalidade | Canal | Status |
 |---|---|---|
 | Registro por texto em PT-BR | Telegram / WhatsApp | ✅ Implementado |
-| Busca fuzzy na base TACO + TBCA + USDA (2.290+ alimentos) | — | ✅ Implementado |
+| Busca fuzzy na base TACO + TBCA + USDA (2.325+ alimentos) | — | ✅ Implementado |
 | Reconhecimento de foto (Claude Vision) | Telegram / WhatsApp | ✅ Implementado |
 | Transcrição de áudio (Whisper) | Telegram / WhatsApp | ✅ Implementado |
 | Fluxo de confirmação de refeição | Telegram / WhatsApp | ✅ Implementado |
@@ -80,7 +80,7 @@ Usuário
 | **Banco de dados** | PostgreSQL 16 · SQLAlchemy (asyncio) · asyncpg · Alembic |
 | **AI primária** | Anthropic Claude — Haiku 4.5 (NLP) · Sonnet 4.6 (Vision) |
 | **AI secundária** | OpenAI Whisper — transcrição de áudio |
-| **Busca nutricional** | RapidFuzz (fuzzy matching) · TACO/UNICAMP (296 itens) · TBCA/USP-FoRC (1.994 itens) · USDA JSON |
+| **Busca nutricional** | RapidFuzz (fuzzy matching) · TACO/UNICAMP (306 itens) · TBCA/USP-FoRC (1.994 itens) · USDA FDC (25 itens) |
 | **Canais** | Telegram Bot API · WhatsApp via Evolution API |
 | **Alertas** | APScheduler AsyncIOScheduler · UptimeRobot (keep-alive) |
 | **PDF** | WeasyPrint · Jinja2 |
@@ -134,7 +134,7 @@ Nutri_Bot/
 │       ├── rate_limiter.py      # Rate limiting por usuário
 │       └── timezone.py          # Utilitários de fuso horário (BRT)
 ├── data/
-│   ├── taco.json                # Base TACO/UNICAMP (296 alimentos brasileiros)
+│   ├── taco.json                # Base TACO/UNICAMP (306 alimentos brasileiros)
 │   ├── tbca.json                # Base TBCA/USP-FoRC (1.994 alimentos brasileiros)
 │   ├── tbca_raw.json            # Links coletados pelo scraper (2.000 itens — input do scrape_tbca.py)
 │   ├── usda.json                # Base USDA (complemento internacional)
@@ -286,9 +286,9 @@ O NutriBot usa três bases de dados nutricionais locais (JSON), sem chamadas ext
 
 | Base | Fonte | Itens | Cobertura |
 |------|-------|-------|-----------|
-| **TACO** | UNICAMP — Tabela Brasileira de Composição de Alimentos | 296 | Alimentos in natura e preparados brasileiros |
+| **TACO** | UNICAMP — Tabela Brasileira de Composição de Alimentos | 306 | Alimentos in natura e preparados brasileiros (incl. 10 itens fast food) |
 | **TBCA** | USP/FoRC — Tabela Brasileira de Composição de Alimentos | 1.994 | Ampla cobertura brasileira: hortaliças, frutas, carnes, cereais, laticínios e mais |
-| **USDA** | USDA FoodData Central (subset) | 3 | Complemento para itens sem equivalente nacional |
+| **USDA** | USDA FoodData Central (subset) | 25 | Produtos importados/internacionais: manteiga de amendoim, nutella, tahini, aveia rolled oats, granola, kombucha, salmão defumado, Special K, etc. |
 
 **Pipeline de lookup (5 camadas) em `app/services/nutrition.py`:**
 

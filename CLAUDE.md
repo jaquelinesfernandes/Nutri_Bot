@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NutriBot is a multicanal nutritional tracking chatbot (WhatsApp, Telegram) that lets users log meals via text, audio, or photo in natural language. It identifies foods, calculates calories and macronutrients using three local databases — TACO/UNICAMP (296 items), TBCA/USP-FoRC (1,994 items), and USDA (3 items) — tracks meal schedules, sends proactive alerts, and delivers weekly PDF reports with AI-generated personalized suggestions.
+NutriBot is a multicanal nutritional tracking chatbot (WhatsApp, Telegram) that lets users log meals via text, audio, or photo in natural language. It identifies foods, calculates calories and macronutrients using three local databases — TACO/UNICAMP (306 items), TBCA/USP-FoRC (1,994 items), and USDA (25 items) — tracks meal schedules, sends proactive alerts, and delivers weekly PDF reports with AI-generated personalized suggestions.
 
 The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, priorities, and acceptance criteria.
 
@@ -158,10 +158,10 @@ app/
     rate_limiter.py        # In-memory rate limiter (per IP, per user)
     timezone.py            # BRT utilities
 data/
-  taco.json                # TACO/UNICAMP nutritional table (296 Brazilian foods)
+  taco.json                # TACO/UNICAMP nutritional table (306 Brazilian foods — includes 10 fast-food items)
   tbca.json                # TBCA/USP-FoRC nutritional table (1,994 Brazilian foods — scraped)
   tbca_raw.json            # Raw scraping links (2,000 items — input for scrape_tbca.py)
-  usda.json                # USDA FoodData Central subset (3 items)
+  usda.json                # USDA FoodData Central subset (25 items — imported/international products)
   report_template.html     # Jinja2 template for PDF reports
 migrations/versions/
   aa27ebf221d2_initial_schema.py
