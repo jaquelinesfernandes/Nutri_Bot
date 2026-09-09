@@ -7,8 +7,8 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Anthropic](https://img.shields.io/badge/Claude-Haiku%204.5-D4A017?logo=anthropic&logoColor=white)
 ![Status](https://img.shields.io/badge/status-beta%20aberto-brightgreen)
-![Cobertura](https://img.shields.io/badge/cobertura-70%25-brightgreen)
-![Testes](https://img.shields.io/badge/testes-302%20passing-brightgreen)
+![Cobertura](https://img.shields.io/badge/cobertura-80.60%25-brightgreen)
+![Testes](https://img.shields.io/badge/testes-411%20passing-brightgreen)
 ![Security](https://img.shields.io/badge/security-auditado-blue)
 
 ---
@@ -153,7 +153,7 @@ Nutri_Bot/
 │   ├── run_bot_polling.py             # Polling local (desenvolvimento)
 │   └── check_db.py                    # Verificar conexão com banco
 ├── tests/
-│   ├── conftest.py
+│   ├── conftest.py                # Fixtures: auth_client, anon_client (mock DB/user)
 │   ├── test_nutrition.py
 │   ├── test_conversation.py
 │   ├── test_services.py
@@ -161,6 +161,12 @@ Nutri_Bot/
 │   ├── test_sprint5.py
 │   ├── test_webhooks.py
 │   ├── test_meals_api.py          # POST /api/meals + DELETE /api/meals/{id}
+│   ├── test_jwt_utils.py          # JWT: create_access_token, magic token, decode
+│   ├── test_telegram_process.py   # _process_update: texto, foto, áudio, ping
+│   ├── test_dashboard.py          # Rotas Jinja2 (login, dashboard, histórico, etc.)
+│   ├── test_health_routes.py      # /health, /scheduler/status, /scheduler/trigger
+│   ├── test_auth_routes.py        # POST /api/auth/register|login|logout
+│   ├── test_reports_routes.py     # GET|POST|DELETE /api/reports
 │   └── fixtures/
 │       ├── golden_meals.json          # Dataset de refeições para testes
 │       └── taco_sample.json
@@ -320,7 +326,7 @@ python scripts/fix_tbca_categories.py
 ## 🧪 Testes
 
 ```powershell
-# Suite completa (302 testes, cobertura ~70%)
+# Suite completa (411 testes, cobertura 80.60%)
 pytest
 
 # Com cobertura detalhada
@@ -341,7 +347,7 @@ pytest tests/test_meals_api.py -v
 - ✅ > 80% de acurácia no reconhecimento textual — top 500 alimentos TACO
 - ✅ > 75% de acurácia no reconhecimento por foto
 - ✅ Alertas entregues em < 2 min em 99% dos casos
-- ✅ Cobertura de testes ≥ 55% (atual: ~70% · 302 testes)
+- ✅ Cobertura de testes ≥ 55% (atual: **80.60%** · 411 testes)
 
 ---
 
@@ -501,4 +507,4 @@ Cada relatório inclui: médias de kcal e macros, aderência à meta, tabela por
 
 ---
 
-*NutriBot · Setembro 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude · Sprint 6 ✅ + Post-6 ✅ · TBCA integrada ✅ · Beta aberto*
+*NutriBot · Setembro 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude · Sprint 6 ✅ + Post-6 ✅ · TBCA integrada ✅ · Beta aberto · 411 testes · 80.60% cobertura*
