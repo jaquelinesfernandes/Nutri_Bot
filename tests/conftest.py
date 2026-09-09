@@ -46,6 +46,7 @@ def _make_mock_db() -> AsyncMock:
     mock_result.scalars.return_value.all.return_value = []
     mock_result.scalars.return_value.unique.return_value.all.return_value = []
     mock_result.scalar_one_or_none.return_value = None
+    mock_result.rowcount = 0
 
     mock_db = AsyncMock()
     mock_db.execute = AsyncMock(return_value=mock_result)
