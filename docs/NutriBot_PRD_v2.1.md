@@ -56,7 +56,7 @@ NutriBot é um **assistente de saúde conversacional B2C com potencial B2B**, op
 | Canal | WhatsApp / Telegram | App nativo | App nativo | App nativo | App nativo |
 | Fricção de início | Nenhuma | Alta | Alta | Alta | Média |
 | Idioma PT-BR nativo | ✅ | Parcial | Parcial | ✅ | ✅ |
-| Base TACO (brasileira) | ✅ | ❌ | ❌ | Parcial | ❌ |
+| Base TACO + TBCA (brasileira) | ✅ | ❌ | ❌ | Parcial | ❌ |
 | Registro por foto | ✅ GPT-4 Vision | ✅ Limitado | ✅ Limitado | ❌ | ✅ |
 | Registro por áudio | ✅ Whisper | ❌ | ❌ | ❌ | ❌ |
 | Linguagem natural BR | ✅ | ❌ | ❌ | ❌ | ❌ |
@@ -64,7 +64,7 @@ NutriBot é um **assistente de saúde conversacional B2C com potencial B2B**, op
 | Plataforma B2B nutricionista | ✅ (Fase 2) | ❌ | ❌ | ✅ | ❌ |
 | Preço entrada | Freemium | Freemium | Freemium | Pago | Gratuito |
 
-**Vantagem defensável:** Canal WhatsApp + base TACO + NLP em PT-BR coloquial. Nenhum concorrente direto combina os três.
+**Vantagem defensável:** Canal WhatsApp + bases TACO/UNICAMP e TBCA/USP-FoRC (2.290+ alimentos brasileiros) + NLP em PT-BR coloquial. Nenhum concorrente direto combina os três.
 
 ---
 
@@ -210,7 +210,7 @@ Bot envia PDF + resumo no chat:
 |----|-----------|
 | F01 | Registro de refeição por texto em PT-BR coloquial |
 | F02 | Reconhecimento de alimentos via GPT-4o com fallback para confirmação manual |
-| F03 | Lookup nutricional (kcal, prot, carb, gordura) — base TACO + USDA local |
+| F03 | Lookup nutricional (kcal, prot, carb, gordura) — base TACO/UNICAMP + TBCA/USP-FoRC + USDA local (pipeline 5 camadas com RapidFuzz) |
 | F04 | Exibição de saldo calórico diário após cada registro |
 | F05 | Configuração de meta calórica (manual ou calculada por TDEE básico) |
 | F06 | Persistência de histórico de registros por usuário |
@@ -693,7 +693,7 @@ FoodItem
 ├── protein_g
 ├── carb_g
 ├── fat_g
-├── source              (taco | usda | gpt_estimated)
+├── source              (taco_cache | taco_fuzzy | tbca_cache | tbca_fuzzy | usda_fuzzy | gpt_estimated)
 └── confidence_score    (0.0–1.0)
 
 WaterLog
@@ -776,7 +776,7 @@ O Brasil tem 4 fusos horários oficiais. Alertas e o relatório semanal enviados
 | Hosting | Railway | Deploy via GitHub; custo ~US$ 5–20/mês |
 | Pagamento | Mercado Pago Subscriptions API | Padrão BR; suporta Pix + cartão + recorrência |
 | Monitoramento de erros | Sentry | SDK Python; alerta por e-mail em erro crítico |
-| Dados nutricionais | TACO + USDA (JSON local) | Sem latência de API externa; custo zero |
+| Dados nutricionais | TACO/UNICAMP + TBCA/USP-FoRC + USDA (JSON local) | Sem latência de API externa; custo zero; 2.290+ alimentos brasileiros |
 
 ### 14.2 Fluxo de Processamento
 
@@ -794,7 +794,9 @@ O Brasil tem 4 fusos horários oficiais. Alertas e o relatório semanal enviados
         └─ áudio   → Whisper → GPT-4o → NutritionService → DB → resposta
 
 [NutritionService]
-        ├─ fuzzy match em taco.json / usda.json
+        ├─ fuzzy match em taco.json (TACO/UNICAMP — prioridade)
+        ├─ fuzzy match em tbca.json (TBCA/USP-FoRC — segunda fonte BR)
+        ├─ fuzzy match em usda.json
         └─ fallback: GPT-4o estima (registrado como source="gpt_estimated")
 
 [APScheduler — jobs periódicos]
@@ -884,7 +886,7 @@ O usuário pode tentar manipular o GPT enviando texto como: *"Ignore as instruç
 | Retry em 429 | Exponential backoff: 3s, 6s, 12s (3 tentativas) | APScheduler fila com retry |
 | Custo por registro | ~US$ 0,005–0,02 | Cache de alimentos comuns (arroz, feijão, frango) reduz até 30% das chamadas |
 
-**Cache de alimentos comuns:** Os 100 alimentos mais frequentes na base TACO (arroz branco, feijão carioca, frango grelhado, etc.) têm resposta pré-calculada no banco, dispensando chamada à API para esses casos.
+**Cache de alimentos comuns:** Todos os aliases das bases TACO (296 itens), TBCA (1.994 itens) e USDA são pré-indexados em memória ao subir a aplicação (2.679 entradas de cache), dispensando chamadas à IA para alimentos conhecidos. Os 100 top aliases garantem lookup O(1) por busca exata normalizada.
 
 ### 16.2 Telegram Bot API
 
@@ -1081,8 +1083,9 @@ F02 (GPT-4o NLP)
   └─ depende de: OPENAI_API_KEY configurada
   └─ desbloqueia: F01, F13 (foto), F19 (áudio)
 
-F03 (Base TACO/USDA)
-  └─ depende de: arquivos data/taco.json e data/usda.json presentes
+F03 (Base nutricional TACO/TBCA/USDA)
+  └─ depende de: arquivos data/taco.json, data/tbca.json e data/usda.json presentes
+  └─ tbca.json gerado por scripts/scrape_tbca.py (web scraping tbca.net.br)
   └─ desbloqueia: F01, F04
 
 F04 (Saldo calórico)
@@ -1175,7 +1178,7 @@ Implementação: endpoint de health check + flag de manutenção no banco. Se fl
 - [ ] Bot Telegram funcional (webhook, health check `/ping`)
 - [ ] Onboarding conversacional (3 perguntas → salva perfil no DB)
 - [ ] Máquina de estados implementada (IDLE → ONBOARDING → CONFIRMING → IDLE)
-- [ ] Registro por texto → GPT-4o → lookup TACO/USDA (fuzzy match) → resposta com kcal/macros
+- [ ] Registro por texto → GPT-4o → lookup TACO/TBCA/USDA (fuzzy match 5 camadas) → resposta com kcal/macros
 - [ ] Cache dos 100 alimentos mais comuns (evitar chamada OpenAI)
 - [ ] Saldo calórico diário retornado após cada registro
 - [ ] Comandos `/deletar_dados` e `/exportar_dados` (LGPD) — Sprint 1 obrigatório

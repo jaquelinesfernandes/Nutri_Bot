@@ -4,15 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NutriBot is a multicanal nutritional tracking chatbot (WhatsApp, Telegram) that lets users log meals via text, audio, or photo in natural language. It identifies foods, calculates calories and macronutrients using the TACO (Brazilian) and USDA databases, tracks meal schedules, sends proactive alerts, and delivers weekly PDF reports with AI-generated personalized suggestions.
+NutriBot is a multicanal nutritional tracking chatbot (WhatsApp, Telegram) that lets users log meals via text, audio, or photo in natural language. It identifies foods, calculates calories and macronutrients using three local databases — TACO/UNICAMP (296 items), TBCA/USP-FoRC (1,994 items), and USDA (3 items) — tracks meal schedules, sends proactive alerts, and delivers weekly PDF reports with AI-generated personalized suggestions.
 
 The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, priorities, and acceptance criteria.
 
-## Current State (August 2026)
+## Current State (September 2026)
 
-**All 6 sprints + Post-6 UX polish complete — in production on Render + Neon.**
+**All 6 sprints + Post-6 UX polish complete — in production on Render + Neon. TBCA integrated.**
 
-- 290 tests passing · coverage 70% (threshold ≥ 55%)
+- 302 tests passing · coverage ~70% (threshold ≥ 55%)
 - Deployed at: `https://nutri-bot-ot0p.onrender.com`
 - Beta open: reports unlocked for all users via `REPORTS_OPEN_BETA=true`
 - Sessions persist for 365 days with sliding-expiration renewal (no re-login needed)
@@ -27,7 +27,7 @@ The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, pri
 **PDF reports:** WeasyPrint + Jinja2 (not Puppeteer)  
 **Auth:** JWT (python-jose) + bcrypt (passlib) · httpOnly cookie  
 **Channels:** Telegram Bot API · WhatsApp via **Evolution API** (not Z-API or Twilio)  
-**Nutrition data:** TACO + USDA as local JSON — no external call at runtime  
+**Nutrition data:** TACO/UNICAMP + TBCA/USP-FoRC + USDA as local JSON — no external call at runtime (5-layer fuzzy pipeline: cache → TACO → TBCA → USDA → GPT estimated)  
 **Payments:** MercadoPago SDK  
 **Analytics:** PostHog  
 **Monitoring:** Sentry SDK  
@@ -103,7 +103,7 @@ REPORTS_OPEN_BETA         # true (default) = all users access reports; false = p
 
 ## Key Domain Constraints
 
-- **Nutrition database priority:** TACO (Brazilian) > USDA. Always prefer TACO entries for Brazilian foods.
+- **Nutrition database priority:** TACO (UNICAMP) > TBCA (USP/FoRC) > USDA. Always prefer TACO entries; TBCA is the second Brazilian source with 1,994 items collected via web scraping (`scripts/scrape_tbca.py`).
 - **Language:** Portuguese (Brazilian), including gírias and regionalismos alimentares.
 - **LGPD compliance:** Health data is classified as *dados sensíveis* (Art. 11). Explicit consent required on onboarding; support right-to-deletion within 72h. Raw meal input is encrypted at rest via `app/utils/crypto.py` (Fernet/AES-256).
 - **MVP acceptance thresholds:** >80% text recognition accuracy on top-500 TACO foods; >75% photo identification; alerts delivered within 2 min in 99% of cases.
@@ -158,8 +158,10 @@ app/
     rate_limiter.py        # In-memory rate limiter (per IP, per user)
     timezone.py            # BRT utilities
 data/
-  taco.json                # TACO nutritional table (Brazilian foods)
-  usda.json                # USDA FoodData Central subset
+  taco.json                # TACO/UNICAMP nutritional table (296 Brazilian foods)
+  tbca.json                # TBCA/USP-FoRC nutritional table (1,994 Brazilian foods — scraped)
+  tbca_raw.json            # Raw scraping links (2,000 items — input for scrape_tbca.py)
+  usda.json                # USDA FoodData Central subset (3 items)
   report_template.html     # Jinja2 template for PDF reports
 migrations/versions/
   aa27ebf221d2_initial_schema.py
@@ -171,6 +173,8 @@ scripts/
   testar_relatorio.py
   testar_alerta.py
   expand_taco.py
+  scrape_tbca.py                 # Web scraping TBCA (20 pages → tbca.json); use --retomar to resume
+  fix_tbca_categories.py         # Post-processing: re-categorizes tbca.json using tbca_raw.json groups
 tests/
   conftest.py
   test_nutrition.py

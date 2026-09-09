@@ -1,22 +1,35 @@
 # NutriBot — Algoritmo de Lookup de Alimentos (Fuzzy Match)
 
-**Versão:** 1.0 | **Data:** Junho 2026
+**Versão:** 1.1 | **Data:** Setembro 2026 | **Atualização:** integração TBCA/USP-FoRC (1.994 itens)
 
 ---
 
 ## 1. Problema
 
-O GPT-4o retorna nomes de alimentos em formato semi-padronizado (ex: `"frango grelhado sem pele"`). A base TACO contém entradas como `"Frango, peito, sem pele, grelhado"`. Precisamos fazer o match entre o nome retornado pelo GPT e a entrada correta na TACO/USDA para obter os valores nutricionais precisos.
+O Claude Haiku retorna nomes de alimentos em formato semi-padronizado (ex: `"frango grelhado sem pele"`). A base TACO contém entradas como `"Frango, peito, sem pele, grelhado"` e a TBCA usa qualificadores como `"Frango, peito, sem pele, grelhado, Brasil"`. Precisamos fazer o match entre o nome retornado pelo Claude e a entrada correta nas bases TACO/TBCA/USDA para obter os valores nutricionais precisos.
 
 Desafios:
 - Variação de ordem das palavras ("feijão carioca cozido" vs "carioca, feijão, cozido")
 - Abreviações e nomes populares ("pão francês" vs "pão de sal")
-- Erros de digitação do usuário que chegam transcriados pelo GPT
+- Erros de digitação do usuário que chegam transcritos pelo Claude
 - Pratos compostos que não têm entrada direta na TACO
+- Qualificadores da TBCA que não identificam o alimento ("brasil", "importado", "enlatado", "drenado")
 
 ---
 
-## 2. Estrutura da Base TACO/USDA (JSON local)
+## 2. Bases Nutricionais (JSON local)
+
+### Fontes disponíveis
+
+| Base | Arquivo | Itens | Fonte |
+|------|---------|-------|-------|
+| TACO | `data/taco.json` | 296 | UNICAMP — Tabela Brasileira de Composição de Alimentos |
+| TBCA | `data/tbca.json` | 1.994 | USP/FoRC — Tabela Brasileira de Composição de Alimentos |
+| USDA | `data/usda.json` | 3 | USDA FoodData Central (subset complementar) |
+
+A **TBCA** foi coletada via web scraping de [tbca.net.br](https://www.tbca.net.br) pelo script `scripts/scrape_tbca.py` (o site não oferece download direto). Os links intermediários ficam em `data/tbca_raw.json`.
+
+### Estrutura dos itens (idêntica nas três bases)
 
 ```json
 // data/taco.json (exemplo de estrutura)
@@ -63,62 +76,77 @@ def normalize(text: str) -> str:
     # 4. Colapsa espaços
     text = re.sub(r"\s+", " ", text).strip()
     # 5. Remove stopwords nutricionais irrelevantes
-    STOPWORDS = {"cozido", "cozida", "grelhado", "grelhada", "assado",
-                 "assada", "sem", "com", "ao", "de", "do", "da", "e"}
+    STOPWORDS = {
+        # artigos / preposições
+        "de", "do", "da", "dos", "das", "com", "sem", "ao", "na", "no", "em", "e", "a", "o",
+        # métodos de preparo
+        "cozido", "cozida", "grelhado", "grelhada", "assado", "assada",
+        "frito", "frita", "refogado", "refogada", "cru", "crua",
+        # qualificadores da TBCA
+        "enlatado", "enlatada", "drenado", "drenada",
+        "brasil", "importado", "dado", "medio", "media",
+        "amostras", "marcas", "tipos", "cultivares", "sabores",
+        "preparado", "preparada", "mistura", "pronto", "pronta",
+    }
     words = [w for w in text.split() if w not in STOPWORDS]
     return " ".join(words)
 
-# Exemplos:
+# Exemplos com TACO:
 # "Frango, peito, sem pele, grelhado" → "frango peito pele"
 # "frango grelhado sem pele"           → "frango pele"
-# → score alto entre os dois
+# Exemplos com TBCA:
+# "Atum, enlatado, drenado, Brasil"    → "atum"
+# "Ervilha, grão, seca, enlatada"      → "ervilha grao seca"
 ```
 
 > **Nota:** Stopwords são removidas apenas para o matching — os valores nutricionais corretos dependem do item completo. Nunca modificar os dados nutricionais da TACO.
 
 ---
 
-## 4. Estratégia de Matching em Camadas
+## 4. Estratégia de Matching em Camadas (5 camadas)
 
 ```
-Nome do GPT: "frango grelhado sem pele"
+Nome do Claude: "frango grelhado sem pele"
                         │
                         ▼
-            ┌─────────────────────┐
-            │  Camada 1: Cache    │
-            │  Top 100 alimentos  │
-            │  (dict Python)      │
-            └────────┬────────────┘
+            ┌─────────────────────────────────┐
+            │  Camada 1: Cache de aliases      │
+            │  2.679 entradas normalizadas     │
+            │  (TACO + TBCA + USDA em memória) │
+            │  Lookup O(1) por dict Python     │
+            └────────┬────────────────────────┘
                      │ miss
                      ▼
-            ┌─────────────────────┐
-            │  Camada 2: Aliases  │
-            │  Match exato em     │
-            │  campo aliases[]    │
-            └────────┬────────────┘
+            ┌─────────────────────────────────┐
+            │  Camada 2: RapidFuzz TACO        │
+            │  token_sort_ratio ≥ 80           │
+            │  296 itens UNICAMP               │
+            └────────┬────────────────────────┘
+                     │ miss (score < 80)
+                     ▼
+            ┌─────────────────────────────────┐
+            │  Camada 3: RapidFuzz TBCA        │
+            │  token_sort_ratio ≥ 80           │
+            │  1.994 itens USP/FoRC            │
+            └────────┬────────────────────────┘
+                     │ miss (score < 80)
+                     ▼
+            ┌─────────────────────────────────┐
+            │  Camada 4: RapidFuzz USDA        │
+            │  token_sort_ratio ≥ 75           │
+            │  threshold menor: complemento   │
+            └────────┬────────────────────────┘
                      │ miss
                      ▼
-            ┌─────────────────────┐
-            │  Camada 3: RapidFuzz│
-            │  token_sort_ratio   │
-            │  threshold ≥ 80     │
-            └────────┬────────────┘
-                     │ miss (< 80)
-                     ▼
-            ┌─────────────────────┐
-            │  Camada 4: USDA     │
-            │  Mesmo pipeline     │
-            │  (threshold ≥ 75)   │
-            └────────┬────────────┘
-                     │ miss
-                     ▼
-            ┌─────────────────────┐
-            │  Fallback: GPT est. │
-            │  Usa quantidade do  │
-            │  GPT + estima macros│
-            │  source="gpt_est."  │
-            └─────────────────────┘
+            ┌─────────────────────────────────┐
+            │  Camada 5: Fallback Claude est.  │
+            │  Usa estimativa do Claude +      │
+            │  quantity_g do contexto          │
+            │  source="gpt_estimated"          │
+            └─────────────────────────────────┘
 ```
+
+**Prioridade de fonte:** TACO > TBCA > USDA > GPT estimado. TACO tem prioridade por ser a referência oficial brasileira da UNICAMP.
 
 ---
 
@@ -227,11 +255,12 @@ Medidos em Python 3.13, base TACO completa (~6.000 itens):
 |--------|----------------------|
 | Cache top 100 | < 0.01ms |
 | Alias match | ~0.5ms |
-| RapidFuzz TACO | ~8ms |
-| RapidFuzz USDA | ~15ms (adicional) |
-| **Total (caso ruim: até USDA)** | **~25ms** |
+| RapidFuzz TACO (296 itens) | ~2ms |
+| RapidFuzz TBCA (1.994 itens) | ~12ms (adicional) |
+| RapidFuzz USDA (3 itens) | < 0.1ms (adicional) |
+| **Total (caso ruim: até USDA)** | **~15ms** |
 
-Aceitável considerando que o gargalo real é a chamada à OpenAI API (~1–3s). O lookup nutricional representa < 1% do tempo total de resposta.
+Aceitável considerando que o gargalo real é a chamada ao Claude API (~0,3–1s). O lookup nutricional representa < 3% do tempo total de resposta. A TBCA sendo maior (1.994 vs 296 itens) adiciona ~10ms — negligível.
 
 ---
 

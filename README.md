@@ -7,20 +7,20 @@
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)
 ![Anthropic](https://img.shields.io/badge/Claude-Haiku%204.5-D4A017?logo=anthropic&logoColor=white)
 ![Status](https://img.shields.io/badge/status-beta%20aberto-brightgreen)
-![Cobertura](https://img.shields.io/badge/cobertura-72%25-brightgreen)
-![Testes](https://img.shields.io/badge/testes-290%20passing-brightgreen)
+![Cobertura](https://img.shields.io/badge/cobertura-70%25-brightgreen)
+![Testes](https://img.shields.io/badge/testes-302%20passing-brightgreen)
 ![Security](https://img.shields.io/badge/security-auditado-blue)
 
 ---
 
 ## 📖 Sobre o projeto
 
-O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de forma natural — o usuário manda uma mensagem como *"almocei arroz, feijão e frango"* e o bot identifica os alimentos, calcula calorias e macronutrientes usando a base **TACO** (brasileira) e **USDA**, e registra tudo automaticamente.
+O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de forma natural — o usuário manda uma mensagem como *"almocei arroz, feijão e frango"* e o bot identifica os alimentos, calcula calorias e macronutrientes usando as bases **TACO** (UNICAMP), **TBCA** (USP/FoRC) e **USDA**, e registra tudo automaticamente.
 
 **Diferenciais frente a apps tradicionais (MyFitnessPal, YAZIO):**
 
 - 📱 Funciona **dentro do WhatsApp e Telegram** — sem instalação
-- 🇧🇷 Base nutricional **TACO** (alimentos brasileiros com prioridade)
+- 🇧🇷 Base nutricional **TACO + TBCA** — duas tabelas brasileiras com cobertura combinada de 2.290+ alimentos
 - 🗣️ Entende **português coloquial** — "tomei um caldinho de feijão" funciona
 - 📸 Identifica alimentos por **foto** (Claude Vision)
 - 🎙️ Transcreve **áudios** de voz (Whisper)
@@ -34,7 +34,7 @@ O NutriBot é um chatbot SaaS Freemium que permite rastrear a alimentação de f
 | Funcionalidade | Canal | Status |
 |---|---|---|
 | Registro por texto em PT-BR | Telegram / WhatsApp | ✅ Implementado |
-| Busca fuzzy na base TACO + USDA | — | ✅ Implementado |
+| Busca fuzzy na base TACO + TBCA + USDA (2.290+ alimentos) | — | ✅ Implementado |
 | Reconhecimento de foto (Claude Vision) | Telegram / WhatsApp | ✅ Implementado |
 | Transcrição de áudio (Whisper) | Telegram / WhatsApp | ✅ Implementado |
 | Fluxo de confirmação de refeição | Telegram / WhatsApp | ✅ Implementado |
@@ -80,7 +80,7 @@ Usuário
 | **Banco de dados** | PostgreSQL 16 · SQLAlchemy (asyncio) · asyncpg · Alembic |
 | **AI primária** | Anthropic Claude — Haiku 4.5 (NLP) · Sonnet 4.6 (Vision) |
 | **AI secundária** | OpenAI Whisper — transcrição de áudio |
-| **Busca nutricional** | RapidFuzz (fuzzy matching) · TACO JSON · USDA JSON |
+| **Busca nutricional** | RapidFuzz (fuzzy matching) · TACO/UNICAMP (296 itens) · TBCA/USP-FoRC (1.994 itens) · USDA JSON |
 | **Canais** | Telegram Bot API · WhatsApp via Evolution API |
 | **Alertas** | APScheduler AsyncIOScheduler · UptimeRobot (keep-alive) |
 | **PDF** | WeasyPrint · Jinja2 |
@@ -134,8 +134,10 @@ Nutri_Bot/
 │       ├── rate_limiter.py      # Rate limiting por usuário
 │       └── timezone.py          # Utilitários de fuso horário (BRT)
 ├── data/
-│   ├── taco.json                # Base TACO (alimentos brasileiros)
-│   ├── usda.json                # Base USDA (complemento)
+│   ├── taco.json                # Base TACO/UNICAMP (296 alimentos brasileiros)
+│   ├── tbca.json                # Base TBCA/USP-FoRC (1.994 alimentos brasileiros)
+│   ├── tbca_raw.json            # Links coletados pelo scraper (2.000 itens — input do scrape_tbca.py)
+│   ├── usda.json                # Base USDA (complemento internacional)
 │   └── report_template.html     # Template HTML do relatório PDF
 ├── migrations/
 │   └── versions/
@@ -144,6 +146,8 @@ Nutri_Bot/
 ├── scripts/
 │   ├── register_telegram_webhook.py   # Registrar URL no BotFather
 │   ├── expand_taco.py                 # Expansão da base TACO
+│   ├── scrape_tbca.py                 # Web scraping da TBCA (20 páginas → tbca.json)
+│   ├── fix_tbca_categories.py         # Pós-processamento: corrige categorias do tbca.json
 │   ├── testar_relatorio.py            # Gerar PDF de teste
 │   ├── testar_alerta.py               # Disparar alerta manualmente
 │   ├── run_bot_polling.py             # Polling local (desenvolvimento)
@@ -276,10 +280,47 @@ Resumo dos passos:
 
 ---
 
+## 🥦 Base Nutricional
+
+O NutriBot usa três bases de dados nutricionais locais (JSON), sem chamadas externas em runtime:
+
+| Base | Fonte | Itens | Cobertura |
+|------|-------|-------|-----------|
+| **TACO** | UNICAMP — Tabela Brasileira de Composição de Alimentos | 296 | Alimentos in natura e preparados brasileiros |
+| **TBCA** | USP/FoRC — Tabela Brasileira de Composição de Alimentos | 1.994 | Ampla cobertura brasileira: hortaliças, frutas, carnes, cereais, laticínios e mais |
+| **USDA** | USDA FoodData Central (subset) | 3 | Complemento para itens sem equivalente nacional |
+
+**Pipeline de lookup (5 camadas) em `app/services/nutrition.py`:**
+
+```
+1. Cache de aliases (busca exata normalizada)
+2. RapidFuzz TACO — threshold 80 (prioridade: alimentos brasileiros UNICAMP)
+3. RapidFuzz TBCA — threshold 80 (segunda fonte brasileira USP/FoRC)
+4. RapidFuzz USDA — threshold 75
+5. Fallback GPT estimado (quando nenhuma base retorna match)
+```
+
+**Como a TBCA foi coletada:**  
+O site [tbca.net.br](https://www.tbca.net.br/base-dados/composicao_estatistica.php) não oferece download — os dados foram coletados via web scraping em duas etapas:
+
+```powershell
+# Etapa 1: coleta links das 20 páginas de listagem → data/tbca_raw.json
+python scripts/scrape_tbca.py --paginas 1-20 --delay 1.0
+
+# Etapa 2: extrai nutrientes de cada página de detalhe → data/tbca.json
+# (use --retomar para continuar se interrompido)
+python scripts/scrape_tbca.py --retomar
+
+# Pós-processamento: corrige categorias
+python scripts/fix_tbca_categories.py
+```
+
+---
+
 ## 🧪 Testes
 
 ```powershell
-# Suite completa (290 testes, cobertura 72%)
+# Suite completa (302 testes, cobertura ~70%)
 pytest
 
 # Com cobertura detalhada
@@ -300,7 +341,7 @@ pytest tests/test_meals_api.py -v
 - ✅ > 80% de acurácia no reconhecimento textual — top 500 alimentos TACO
 - ✅ > 75% de acurácia no reconhecimento por foto
 - ✅ Alertas entregues em < 2 min em 99% dos casos
-- ✅ Cobertura de testes ≥ 55% (atual: 72% · 290 testes)
+- ✅ Cobertura de testes ≥ 55% (atual: ~70% · 302 testes)
 
 ---
 
@@ -460,4 +501,4 @@ Cada relatório inclui: médias de kcal e macros, aderência à meta, tabela por
 
 ---
 
-*NutriBot · Agosto 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude · Sprint 6 ✅ + Post-6 ✅ · Beta aberto*
+*NutriBot · Setembro 2026 · Python 3.13 · FastAPI · PostgreSQL · Anthropic Claude · Sprint 6 ✅ + Post-6 ✅ · TBCA integrada ✅ · Beta aberto*
