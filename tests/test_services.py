@@ -683,9 +683,11 @@ class TestAIService:
             mock_openai_client.audio.transcriptions.create = AsyncMock(
                 return_value="arroz com feijão"
             )
-            with patch("app.config.settings") as mock_settings:
+            # Patcha o objeto settings *dentro de ai_service.py* para rotear para OpenAI
+            with patch("app.services.ai_service.settings") as mock_settings:
                 mock_settings.openai_api_key = "fake_key"
                 mock_settings.openai_whisper_model = "whisper-1"
+                mock_settings.audio_provider = "openai"  # evita import de faster_whisper
                 result = await svc.transcribe_audio(b"fake_audio_bytes")
 
         assert result == "arroz com feijão"

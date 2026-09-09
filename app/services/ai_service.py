@@ -17,6 +17,23 @@ from app.schemas.ai_response import FoodExtractionResponse, ReportSuggestionsRes
 
 logger = logging.getLogger(__name__)
 
+# ── Fase 1: faster-whisper singleton ──────────────────────────────────────────
+# Carregado lazily na primeira chamada; reutilizado em todas as requisições.
+# O modelo base (~74MB) é pré-baixado no build do Docker para eliminar cold start.
+_whisper_model = None
+
+
+def _get_whisper_model():
+    """Retorna (ou instancia) o singleton WhisperModel (CPU/int8)."""
+    global _whisper_model
+    if _whisper_model is None:
+        from faster_whisper import WhisperModel  # type: ignore[import]
+        size = settings.whisper_model_size
+        _whisper_model = WhisperModel(size, device="cpu", compute_type="int8")
+        logger.info(f"[Whisper-local] modelo '{size}' carregado (CPU/int8)")
+    return _whisper_model
+
+
 SYSTEM_PROMPT_TEXT = """Você é um assistente especializado em nutrição brasileira.
 Sua única função é extrair alimentos e quantidades de uma mensagem em português brasileiro.
 
@@ -211,10 +228,10 @@ class AIService:
 
         return await self._call_with_retry(_call)
 
-    async def extract_foods_from_image(
-        self, image_bytes: bytes, caption: str | None = None
+    async def _vision_call(
+        self, model: str, b64: str, caption: str | None
     ) -> FoodExtractionResponse:
-        b64 = base64.standard_b64encode(image_bytes).decode()
+        """Chama o modelo de visão especificado e retorna FoodExtractionResponse."""
         content: list[dict] = [
             {
                 "type": "image",
@@ -226,7 +243,7 @@ class AIService:
 
         async def _call():
             response = await self._client.messages.create(
-                model=settings.anthropic_vision_model,
+                model=model,
                 max_tokens=1000,
                 system=SYSTEM_PROMPT_VISION,
                 messages=[{"role": "user", "content": content}],
@@ -241,13 +258,53 @@ class AIService:
 
         return await self._call_with_retry(_call)
 
-    async def transcribe_audio(self, audio_bytes: bytes) -> str:
-        """Usa OpenAI Whisper — Claude não suporta transcrição de áudio."""
+    async def extract_foods_from_image(
+        self, image_bytes: bytes, caption: str | None = None
+    ) -> FoodExtractionResponse:
+        """Fase 2: Haiku Vision como primário; Sonnet como fallback se confiança baixa.
+
+        Fluxo:
+          1. Haiku Vision → result.overall_confidence
+          2. Se confidence < vision_confidence_threshold → Sonnet (fallback) + log PostHog
+          3. Retorna o melhor resultado disponível
+        """
+        b64 = base64.standard_b64encode(image_bytes).decode()
+
+        result = await self._vision_call(settings.anthropic_vision_model, b64, caption)
+
+        confidence = result.overall_confidence if result.overall_confidence is not None else 1.0
+        if confidence < settings.vision_confidence_threshold:
+            logger.info(
+                f"[Vision] confiança={confidence:.2f} < {settings.vision_confidence_threshold} "
+                f"— fallback {settings.anthropic_vision_fallback_model}"
+            )
+            try:
+                from app.services.analytics import analytics_service
+                analytics_service.track(
+                    "vision_fallback_triggered",
+                    {
+                        "haiku_confidence": confidence,
+                        "threshold": settings.vision_confidence_threshold,
+                        "fallback_model": settings.anthropic_vision_fallback_model,
+                    },
+                )
+            except Exception:
+                pass  # analytics não bloqueia o fluxo principal
+
+            result = await self._vision_call(
+                settings.anthropic_vision_fallback_model, b64, caption
+            )
+
+        return result
+
+    async def _transcribe_openai(self, audio_bytes: bytes) -> str:
+        """Transcrição via OpenAI Whisper API (cloud) — fallback ou quando AUDIO_PROVIDER=openai."""
         from openai import AsyncOpenAI
+        import io
+
         client = AsyncOpenAI(api_key=settings.openai_api_key)
 
         async def _call():
-            import io
             audio_file = io.BytesIO(audio_bytes)
             audio_file.name = "audio.ogg"
             transcript = await client.audio.transcriptions.create(
@@ -264,8 +321,44 @@ class AIService:
                 return await _call()
             except Exception as e:
                 if attempt == 2:
-                    raise RuntimeError(f"Whisper falhou após 3 tentativas: {e}") from e
+                    raise RuntimeError(f"Whisper OpenAI falhou após 3 tentativas: {e}") from e
                 await asyncio.sleep(3)
+
+    async def transcribe_audio(self, audio_bytes: bytes) -> str:
+        """Fase 1: faster-whisper local (CPU/int8) por padrão; fallback para OpenAI API.
+
+        Roteamento via settings.audio_provider:
+          - "local"  → faster-whisper rodando in-process (zero custo por transcrição)
+          - "openai" → OpenAI Whisper API (cloud, cobrado por minuto)
+
+        Em caso de falha do local, faz fallback automático para OpenAI.
+        """
+        if settings.audio_provider == "openai":
+            return await self._transcribe_openai(audio_bytes)
+
+        import io
+        audio_file = io.BytesIO(audio_bytes)
+
+        model = _get_whisper_model()
+        loop = asyncio.get_event_loop()
+
+        def _run() -> str:
+            # Consome o gerador dentro do executor para evitar lazy-eval na event loop
+            segments, info = model.transcribe(
+                audio_file,
+                language="pt",
+                initial_prompt="Registro de refeição em português brasileiro.",
+                beam_size=5,
+            )
+            text = " ".join(seg.text for seg in segments).strip()
+            logger.info(f"[Whisper-local] {info.duration:.1f}s → '{text[:60]}'")
+            return text
+
+        try:
+            return await loop.run_in_executor(None, _run)
+        except Exception as e:
+            logger.warning(f"[Whisper-local] falha ({e}) — fallback OpenAI Whisper")
+            return await self._transcribe_openai(audio_bytes)
 
     async def generate_report_suggestions(
         self, user_context: dict, week_summary: dict

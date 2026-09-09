@@ -12,12 +12,17 @@ RUN apt-get update --fix-missing && apt-get install -y --no-install-recommends \
     libharfbuzz0b \
     libffi-dev \
     fonts-liberation \
+    ffmpeg \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Fase 1: pré-baixa o modelo faster-whisper base (~74MB) para eliminar cold start
+# O modelo fica baked na imagem Docker — reinicializações não precisam baixar novamente
+RUN python -c "from faster_whisper import WhisperModel; WhisperModel('base', device='cpu', compute_type='int8')" || true
 
 COPY . .
 

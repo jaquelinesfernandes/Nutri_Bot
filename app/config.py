@@ -11,11 +11,20 @@ class Settings(BaseSettings):
     # Anthropic (Claude) — NLP + Vision
     anthropic_api_key: str = ""
     anthropic_model: str = "claude-haiku-4-5-20251001"
-    anthropic_vision_model: str = "claude-sonnet-4-6"
+    # Fase 2: Haiku como primário (↓85% custo); Sonnet como fallback se confiança < threshold
+    anthropic_vision_model: str = "claude-haiku-4-5-20251001"
+    anthropic_vision_fallback_model: str = "claude-sonnet-4-6"
+    vision_confidence_threshold: float = 0.70  # abaixo disso → fallback para Sonnet
 
-    # OpenAI — apenas Whisper (áudio, Sprint 2)
+    # OpenAI — fallback Whisper (usado somente se AUDIO_PROVIDER=openai ou local falhar)
     openai_api_key: str = ""
     openai_whisper_model: str = "whisper-1"
+
+    # Fase 1: faster-whisper local (CPU/int8) — zero custo por transcrição
+    # AUDIO_PROVIDER=local (padrão) | openai (fallback cloud)
+    audio_provider: str = "local"
+    # tiny(39MB) | base(74MB) | small(244MB) — base tem boa acurácia para PT-BR
+    whisper_model_size: str = "base"
 
     # Banco de dados
     database_url: str = "postgresql+asyncpg://user:pass@localhost/nutribot"
