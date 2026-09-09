@@ -5764,7 +5764,10 @@
     "name": "Whey protein, concentrado",
     "aliases": [
       "whey protein",
-      "proteina do soro do leite"
+      "proteina do soro do leite",
+      "proteina whey",
+      "whey concentrado",
+      "proteina concentrado soro"
     ],
     "category": "industrializados",
     "per_100g": {
@@ -5796,6 +5799,228 @@
       "sodium_mg": 20.0
     },
     "default_portion_g": 300,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_001",
+    "name": "Macarrão instantâneo, cozido (miojo)",
+    "aliases": [
+      "miojo",
+      "miojo cozido",
+      "macarrao instantaneo",
+      "macarrao instantaneo cozido",
+      "lamen",
+      "ramen instantaneo",
+      "yakisoba instantaneo"
+    ],
+    "category": "cereais_graos",
+    "per_100g": {
+      "calories_kcal": 126,
+      "protein_g": 3.0,
+      "carb_g": 22.0,
+      "fat_g": 3.2,
+      "fiber_g": 0.7,
+      "sodium_mg": 900.0
+    },
+    "default_portion_g": 80,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_002",
+    "name": "Esfiha, carne",
+    "aliases": [
+      "esfiha",
+      "esfiha de carne",
+      "esfirra",
+      "esfirra de carne",
+      "esfiha aberta"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 248,
+      "protein_g": 10.0,
+      "carb_g": 29.0,
+      "fat_g": 10.5,
+      "fiber_g": 1.2,
+      "sodium_mg": 360.0
+    },
+    "default_portion_g": 90,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_003",
+    "name": "Nugget de frango, empanado, frito",
+    "aliases": [
+      "nugget",
+      "nuggets",
+      "nugget de frango",
+      "nuggets de frango",
+      "chicken nugget",
+      "nugget frito"
+    ],
+    "category": "carnes_aves",
+    "per_100g": {
+      "calories_kcal": 240,
+      "protein_g": 14.5,
+      "carb_g": 16.0,
+      "fat_g": 13.0,
+      "fiber_g": 0.5,
+      "sodium_mg": 470.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_004",
+    "name": "Cachorro-quente, completo (pão + salsicha + molhos)",
+    "aliases": [
+      "hot dog",
+      "cachorro quente",
+      "cachorro-quente",
+      "hotdog",
+      "cachorro quente completo"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 245,
+      "protein_g": 9.5,
+      "carb_g": 22.0,
+      "fat_g": 13.0,
+      "fiber_g": 1.0,
+      "sodium_mg": 680.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_005",
+    "name": "Cheeseburger, pão + carne + queijo",
+    "aliases": [
+      "cheeseburger",
+      "cheese burger",
+      "hamburguer com queijo",
+      "hamburguer queijo",
+      "x-queijo",
+      "x queijo"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 258,
+      "protein_g": 14.0,
+      "carb_g": 24.0,
+      "fat_g": 12.5,
+      "fiber_g": 1.0,
+      "sodium_mg": 510.0
+    },
+    "default_portion_g": 130,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_006",
+    "name": "Pizza, margherita (mussarela + tomate), fatia",
+    "aliases": [
+      "pizza margherita",
+      "pizza mozzarella",
+      "pizza mussarela tomate",
+      "pizza marguerita",
+      "pizza mozzarela",
+      "pizza mussarela",
+      "pizza queijo tomate",
+      "pizza muzzarela tomate"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 218,
+      "protein_g": 10.5,
+      "carb_g": 27.0,
+      "fat_g": 7.5,
+      "fiber_g": 1.5,
+      "sodium_mg": 460.0
+    },
+    "default_portion_g": 100,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_007",
+    "name": "Wrap de frango grelhado com legumes",
+    "aliases": [
+      "wrap",
+      "wrap de frango",
+      "wrap frango",
+      "tortilla wrap",
+      "wrap frango grelhado"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 182,
+      "protein_g": 11.5,
+      "carb_g": 20.5,
+      "fat_g": 5.5,
+      "fiber_g": 2.5,
+      "sodium_mg": 360.0
+    },
+    "default_portion_g": 200,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_008",
+    "name": "Burrito de frango",
+    "aliases": [
+      "burrito",
+      "burrito de frango",
+      "burrito chicken",
+      "burrito frango"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 192,
+      "protein_g": 10.5,
+      "carb_g": 22.5,
+      "fat_g": 7.0,
+      "fiber_g": 2.0,
+      "sodium_mg": 420.0
+    },
+    "default_portion_g": 250,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_009",
+    "name": "Panqueca, simples, com recheio de frango",
+    "aliases": [
+      "panqueca de frango",
+      "panqueca recheada",
+      "panqueca salgada"
+    ],
+    "category": "pratos_tipicos",
+    "per_100g": {
+      "calories_kcal": 165,
+      "protein_g": 9.0,
+      "carb_g": 18.0,
+      "fat_g": 6.0,
+      "fiber_g": 0.8,
+      "sodium_mg": 290.0
+    },
+    "default_portion_g": 150,
+    "source": "taco"
+  },
+  {
+    "code": "taco_ft_010",
+    "name": "Panqueca, doce, simples",
+    "aliases": [
+      "panqueca doce",
+      "panqueca",
+      "pancake"
+    ],
+    "category": "doces",
+    "per_100g": {
+      "calories_kcal": 215,
+      "protein_g": 5.5,
+      "carb_g": 32.0,
+      "fat_g": 7.0,
+      "fiber_g": 1.0,
+      "sodium_mg": 320.0
+    },
+    "default_portion_g": 120,
     "source": "taco"
   }
 ]
