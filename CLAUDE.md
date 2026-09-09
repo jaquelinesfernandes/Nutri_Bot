@@ -12,7 +12,7 @@ The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, pri
 
 **All 6 sprints + Post-6 UX polish complete — in production on Render + Neon. TBCA integrated.**
 
-- 302 tests passing · coverage ~70% (threshold ≥ 55%)
+- 411 tests passing · coverage 80.60% (threshold ≥ 55%)
 - Deployed at: `https://nutri-bot-ot0p.onrender.com`
 - Beta open: reports unlocked for all users via `REPORTS_OPEN_BETA=true`
 - Sessions persist for 365 days with sliding-expiration renewal (no re-login needed)
