@@ -45,6 +45,20 @@ STOPWORDS = {
     "natural", "fresco", "fresca", "frescos", "frescas",
     "simples", "puro", "pura", "tradicional", "original",
     "cru", "crua",
+    # qualificadores da TBCA que não afetam a identidade do alimento
+    "enlatado", "enlatada", "enlatados", "enlatadas",  # atum enlatado → atum
+    "drenado", "drenada", "drenados", "drenadas",       # ervilha drenada → ervilha
+    "solido", "solida",                                  # atum sólido → atum
+    "po",                                                # gelatina em pó → gelatina
+    "brasil",                                            # sufixo da TBCA
+    "importado",                                         # "(dado importado)"
+    "dado",                                              # "(dado importado)"
+    "medio", "media",                                    # "média de diferentes amostras"
+    "diferentes", "diversas", "diversos",
+    "amostras", "marcas", "tipos", "cultivares", "sabores",
+    "preparado", "preparada",                            # gelatina preparada → gelatina
+    "mistura",                                           # mistura para bolo → bolo
+    "pronto", "pronta",
 }
 
 
