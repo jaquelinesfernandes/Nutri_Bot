@@ -49,7 +49,8 @@ STOPWORDS = {
     "enlatado", "enlatada", "enlatados", "enlatadas",  # atum enlatado → atum
     "drenado", "drenada", "drenados", "drenadas",       # ervilha drenada → ervilha
     "solido", "solida",                                  # atum sólido → atum
-    "po",                                                # gelatina em pó → gelatina
+    # "po" REMOVIDA: causava colisão "leite em pó" → "leite integral" (sobrescrevia leite de vaca)
+    # gelatina diet ainda encontrada com score ~89% mesmo sem "po" como stopword
     "brasil",                                            # sufixo da TBCA
     "importado",                                         # "(dado importado)"
     "dado",                                              # "(dado importado)"
