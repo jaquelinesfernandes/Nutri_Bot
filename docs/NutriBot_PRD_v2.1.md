@@ -564,12 +564,27 @@ O usuário sai do silêncio ao enviar qualquer mensagem ao bot.
 
 ### 11.2 Especificação de Pagamento e Billing
 
-**Gateway:** Mercado Pago (padrão brasileiro — suporta Pix, cartão de crédito e débito, boleto)
+**Arquitetura dual de gateways (decisão 2026-09-11):**
 
-**Métodos aceitos no MVP:**
+| Segmento | Gateway | Razão |
+|----------|---------|-------|
+| B2C — usuários individuais (Free → Premium) | **Mercado Pago** | Já integrado; PIX zero-fricção; reconhecimento de marca |
+| B2B — nutricionistas (Plano Nutricionista) | **Asaas** | NFS-e nativa obrigatória para PJ; dunning automático; melhor gestão de assinaturas |
+
+> **Por que não usar Mercado Pago para B2B:** MP não emite NFS-e (Nota Fiscal de Serviço Eletrônica). Nutricionistas PJ precisam de nota para dedução fiscal. A alternativa seria integrar MP + serviço externo de NFS-e (ex: eNotas), criando dois pontos de falha. O Asaas resolve pagamento + NFS-e em uma única integração e é gratuito (paga por transação).
+
+> **Por que não usar Stripe:** Stripe não emite NFS-e e exige integração separada para nota fiscal. Recomendado no futuro se houver necessidade de internacionalização (Argentina, México).
+
+**Métodos aceitos — B2C (Mercado Pago):**
 - Pix (processamento imediato)
 - Cartão de crédito (recorrência mensal/anual via Mercado Pago Subscriptions)
 - Boleto (anual apenas — risco de churn no mensal)
+
+**Métodos aceitos — B2B (Asaas):**
+- Pix (1%, mín. R$1,00)
+- Cartão de crédito à vista (2,49% + R$0,49)
+- Boleto bancário (R$1,99/boleto)
+- NFS-e emitida automaticamente após confirmação de pagamento → enviada ao e-mail do cliente
 
 **Fluxo de upgrade:**
 
@@ -1332,18 +1347,422 @@ Implementação: endpoint de health check + flag de manutenção no banco. Se fl
 
 ---
 
-## 27. Próximos Passos
+---
 
-1. **Aprovação deste PRD** pelos stakeholders (prazo: 5 dias úteis)
-2. **Ações imediatas antes do Sprint 1:**
-   - Contratar conta OpenAI e solicitar Tier 2
-   - Criar conta Z-API e iniciar aprovação do número WhatsApp Business
-   - Criar conta Mercado Pago Business e configurar ambiente Sandbox
-   - Criar conta PostHog
-   - Contratar assessoria jurídica para LGPD e designar DPO
-3. **Validação de canal:** testar onboarding no Telegram com 5–10 pessoas antes de construir
-4. **Sprint 1 inicia** em até 1 semana após aprovação
+## 28. Fase 2 — Painel B2B Nutricionistas
+
+> **Status:** Especificado e pronto para sprint — aguardando estabilização das Fases 1+2 de IA (previsto para iniciar após 2026-09-18)
+> **Versão da especificação:** 1.0 — 2026-09-11
+
+### 28.1 Visão Geral
+
+O Plano Nutricionista transforma o NutriBot em uma ferramenta de acompanhamento clínico. A nutricionista gerencia pacientes pelo painel web; os pacientes continuam registrando refeições normalmente pelo bot (WhatsApp ou Telegram). Nenhuma instalação adicional é necessária para nenhum dos dois lados.
+
+**Proposta de valor para a nutricionista:**
+- Ver o diário alimentar completo do paciente antes de cada consulta — sem planilha Excel
+- Identificar padrões problemáticos (dias sem registro, calorias muito baixas, saltos de macros) sem perguntar ao paciente
+- Adicionar notas clínicas vinculadas à data de consulta
+- Exportar relatório PDF do paciente com um clique (serviço já existente)
+
+**Proposta de valor para o paciente:**
+- Não precisa mudar nada — continua usando o bot normalmente
+- Sabe que a nutricionista está acompanhando → aumenta adesão ao diário
+
+**Modelo financeiro:** R$79,90/mês por nutricionista · até 30 pacientes incluídos · NFS-e automática via Asaas
 
 ---
 
-*NutriBot PRD v2.1 — Documento Interno — Junho 2026*
+### 28.2 Personas
+
+#### Nutricionista — Dra. Camila, 42 anos
+- Consultório próprio em São Paulo, 40 pacientes ativos
+- Usa planilha Excel para acompanhar diários — abandono de ~60% dos pacientes após 2 semanas
+- Consulta a cada 30 dias; precisa dos dados dos últimos 30 dias antes de cada sessão
+- Paga R$79,90/mês se resolver a dor de "paciente não preenche o diário"
+- Emite nota fiscal de despesa — CNPJ ativo, MEI ou empresa
+
+#### Paciente — Carlos, 34 anos
+- Paciente da Dra. Camila, usa WhatsApp, não instala apps
+- Já usa ou não usa NutriBot — em ambos os casos o convite chega pelo bot
+- Não sabe o que é SaaS; aceita ou recusa com "sim" ou "não" no chat
+- Tem direito de revogar acesso da nutricionista a qualquer momento
+
+---
+
+### 28.3 Fluxo de Cadastro — Nutricionista
+
+```
+Acessa /nutricionista/cadastro (web)
+  │
+  ▼
+Preenche formulário:
+  • Nome completo
+  • CRN (ex: CRN-3 12345/P) — campo obrigatório
+  • E-mail profissional
+  • Senha (mín. 8 chars)
+  • CNPJ ou CPF (para NFS-e)
+  • Aceite: Termos de Uso + Política de Privacidade (inclui cláusula LGPD)
+  │
+  ▼
+Conta criada com plan = 'nutritionist' + trial 30 dias (sem cartão)
+  │
+  ▼
+E-mail de boas-vindas com link de acesso ao painel
+  │
+  ▼
+/nutricionista/ → painel vazio, card "Convide seu primeiro paciente"
+  │
+  ▼
+No dia 25 do trial → e-mail automático: "Seu período gratuito termina em 5 dias"
+  │
+  ▼
+Checkout Asaas → R$79,90/mês → NFS-e emitida automaticamente
+```
+
+**Validação do CRN (MVP):** campo obrigatório, formato validado (regex `CRN-[0-9]{1,2}\s?[0-9]{4,6}\/[PTN]?`), mas sem consulta automática ao CFN. Aprovação manual pela equipe durante o beta (máx. 20 nutricionistas). Automação via scraping do CFN fica para Fase 3.
+
+---
+
+### 28.4 Fluxo de Convite e Consentimento — Paciente
+
+#### Sub-cenário A — Paciente novo (não usa NutriBot)
+
+```
+Nutricionista clica "Convidar paciente" no painel
+  → Informa: nome + número WhatsApp (ou username Telegram)
+  → Sistema gera token único (64 chars, expira em 7 dias)
+  → Exibe link na tela para a nutricionista copiar e enviar manualmente*
+
+Paciente recebe e clica no link deep link:
+  → WhatsApp/Telegram abre com mensagem pré-preenchida ao bot
+  → Bot responde:
+     "Olá! A Dra. [Nome] (CRN-3 12345) quer acompanhar sua alimentação
+      pelo NutriBot. Ela poderá ver seus registros diários e relatórios.
+      Você pode revogar esse acesso quando quiser digitando /privacidade.
+      Aceita? Responda SIM ou NÃO."
+
+SIM → conta criada automaticamente + vínculo ativo + onboarding normal
+NÃO → token invalidado + nutricionista notificada no painel ("Convite recusado")
+```
+
+*Quando template WhatsApp Business API for aprovado pela Meta, o envio passa a ser automático pelo sistema.
+
+#### Sub-cenário B — Paciente já usa NutriBot
+
+```
+Nutricionista busca por número de telefone ou e-mail no painel
+  → Sistema confirma que conta existe (sem revelar dados — só "encontrado/não encontrado")
+  → Nutricionista clica "Solicitar vínculo"
+
+Bot envia notificação ao paciente:
+  "A Dra. [Nome] (CRN-3 12345) quer acompanhar sua alimentação.
+   Ela verá seus registros a partir de hoje e os próximos.
+   Seu histórico anterior (últimos 30 dias) também ficará visível com seu consentimento.
+   Aceita? Responda SIM ou NÃO."
+
+SIM → vínculo ativo + consentimento gravado (consented_at)
+NÃO → solicitação recusada + nutricionista notificada
+```
+
+---
+
+### 28.5 LGPD — Obrigações e Implementação
+
+Dados nutricionais são **dados sensíveis** (LGPD Art. 11). O consentimento explícito do paciente é **obrigatório** — não é opcional mesmo que a nutricionista seja cliente pagante.
+
+| Situação | Comportamento do sistema |
+|----------|--------------------------|
+| Paciente recusa convite | Nutricionista não acessa nenhum dado. Painel mostra "Convite recusado" |
+| Paciente revoga acesso | Acesso bloqueado imediatamente. Nutricionista recebe e-mail de aviso |
+| Paciente deleta conta | Todos os dados removidos. Nutricionista recebe aviso no painel |
+| Nutricionista cancela plano | Vínculos suspensos. Pacientes recebem mensagem no bot informando |
+| Paciente quer auditoria | `/privacidade` no bot lista todos os nutricionistas com acesso ativo e data de consentimento |
+| Nutricionista exporta dados | Apenas via PDF do relatório existente — sem dump de raw data |
+
+**Campos de auditoria obrigatórios (tabela `nutritionist_patients`):**
+- `consented_at` — timestamp do aceite explícito do paciente
+- `revoked_at` — timestamp de revogação (null se ativo)
+- `invite_token` — token único do convite (invalidado após uso ou expiração)
+
+---
+
+### 28.6 Modelo de Dados
+
+```sql
+-- Vínculo nutricionista ↔ paciente
+CREATE TABLE nutritionist_patients (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nutritionist_id   UUID NOT NULL REFERENCES users(id),
+    patient_id        UUID REFERENCES users(id),          -- NULL enquanto pendente (paciente novo)
+    patient_phone     VARCHAR(20),                        -- número informado pela nutricionista no convite
+    patient_name      VARCHAR(100),                       -- nome informado no convite (antes da conta existir)
+    invite_token      VARCHAR(64) UNIQUE NOT NULL,
+    status            VARCHAR(20) NOT NULL DEFAULT 'pending',
+                      -- pending | active | revoked | declined | expired
+    invited_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    expires_at        TIMESTAMPTZ NOT NULL,               -- invited_at + 7 dias
+    consented_at      TIMESTAMPTZ,                        -- LGPD: momento do aceite
+    revoked_at        TIMESTAMPTZ,
+    CONSTRAINT valid_status CHECK (
+        status IN ('pending', 'active', 'revoked', 'declined', 'expired')
+    )
+);
+
+-- Notas clínicas (escrita exclusiva da nutricionista)
+CREATE TABLE clinical_notes (
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    nutritionist_id   UUID NOT NULL REFERENCES users(id),
+    patient_id        UUID NOT NULL REFERENCES users(id),
+    note_text         TEXT NOT NULL,
+    consultation_date DATE NOT NULL,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at        TIMESTAMPTZ
+);
+
+CREATE INDEX idx_nutritionist_patients_nutri ON nutritionist_patients(nutritionist_id);
+CREATE INDEX idx_nutritionist_patients_patient ON nutritionist_patients(patient_id);
+CREATE INDEX idx_clinical_notes_patient ON clinical_notes(patient_id, consultation_date DESC);
+```
+
+**Regras de acesso:**
+- Um paciente pode ter múltiplos nutricionistas vinculados simultaneamente (ex: nutri + médico)
+- A nutricionista vê apenas os pacientes com `status = 'active'` vinculados ao seu `nutritionist_id`
+- Notas clínicas são privadas entre nutricionista e paciente — outro nutricionista vinculado ao mesmo paciente não vê as notas da outra
+
+---
+
+### 28.7 Especificação de Telas
+
+#### Tela 1 — `/nutricionista/` (Dashboard)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  NutriBot Nutricionista · Dra. Camila · [Sair]      │
+├─────────────────────────────────────────────────────┤
+│  Resumo                                             │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐            │
+│  │ 12       │ │ 3        │ │ 2        │            │
+│  │ Pacientes│ │ Inativos │ │ Pendentes│            │
+│  │ ativos   │ │ > 3 dias │ │ (convite)│            │
+│  └──────────┘ └──────────┘ └──────────┘            │
+├─────────────────────────────────────────────────────┤
+│  [+ Convidar Paciente]                              │
+├─────────────────────────────────────────────────────┤
+│  Pacientes                          [Buscar...]     │
+│  ─────────────────────────────────────────────────  │
+│  Carlos Silva    Último reg: hoje    1.820 kcal/d   │
+│  Maria Souza     Último reg: ontem   1.450 kcal/d   │
+│  João Pereira    Último reg: 4 dias  —    ⚠️ inativo│
+│  ...                                                │
+└─────────────────────────────────────────────────────┘
+```
+
+#### Tela 2 — `/nutricionista/paciente/{id}` (Perfil do Paciente)
+
+```
+┌─────────────────────────────────────────────────────┐
+│  ← Voltar  │  Carlos Silva  │  [Baixar PDF]         │
+├──────────────────────┬──────────────────────────────┤
+│  Dados               │  Evolução 30 dias             │
+│  Meta: 2.000 kcal    │  [gráfico kcal diária]        │
+│  Plano: Premium      │                               │
+│  Desde: 01/08/2026   │                               │
+├──────────────────────┴──────────────────────────────┤
+│  Registros desta semana                             │
+│  Seg 09/09 · 1.820 kcal                            │
+│    Café: pão francês + café c/ leite (320 kcal)    │
+│    Almoço: arroz + feijão + frango (650 kcal)      │
+│    Jantar: macarrão ao molho (520 kcal)            │
+│  [expandir dias anteriores...]                      │
+├─────────────────────────────────────────────────────┤
+│  Notas Clínicas                    [+ Nova Nota]    │
+│  ─────────────────────────────────────────────────  │
+│  05/09/2026 · Consulta                             │
+│  Paciente relata dificuldade em controlar          │
+│  quantidade de carboidratos no jantar. Orientado   │
+│  a substituir macarrão por arroz integral.         │
+└─────────────────────────────────────────────────────┘
+```
+
+#### Tela 3 — Modal "Convidar Paciente"
+
+```
+Convidar paciente
+─────────────────
+Nome completo *     [Carlos Silva              ]
+WhatsApp (ou)  *    [+55 11 99999-0000         ]
+Telegram username   [@carlos_silva             ]
+
+[ Gerar convite ]
+
+──────────────────────────────────────────────
+Link gerado (válido por 7 dias):
+https://nutri-bot.app/convite/abc123...
+
+[Copiar link]  ← nutricionista envia manualmente ao paciente
+               (automático quando template Meta aprovado)
+```
+
+---
+
+### 28.8 Decisões de Produto (resolvidas em 2026-09-11)
+
+| Decisão | Escolha | Justificativa |
+|---------|---------|---------------|
+| Validar CRN automaticamente? | ❌ Não no MVP — validação manual | Max 20 nutricionistas no beta; custo de engenharia não justificado |
+| Trial com ou sem cartão? | Sem cartão — 30 dias | Reduz fricção de aquisição; cobrança automática no D+30 via Asaas |
+| Nutricionista edita dados do paciente? | ❌ Não | Apenas leitura + notas clínicas. Integridade dos dados preservada |
+| Limite de pacientes por plano? | 30 por nutricionista | MVP; plano Clínica (100 pacientes) fica para Fase 3 |
+| Paciente free pode ser monitorado? | ✅ Sim | Plano do nutricionista já cobre o acesso; não exige upgrade do paciente |
+| Paciente vê log de acesso da nutricionista? | ✅ Sim | Boa prática de privacidade; `/privacidade` lista acessos com data |
+| App mobile? | ❌ WON'T HAVE até 2.000+ MAU | WhatsApp (97% penetração BR) já é o canal; app = fricção sem benefício |
+| Múltiplos nutricionistas por paciente? | ✅ Permitido | Modelo de dados suporta; paciente consente individualmente com cada um |
+| Convite expirado: o paciente pode reabrir? | ❌ Não | Nutricionista gera novo convite — simplicidade de fluxo |
+| NFS-e: gateway? | **Asaas** | Único gateway brasileiro com NFS-e nativa + assinatura recorrente integrada |
+
+---
+
+### 28.9 Billing B2B — Asaas
+
+**Setup (pré-sprint):**
+1. Criar conta Asaas em `asaas.com` (gratuito)
+2. Configurar dados fiscais: CNPJ/razão social para emissão de NFS-e
+3. Configurar código de serviço municipal (LC 116 — código 8.01 "análise e desenvolvimento de sistemas" ou equivalente)
+4. Criar plano de assinatura: R$79,90/mês recorrente
+5. Obter API key Sandbox → testar → produção
+
+**Fluxo de pagamento B2B:**
+
+```
+Nutricionista clica "Assinar Plano" no painel (dia 25 do trial)
+  │
+  ▼
+Backend cria customer + subscription no Asaas via API
+  │
+  ▼
+Asaas gera link de pagamento (PIX/cartão/boleto)
+  │
+  ▼
+Nutricionista paga → Asaas dispara webhook PAYMENT_CONFIRMED
+  │
+  ▼
+Backend recebe webhook → plan permanece 'nutritionist' no DB
+  │
+  ▼
+Asaas emite NFS-e automaticamente → envia PDF ao e-mail da nutricionista
+```
+
+**Dunning automático (Asaas cuida):**
+
+| Tentativa | Quando | Ação |
+|-----------|--------|------|
+| 1ª retry | D+1 | Asaas tenta cobrança automática |
+| 2ª retry | D+3 | Asaas tenta + envia e-mail ao cliente |
+| 3ª retry | D+5 | Asaas tenta + e-mail + painel mostra aviso |
+| Grace period | D+7 | Acesso mantido |
+| Suspensão | D+8 | Backend recebe webhook PAYMENT_OVERDUE → bloqueia acesso ao painel; pacientes não são afetados |
+
+**Variáveis de ambiente a adicionar:**
+```env
+ASAAS_API_KEY          # Asaas API key (sandbox → produção)
+ASAAS_WEBHOOK_TOKEN    # Token para validar webhooks recebidos
+```
+
+---
+
+### 28.10 Sprints de Implementação
+
+#### Sprint B2B-1 — Infraestrutura e Cadastro (estimativa: 5 dias)
+
+- [ ] Migration: tabelas `nutritionist_patients` e `clinical_notes`
+- [ ] Alembic revision + `alembic upgrade head`
+- [ ] Cadastro de nutricionista: `GET /nutricionista/cadastro` + `POST /api/nutricionista/register`
+- [ ] Login nutricionista: reutiliza `/dashboard/login` — plan check redireciona para `/nutricionista/`
+- [ ] Trial 30 dias: campo `trial_ends_at` no User ou tabela auxiliar
+- [ ] Geração de convite: `POST /api/nutricionista/convite` → gera token + grava `nutritionist_patients`
+- [ ] Aceitação pelo bot: detecta token no deep link → `SIM/NÃO` → `PATCH /api/nutricionista/convite/{token}`
+- [ ] Expiração de convites: job APScheduler diário marca `status = 'expired'` nos vencidos
+- [ ] `/privacidade` no bot: lista nutricionistas com acesso ativo ao usuário
+
+#### Sprint B2B-2 — Painel e Notas Clínicas (estimativa: 5 dias)
+
+- [ ] `GET /nutricionista/` — dashboard com lista de pacientes + métricas resumo
+- [ ] `GET /nutricionista/paciente/{id}` — perfil + gráfico kcal 30 dias + tabela de registros por dia
+- [ ] `POST /api/nutricionista/paciente/{id}/nota` — adiciona nota clínica
+- [ ] Download PDF: reutiliza `report_service.generate_report()` com `user_id = paciente.id`
+- [ ] Revogação pelo paciente: `/privacidade` no bot → "Revogar acesso da Dra. X?" → `PATCH` status = revoked
+- [ ] Templates Jinja2: `nutricionista_dashboard.html`, `nutricionista_paciente.html`
+- [ ] Testes de integração: cadastro, convite, aceite, revogação, acesso após revogação
+
+#### Sprint B2B-3 — Billing Asaas e Lançamento (estimativa: 3 dias)
+
+- [ ] Integração Asaas: cliente REST (`app/services/payment_asaas.py`)
+- [ ] Webhook Asaas: `POST /webhook/asaas` → `PAYMENT_CONFIRMED` / `PAYMENT_OVERDUE`
+- [ ] Fluxo de upgrade: no D+25 do trial → e-mail + banner no painel → link de checkout Asaas
+- [ ] NFS-e: configurar no painel Asaas (sem código adicional — Asaas emite automaticamente)
+- [ ] E-mail de boas-vindas pós-pagamento com link de acesso ao painel
+- [ ] Deploy + onboarding dos primeiros nutricionistas beta (meta: 5 nutricionistas validados)
+
+---
+
+### 28.11 Critérios de Aceitação da Fase 2
+
+| Critério | Meta |
+|----------|------|
+| Nutricionista completa cadastro + trial sem suporte | 100% dos beta testers |
+| Paciente aceita convite pelo bot em < 2 min | > 90% |
+| Painel carrega lista de pacientes | < 2s (p95) |
+| NFS-e emitida automaticamente após pagamento | 100% das assinaturas |
+| Acesso bloqueado após revogação | < 5s |
+| Cobertura de testes (rotas nutricionista) | > 80% |
+| Taxa de ativação (nutricionista convida ≥1 paciente em 7 dias) | > 70% |
+
+---
+
+## 27. Próximos Passos
+
+> **Atualizado em 2026-09-11** — Sprints 1–6 + Post-6 completos e em produção. Estado atual e roadmap abaixo.
+
+### Estado atual (Setembro 2026)
+
+| Item | Status |
+|------|--------|
+| Sprints 1–6 + Post-6 | ✅ Em produção — `https://nutri-bot-ot0p.onrender.com` |
+| 411 testes · cobertura 80.60% | ✅ |
+| Fase 1 IA — faster-whisper local (áudio) | ✅ Deploy 2026-09-09, commit `3b3d1d2` |
+| Fase 2 IA — Haiku Vision + Sonnet fallback | ✅ Deploy 2026-09-09, commit `3b3d1d2` |
+| Fase 3 IA — Groq texto | ⏳ Aguardar 1 semana de estabilidade das Fases 1+2 |
+| WhatsApp Business API (Meta) — aprovação | 🔴 **Pendente** — bloqueio para alertas proativos fora de 24h |
+| Painel B2B Nutricionistas (Seção 28) | 📋 Especificado — iniciar após estabilização IA |
+| App mobile iOS/Android | ❌ WON'T HAVE até 2.000+ MAU ativos |
+
+### Fila de trabalho priorizada
+
+```
+Semana atual:
+  → Monitorar Fases 1+2 IA em produção (taxa de fallback Vision, erros Whisper)
+
+Próxima semana (a partir de 2026-09-18):
+  1. WhatsApp Business API — iniciar cadastro Meta Business Manager
+     (desbloqueio crítico para alertas proativos — afeta retenção)
+  2. Sprint B2B-1 — Infraestrutura nutricionistas (migration + cadastro + convite)
+
+Semana seguinte:
+  3. Fase 3 IA — Groq benchmark + implementação (se Fases 1+2 estáveis)
+  4. Sprint B2B-2 — Painel nutricionista + notas clínicas
+
+Depois:
+  5. Sprint B2B-3 — Billing Asaas + NFS-e + lançamento beta nutricionistas
+```
+
+### Ações pré-sprint B2B (fazer antes de iniciar Sprint B2B-1)
+
+- [ ] Criar conta Asaas em `asaas.com` e configurar dados fiscais (CNPJ + NFS-e)
+- [ ] Obter `ASAAS_API_KEY` e `ASAAS_WEBHOOK_TOKEN` (sandbox primeiro)
+- [ ] Cadastrar plano de assinatura R$79,90/mês no painel Asaas
+- [ ] Definir código de serviço municipal para NFS-e (LC 116)
+- [ ] Verificar formato do CRN esperado por região (CRN-1 a CRN-9)
+
+---
+
+*NutriBot PRD v2.1 — Documento Interno — atualizado em 2026-09-11*
