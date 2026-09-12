@@ -1209,6 +1209,9 @@ class ConversationService:
 
         for fi in pending.get("food_items", []):
             try:
+                # Garante que taco_code cabe na coluna String(32)
+                raw_code = fi.get("taco_code") or None
+                safe_code = raw_code[:32] if raw_code else None
                 db.add(FoodItem(
                     meal_log_id=meal_log.id,
                     name=fi.get("name", "Alimento"),
@@ -1219,9 +1222,9 @@ class ConversationService:
                     carb_g=float(fi.get("carb_g") or 0),
                     fat_g=float(fi.get("fat_g") or 0),
                     fiber_g=float(fi.get("fiber_g") or 0),
-                    source=fi.get("source", "taco"),
+                    source=(fi.get("source") or "taco")[:20],
                     confidence_score=float(fi.get("confidence_score") or 1.0),
-                    taco_code=fi.get("taco_code"),
+                    taco_code=safe_code,
                 ))
             except Exception as e:
                 logger.warning(f"[MEAL] FoodItem ignorado por dado inválido: {e} — {fi}")

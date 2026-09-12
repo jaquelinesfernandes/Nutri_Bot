@@ -29,9 +29,11 @@ class FoodItem(Base):
     carb_g: Mapped[float] = mapped_column(Float, default=0.0)
     fat_g: Mapped[float] = mapped_column(Float, default=0.0)
     fiber_g: Mapped[float] = mapped_column(Float, default=0.0)
-    source: Mapped[str] = mapped_column(String(20), default="taco")  # taco|taco_alias|taco_fuzzy|usda_fuzzy|gpt_estimated
+    source: Mapped[str] = mapped_column(String(20), default="taco")  # taco|taco_alias|taco_fuzzy|tbca_fuzzy|usda_fuzzy|gpt_estimated
     confidence_score: Mapped[float] = mapped_column(Float, default=1.0)
-    taco_code: Mapped[str | None] = mapped_column(String(10), nullable=True)
+    # Código do alimento na base de origem: TACO (3 dígitos, ex: "001") ou
+    # TBCA (13 chars, ex: "tbca_BRC0001D"). Aumentado de String(10) para String(32).
+    taco_code: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     meal_log: Mapped["MealLog"] = relationship(back_populates="food_items")
 
