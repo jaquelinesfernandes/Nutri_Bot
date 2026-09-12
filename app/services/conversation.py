@@ -25,7 +25,7 @@ from app.services import analytics
 logger = logging.getLogger(__name__)
 
 ConversationState = Literal[
-    "IDLE", "ONBOARDING", "CONFIRMING", "CORRECTING", "DELETING", "INVITE_PENDING"
+    "IDLE", "ONBOARDING", "CONFIRMING", "CORRECTING", "DELETING", "INVITE_PENDING", "REVOKING"
 ]
 
 CONFIRM_WORDS = {"sim", "s", "yes", "y", "ok", "confirmar", "confirma", "certo", "isso", "exato", "correto"}
@@ -56,6 +56,7 @@ _STATE_TIMEOUTS = {
     "DELETING":       timedelta(minutes=5),
     "BACKDATING":     timedelta(minutes=10),
     "INVITE_PENDING": timedelta(minutes=30),
+    "REVOKING":       timedelta(minutes=10),
 }
 
 # Hora padrão (local) usada ao salvar um registro retroativo por tipo de refeição
@@ -175,8 +176,16 @@ class ConversationService:
         if state == "INVITE_PENDING":
             return await self._handle_invite_pending(user, str(content), db)
 
+        if state == "REVOKING":
+            return await self._handle_revoking(user, str(content), db)
+
         # IDLE
         if message_type == "text":
+            txt_idle = str(content).strip().lower()
+            # Palavra-chave "revogar [nome]" — inicia fluxo de revogação LGPD
+            if txt_idle.startswith("revogar"):
+                name_hint = str(content).strip()[len("revogar"):].strip()
+                return await self._iniciar_revogacao(user, name_hint or None, db)
             return await self._process_text_meal(user, str(content), db)
         if message_type == "photo":
             return await self._process_photo_meal(user, bytes(content), caption, db)
@@ -2263,6 +2272,158 @@ class ConversationService:
                 "Seus dados continuam 100% privados. "
                 "Se mudar de ideia, peça à nutricionista um novo convite."
             )
+
+    # ── Revogação de acesso nutricionista (B2B-2 / LGPD) ──────────────────────
+
+    async def _iniciar_revogacao(
+        self, user: User, name_hint: str | None, db: AsyncSession
+    ) -> str:
+        """Inicia o fluxo de revogação: exibe nutricionistas com acesso e pede confirmação.
+
+        Chamado quando o usuário digita 'revogar [nome]' no IDLE.
+        Se name_hint for fornecido, filtra pelo nome; caso contrário, lista todas.
+        """
+        from app.models.nutritionist_patient import NutritionistPatient
+        from app.models.user import User as _User
+        from sqlalchemy import select as sa_select
+
+        links_q = await db.execute(
+            sa_select(NutritionistPatient).where(
+                NutritionistPatient.patient_id == user.id,
+                NutritionistPatient.status == "active",
+            )
+        )
+        links = links_q.scalars().all()
+
+        if not links:
+            return (
+                "Você não tem nenhuma nutricionista com acesso aos seus dados no momento.\n\n"
+                "Use /privacidade para ver o resumo completo."
+            )
+
+        # Carrega dados das nutricionistas
+        candidates = []
+        for link in links:
+            nutri_r = await db.execute(sa_select(_User).where(_User.id == link.nutritionist_id))
+            nutri = nutri_r.scalar_one_or_none()
+            nutri_name = nutri.first_name if nutri else link.patient_name or "Nutricionista"
+            candidates.append((link, nutri_name))
+
+        # Filtra por nome se fornecido
+        if name_hint:
+            hint_low = name_hint.lower()
+            matched = [(l, n) for l, n in candidates if hint_low in n.lower()]
+            if len(matched) == 1:
+                link, nutri_name = matched[0]
+                user.conversation_state = "REVOKING"
+                user.state_data = {"link_id": str(link.id), "nutri_name": nutri_name}
+                self._set_timed_state(user, "REVOKING")
+                await db.commit()
+                return (
+                    f"⚠️ Tem certeza que deseja revogar o acesso de *{nutri_name}*?\n\n"
+                    "Ela não poderá mais ver seus registros.\n"
+                    "Responda *SIM* para confirmar ou *NÃO* para cancelar."
+                )
+            elif len(matched) == 0:
+                names = "\n".join(f"• {n}" for _, n in candidates)
+                return (
+                    f"Não encontrei nutricionista com esse nome.\n\nAcessos ativos:\n{names}\n\n"
+                    "Responda com: *revogar [nome exato]*"
+                )
+            # Mais de um match — lista para escolher
+            names = "\n".join(f"• {n}" for _, n in matched)
+            return (
+                f"Encontrei mais de uma nutricionista com esse nome:\n{names}\n\n"
+                "Por favor, informe o nome completo: *revogar [nome completo]*"
+            )
+
+        # Sem name_hint: lista todas e pede confirmação
+        if len(candidates) == 1:
+            link, nutri_name = candidates[0]
+            user.conversation_state = "REVOKING"
+            user.state_data = {"link_id": str(link.id), "nutri_name": nutri_name}
+            self._set_timed_state(user, "REVOKING")
+            await db.commit()
+            return (
+                f"⚠️ Tem certeza que deseja revogar o acesso de *{nutri_name}*?\n\n"
+                "Ela não poderá mais ver seus registros.\n"
+                "Responda *SIM* para confirmar ou *NÃO* para cancelar."
+            )
+
+        # Múltiplas — lista para escolher
+        names = "\n".join(f"• {n}" for _, n in candidates)
+        return (
+            f"Você tem {len(candidates)} nutricionistas com acesso:\n{names}\n\n"
+            "Responda com: *revogar [nome da nutricionista]*"
+        )
+
+    async def _handle_revoking(self, user: User, text: str, db: AsyncSession) -> str:
+        """Processa a confirmação SIM/NÃO da revogação de acesso."""
+        import uuid as _uuid
+        from app.models.nutritionist_patient import NutritionistPatient
+        from sqlalchemy import select as sa_select
+
+        txt = text.strip().lower()
+        data = user.state_data or {}
+        nutri_name = data.get("nutri_name", "a nutricionista")
+        link_id_str = data.get("link_id")
+
+        def _reset():
+            user.conversation_state = "IDLE"
+            user.state_data = None
+
+        if txt in CONFIRM_WORDS:
+            aceitar = True
+        elif txt in {"não", "nao", "n", "no", "cancelar", "cancela"}:
+            aceitar = False
+        else:
+            # Mantém estado — repergunata
+            user.conversation_state = "REVOKING"
+            user.state_data = data
+            self._set_timed_state(user, "REVOKING")
+            await db.commit()
+            return "Não entendi. Responda *SIM* para confirmar a revogação ou *NÃO* para cancelar."
+
+        _reset()
+
+        if not aceitar:
+            await db.commit()
+            return "Cancelado. O acesso de {} continua ativo.".format(nutri_name)
+
+        # Efetua revogação
+        if not link_id_str:
+            await db.commit()
+            return "Não consegui identificar o vínculo. Tente novamente com /privacidade."
+
+        try:
+            link_id = _uuid.UUID(link_id_str)
+        except ValueError:
+            await db.commit()
+            return "Erro interno: ID de vínculo inválido. Use /privacidade e tente novamente."
+
+        link_q = await db.execute(
+            sa_select(NutritionistPatient).where(NutritionistPatient.id == link_id)
+        )
+        link = link_q.scalar_one_or_none()
+
+        if not link or link.status != "active":
+            await db.commit()
+            return (
+                f"O vínculo com {nutri_name} não está mais ativo "
+                "(pode já ter sido revogado). Use /privacidade para verificar."
+            )
+
+        from datetime import datetime as _dt
+        link.status = "revoked"
+        link.revoked_at = _dt.now()
+        await db.commit()
+
+        return (
+            f"✅ *Pronto!* Acesso de *{nutri_name}* revogado com sucesso.\n\n"
+            "Ela não poderá mais ver seus dados no NutriBot.\n"
+            "Se quiser restaurar o acesso no futuro, peça um novo convite.\n\n"
+            "Seus dados continuam totalmente privados. 🔒"
+        )
 
 
 conversation_service = ConversationService()

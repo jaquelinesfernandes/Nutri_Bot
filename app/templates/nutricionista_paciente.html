@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+{% block title %}{{ patient.first_name or patient.patient_name }} — NutriBot{% endblock %}
+{% block body %}
+<style>
+  /* ── Layout compartilhado com o painel ──────────────────────────── */
+  .nutri-shell { display: flex; height: 100vh; }
+  .nutri-sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--sidebar-bg);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
+  }
+  .nsb-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .nsb-leaf {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    border-radius: 9px; display: grid; place-items: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .nsb-brand { font-weight: 600; font-size: 14px; color: #DDD8FF; }
+  .nsb-brand small { display: block; font-size: 11px; color: #7B78C8; font-weight: 400; }
+  .nsb-nav { flex: 1; padding: 14px 10px; }
+  .nsb-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 8px;
+    font-size: 13.5px; font-weight: 500; color: rgba(255,255,255,.45);
+    transition: background .15s, color .15s;
+    border-left: 3px solid transparent; cursor: pointer;
+    text-decoration: none; margin-bottom: 2px;
+  }
+  .nsb-link:hover { background: var(--sidebar-hov); color: rgba(255,255,255,.8); }
+  .nsb-link.active { background: var(--sidebar-act); color: #A5B4FC; border-left-color: var(--primary); }
+  .nsb-foot { padding: 12px 10px; border-top: 1px solid rgba(255,255,255,.06); }
+  .nsb-user { display: flex; align-items: center; gap: 9px; padding: 7px 10px; margin-bottom: 4px; }
+  .nsb-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 600; color: #fff;
+  }
+  .nsb-username { font-size: 12px; color: rgba(255,255,255,.55); }
+  .nsb-logout {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 8px 10px; border-radius: 8px;
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; color: rgba(255,255,255,.3); font-family: inherit;
+    transition: background .15s, color .15s;
+  }
+  .nsb-logout:hover { background: var(--sidebar-hov); color: rgba(255,255,255,.6); }
+
+  .nutri-main { flex: 1; overflow-y: auto; min-width: 0; }
+  .nutri-inner { max-width: 960px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  /* ── Cabeçalho do perfil ───────────────────────────────────────── */
+  .profile-header {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 14px; margin-bottom: 26px;
+  }
+  .profile-header-left { display: flex; align-items: center; gap: 14px; }
+  .back-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 13px; color: var(--text-3); text-decoration: none;
+    padding: 6px 10px; border-radius: 8px;
+    transition: background .15s, color .15s;
+  }
+  .back-link:hover { background: var(--card); color: var(--text-1); }
+  .patient-avatar {
+    width: 52px; height: 52px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    display: grid; place-items: center;
+    font-size: 22px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .patient-info h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.45rem; color: var(--text-1); margin: 0 0 3px;
+  }
+  .patient-meta { font-size: 12px; color: var(--text-3); }
+  .btn-pdf {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; border: none; border-radius: 10px; padding: 10px 18px;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    text-decoration: none; transition: opacity .2s;
+  }
+  .btn-pdf:hover { opacity: .88; }
+
+  /* ── Cards de resumo ───────────────────────────────────────────── */
+  .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
+  .summary-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 16px; padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .summary-card .num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem; color: var(--text-1); line-height: 1;
+  }
+  .summary-card .num.ok { color: #10B981; }
+  .summary-card .num.warn { color: #F59E0B; }
+  .summary-card .num.err { color: #EF4444; }
+  .summary-card .lbl { font-size: 12px; color: var(--text-3); margin-top: 5px; }
+
+  /* ── Gráfico ───────────────────────────────────────────────────── */
+  .chart-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 18px; padding: 22px 22px 18px;
+    box-shadow: var(--shadow-sm); margin-bottom: 26px;
+  }
+  .chart-card h2 {
+    font-size: 13.5px; font-weight: 700; color: var(--text-1);
+    margin: 0 0 18px;
+  }
+  .chart-wrap { position: relative; height: 200px; }
+
+  /* ── Seção notas clínicas ──────────────────────────────────────── */
+  .section-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 18px; padding: 22px; box-shadow: var(--shadow-sm);
+    margin-bottom: 26px;
+  }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 18px; flex-wrap: wrap; gap: 10px;
+  }
+  .section-header h2 { font-size: 14px; font-weight: 700; color: var(--text-1); margin: 0; }
+  .btn-nova-nota {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: rgba(99,102,241,.12); color: var(--primary);
+    border: none; border-radius: 8px; padding: 8px 14px;
+    font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: background .15s;
+  }
+  .btn-nova-nota:hover { background: rgba(99,102,241,.2); }
+
+  /* Notas */
+  .note-item {
+    border-left: 3px solid var(--primary);
+    padding: 10px 14px; margin-bottom: 12px;
+    background: rgba(99,102,241,.04); border-radius: 0 8px 8px 0;
+  }
+  .note-date { font-size: 11px; color: var(--text-3); margin-bottom: 5px; font-weight: 600; }
+  .note-text { font-size: 13.5px; color: var(--text-1); white-space: pre-wrap; }
+  .no-notes { text-align: center; padding: 30px 20px; color: var(--text-3); font-size: 13.5px; }
+
+  /* Formulário nova nota */
+  .nova-nota-form { display: none; border-top: 1px solid var(--card-b); padding-top: 18px; margin-top: 18px; }
+  .nova-nota-form.open { display: block; }
+  .form-row { margin-bottom: 14px; }
+  .form-row label { display: block; font-size: 12px; font-weight: 600; color: var(--text-2); margin-bottom: 5px; }
+  .form-row input, .form-row textarea {
+    width: 100%; background: var(--input-bg); border: 1px solid var(--card-b);
+    border-radius: 8px; padding: 9px 12px; font-family: inherit;
+    font-size: 13.5px; color: var(--text-1); resize: vertical;
+    box-sizing: border-box;
+  }
+  .form-row input:focus, .form-row textarea:focus {
+    outline: none; border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(99,102,241,.18);
+  }
+  .form-actions { display: flex; gap: 10px; }
+  .btn-save {
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; border: none; border-radius: 8px; padding: 9px 18px;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+  }
+  .btn-cancel {
+    background: none; border: 1px solid var(--card-b); border-radius: 8px;
+    padding: 9px 14px; font-family: inherit; font-size: 13.5px;
+    color: var(--text-2); cursor: pointer;
+  }
+
+  /* ── Histórico de refeições ────────────────────────────────────── */
+  .day-group { margin-bottom: 14px; }
+  .day-toggle {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 11px 16px; background: var(--card-b);
+    border-radius: 10px; cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--text-1);
+    border: none; width: 100%; font-family: inherit;
+    transition: background .15s;
+  }
+  .day-toggle:hover { background: rgba(99,102,241,.08); }
+  .day-kcal { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-3); }
+  .day-meals { display: none; border: 1px solid var(--card-b); border-radius: 0 0 10px 10px; overflow: hidden; }
+  .day-meals.open { display: block; }
+  .meal-row {
+    display: grid; grid-template-columns: 130px 1fr 90px;
+    padding: 10px 16px; font-size: 13px; align-items: start;
+    border-bottom: 1px solid var(--card-b);
+  }
+  .meal-row:last-child { border-bottom: none; }
+  .meal-type { font-weight: 600; color: var(--text-2); font-size: 12.5px; }
+  .meal-desc { color: var(--text-1); font-size: 13px; }
+  .meal-kcal { font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--text-3); text-align: right; }
+
+  /* Badge status */
+  .badge-active {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(16,185,129,.12); color: #059669;
+    border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 20px; right: 20px; z-index: 200;
+    background: #1E1B4B; color: #A5B4FC; border-radius: 10px;
+    padding: 12px 18px; font-size: 13.5px; font-weight: 500;
+    box-shadow: 0 4px 24px rgba(0,0,0,.35);
+    transform: translateY(40px); opacity: 0;
+    transition: transform .25s, opacity .25s;
+    max-width: 320px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.err { background: #3B1A1A; color: #F87171; }
+
+  /* Responsive */
+  @media (max-width: 700px) {
+    .nutri-sidebar { display: none; }
+    .summary-row { grid-template-columns: 1fr 1fr; }
+    .meal-row { grid-template-columns: 110px 1fr; }
+    .meal-kcal { display: none; }
+  }
+  @media (max-width: 480px) {
+    .summary-row { grid-template-columns: 1fr; }
+    .profile-header { flex-direction: column; align-items: flex-start; }
+  }
+</style>
+
+<div class="nutri-shell">
+  <!-- ── Sidebar ───────────────────────────────────────────────── -->
+  <aside class="nutri-sidebar">
+    <div class="nsb-logo">
+      <div class="nsb-leaf">🥗</div>
+      <div class="nsb-brand">NutriBot<small>Painel Nutricionista</small></div>
+    </div>
+    <nav class="nsb-nav">
+      <a href="/nutricionista/" class="nsb-link active">
+        <span>👥</span> Meus Pacientes
+      </a>
+    </nav>
+    <div class="nsb-foot">
+      <div class="nsb-user">
+        <div class="nsb-avatar">{{ (user.first_name or 'N')[0].upper() }}</div>
+        <span class="nsb-username">{{ user.first_name or user.email }}</span>
+      </div>
+      <form method="post" action="/api/auth/logout">
+        <button class="nsb-logout" type="submit">
+          <span>🚪</span> Sair
+        </button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- ── Conteúdo principal ────────────────────────────────────── -->
+  <main class="nutri-main">
+    <div class="nutri-inner">
+
+      <!-- Cabeçalho -->
+      <div class="profile-header">
+        <div class="profile-header-left">
+          <a href="/nutricionista/" class="back-link">← Pacientes</a>
+          <div class="patient-avatar">{{ (patient.first_name or link.patient_name or 'P')[0].upper() }}</div>
+          <div class="patient-info">
+            <h1>{{ patient.first_name or link.patient_name }}</h1>
+            <span class="patient-meta">
+              Vinculado em {{ link.consented_at.strftime('%d/%m/%Y') if link.consented_at else '—' }}
+              &nbsp;·&nbsp; <span class="badge-active">✓ Ativo</span>
+            </span>
+          </div>
+        </div>
+        <a href="/api/nutricionista/paciente/{{ patient.id }}/pdf"
+           class="btn-pdf" title="Baixar relatório PDF dos últimos 30 dias">
+          📄 Baixar PDF
+        </a>
+      </div>
+
+      <!-- Cards de resumo -->
+      <div class="summary-row">
+        <div class="summary-card">
+          {% set avg = avg_kcal_7d %}
+          {% set goal = goal_kcal or 2000 %}
+          {% if avg == 0 %}
+            <div class="num">—</div>
+          {% elif avg >= goal * 0.85 and avg <= goal * 1.15 %}
+            <div class="num ok">{{ avg }}</div>
+          {% elif avg < goal * 0.7 or avg > goal * 1.3 %}
+            <div class="num err">{{ avg }}</div>
+          {% else %}
+            <div class="num warn">{{ avg }}</div>
+          {% endif %}
+          <div class="lbl">Média kcal (7 dias)</div>
+        </div>
+        <div class="summary-card">
+          <div class="num">{{ goal_kcal or '—' }}</div>
+          <div class="lbl">Meta diária (kcal)</div>
+        </div>
+        <div class="summary-card">
+          <div class="num">{{ days_with_data_7d }}</div>
+          <div class="lbl">Dias com registro (7d)</div>
+        </div>
+      </div>
+
+      <!-- Gráfico 30 dias -->
+      <div class="chart-card">
+        <h2>📈 Calorias — últimos 30 dias</h2>
+        <div class="chart-wrap">
+          <canvas id="kcalChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Notas Clínicas -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2>📋 Notas Clínicas</h2>
+          <button class="btn-nova-nota" onclick="toggleNoteForm()">+ Nova nota</button>
+        </div>
+
+        <!-- Formulário (oculto inicialmente) -->
+        <div class="nova-nota-form" id="noteForm">
+          <div class="form-row">
+            <label for="consultDate">Data da consulta</label>
+            <input type="date" id="consultDate" name="consultation_date"
+                   max="{{ 'today' }}" required>
+          </div>
+          <div class="form-row">
+            <label for="noteText">Observações clínicas</label>
+            <textarea id="noteText" name="note_text" rows="5"
+                      placeholder="Anamnese, evolução, conduta nutricional, metas..." required></textarea>
+          </div>
+          <div class="form-actions">
+            <button class="btn-save" type="button" onclick="salvarNota()">Salvar nota</button>
+            <button class="btn-cancel" type="button" onclick="toggleNoteForm()">Cancelar</button>
+          </div>
+        </div>
+
+        <!-- Lista de notas -->
+        <div id="notesList">
+          {% if notes %}
+            {% for note in notes %}
+            <div class="note-item" data-note-id="{{ note.id }}">
+              <div class="note-date">🗓️ Consulta em {{ note.consultation_date.strftime('%d/%m/%Y') }}
+                &nbsp;·&nbsp; <span style="font-weight:400;">Adicionado em {{ note.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
+              </div>
+              <div class="note-text">{{ note.note_text }}</div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <p class="no-notes" id="emptyNotes">Nenhuma nota clínica ainda. Adicione a primeira nota após a consulta.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Histórico de refeições -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2>🍽️ Histórico de Refeições — 30 dias</h2>
+        </div>
+
+        {% if days_sorted %}
+          {% for day in days_sorted %}
+            {% set logs = days_map[day] %}
+            {% set day_kcal = logs | sum(attribute='total_calories_kcal') | round(0) | int %}
+            <div class="day-group">
+              <button class="day-toggle" onclick="toggleDay('{{ day.isoformat() }}')">
+                <span>{{ day.strftime('%A, %d/%m/%Y') | title }}</span>
+                <span class="day-kcal">{{ day_kcal }} kcal</span>
+              </button>
+              <div class="day-meals" id="day-{{ day.isoformat() }}">
+                {% for log in logs | sort(attribute='logged_at') %}
+                <div class="meal-row">
+                  <div class="meal-type">{{ meal_labels.get(log.meal_type, log.meal_type) }}</div>
+                  <div class="meal-desc">
+                    {% if log.food_items %}
+                      {% for fi in log.food_items %}
+                        {{ fi.food_name }}{% if fi.quantity_g %} ({{ fi.quantity_g|int }}g){% endif %}{% if not loop.last %}, {% endif %}
+                      {% endfor %}
+                    {% else %}
+                      <span style="color:var(--text-3)">—</span>
+                    {% endif %}
+                  </div>
+                  <div class="meal-kcal">{{ log.total_calories_kcal | round(0) | int }} kcal</div>
+                </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% endfor %}
+        {% else %}
+          <div class="no-notes">Nenhum registro de refeição nos últimos 30 dias.</div>
+        {% endif %}
+      </div>
+
+    </div><!-- /nutri-inner -->
+  </main>
+</div><!-- /nutri-shell -->
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- Chart.js -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ── Dados do servidor ───────────────────────────────────────────────────────
+const CHART_LABELS = {{ chart_labels | tojson }};
+const CHART_KCAL   = {{ chart_kcal | tojson }};
+const GOAL_KCAL    = {{ goal_kcal or 2000 }};
+const PATIENT_ID   = "{{ patient.id }}";
+
+// ── Gráfico 30 dias ─────────────────────────────────────────────────────────
+(function() {
+  const isDark = document.documentElement.dataset.theme === 'dark'
+    || (!document.documentElement.dataset.theme
+        && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
+  const textColor  = isDark ? '#C4C4E0' : '#6B7280';
+  const gridColor  = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  const barColor   = 'rgba(99,102,241,.72)';
+  const goalColor  = 'rgba(16,185,129,.7)';
+
+  const ctx = document.getElementById('kcalChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: CHART_LABELS,
+      datasets: [
+        {
+          label: 'Kcal consumidas',
+          data: CHART_KCAL,
+          backgroundColor: CHART_KCAL.map(v =>
+            v === 0 ? 'rgba(156,163,175,.15)' :
+            v >= GOAL_KCAL * .85 && v <= GOAL_KCAL * 1.15 ? 'rgba(16,185,129,.5)' :
+            v < GOAL_KCAL * .7 || v > GOAL_KCAL * 1.3 ? 'rgba(239,68,68,.5)' :
+            barColor
+          ),
+          borderRadius: 5, borderSkipped: false,
+        },
+        {
+          label: 'Meta (' + GOAL_KCAL + ' kcal)',
+          data: Array(CHART_LABELS.length).fill(GOAL_KCAL),
+          type: 'line',
+          borderColor: goalColor,
+          borderWidth: 1.5, borderDash: [5, 4],
+          pointRadius: 0, fill: false,
+        },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { labels: { color: textColor, font: { size: 11.5 }, boxWidth: 12 } },
+        tooltip: {
+          callbacks: {
+            label: ctx => ctx.dataset.label.includes('Meta')
+              ? ctx.dataset.label
+              : ` ${ctx.parsed.y} kcal`,
+          },
+        },
+      },
+      scales: {
+        x: { ticks: { color: textColor, font: { size: 10.5 }, maxRotation: 0 },
+             grid: { color: gridColor } },
+        y: { ticks: { color: textColor, font: { size: 11 } },
+             grid: { color: gridColor },
+             beginAtZero: true },
+      },
+    },
+  });
+})();
+
+// ── Toggle dia refeições ─────────────────────────────────────────────────────
+function toggleDay(dateStr) {
+  const el = document.getElementById('day-' + dateStr);
+  if (el) el.classList.toggle('open');
+}
+
+// ── Nova nota ────────────────────────────────────────────────────────────────
+function toggleNoteForm() {
+  const form = document.getElementById('noteForm');
+  form.classList.toggle('open');
+  if (form.classList.contains('open')) {
+    // Preenche a data com hoje
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById('consultDate').value = today;
+    document.getElementById('consultDate').max = today;
+  }
+}
+
+function showToast(msg, isErr) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast' + (isErr ? ' err' : '') + ' show';
+  setTimeout(() => t.classList.remove('show'), 3500);
+}
+
+async function salvarNota() {
+  const date = document.getElementById('consultDate').value;
+  const text = document.getElementById('noteText').value.trim();
+
+  if (!date || !text) {
+    showToast('Preencha a data e o texto da nota.', true);
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append('consultation_date', date);
+  formData.append('note_text', text);
+
+  try {
+    const resp = await fetch('/api/nutricionista/paciente/' + PATIENT_ID + '/nota', {
+      method: 'POST', body: formData,
+    });
+    if (!resp.ok) {
+      const err = await resp.json();
+      showToast('Erro: ' + (err.detail || 'Falha ao salvar'), true);
+      return;
+    }
+    const nota = await resp.json();
+
+    // Insere nota na lista
+    const emptyEl = document.getElementById('emptyNotes');
+    if (emptyEl) emptyEl.remove();
+
+    const dateDisplay = new Date(nota.consultation_date + 'T12:00:00')
+      .toLocaleDateString('pt-BR');
+    const createdAt = new Date(nota.created_at).toLocaleString('pt-BR');
+    const noteHtml = `
+      <div class="note-item" data-note-id="${nota.id}">
+        <div class="note-date">🗓️ Consulta em ${dateDisplay}
+          &nbsp;·&nbsp; <span style="font-weight:400;">Adicionado em ${createdAt}</span>
+        </div>
+        <div class="note-text">${nota.note_text.replace(/</g,'&lt;').replace(/>/g,'&gt;')}</div>
+      </div>`;
+    document.getElementById('notesList').insertAdjacentHTML('afterbegin', noteHtml);
+
+    // Limpa formulário
+    document.getElementById('noteText').value = '';
+    document.getElementById('noteForm').classList.remove('open');
+    showToast('✅ Nota salva com sucesso!');
+  } catch (e) {
+    showToast('Erro de rede. Tente novamente.', true);
+  }
+}
+</script>
+{% endblock %}

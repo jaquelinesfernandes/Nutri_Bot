@@ -1,14 +1,18 @@
-"""Painel B2B Nutricionistas — Sprint B2B-1.
+"""Painel B2B Nutricionistas — Sprint B2B-1 + B2B-2.
 
 Rotas HTML (Jinja2):
-  GET  /nutricionista/cadastro           — tela de cadastro
-  GET  /nutricionista/                   — painel (requer plano 'nutritionist')
+  GET  /nutricionista/cadastro              — tela de cadastro
+  GET  /nutricionista/                      — painel (requer plano 'nutritionist')
+  GET  /nutricionista/paciente/{id}         — perfil do paciente (B2B-2)
 
 Rotas API:
-  POST /api/nutricionista/register       — cria conta nutricionista (trial 30d)
-  POST /api/nutricionista/convite        — gera convite para paciente
-  PATCH /api/nutricionista/convite/{token} — aceita/recusa convite (chamado pelo bot)
-  GET  /api/nutricionista/pacientes      — lista pacientes ativos (JSON)
+  POST /api/nutricionista/register          — cria conta nutricionista (trial 30d)
+  POST /api/nutricionista/convite           — gera convite para paciente
+  PATCH /api/nutricionista/convite/{token}  — aceita/recusa convite (chamado pelo bot)
+  PATCH /api/nutricionista/revogar/{id}     — revogação LGPD (chamado pelo bot)
+  GET  /api/nutricionista/pacientes         — lista pacientes ativos (JSON)
+  POST /api/nutricionista/paciente/{id}/nota — adiciona nota clínica (B2B-2)
+  GET  /api/nutricionista/paciente/{id}/pdf  — download PDF do paciente (B2B-2)
 
 Autenticação: cookie JWT reutilizado do sistema existente.
 O login em /auth/login-form já redireciona para /nutricionista/ quando plan='nutritionist'.
@@ -29,6 +33,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.session import get_db
+from app.models.clinical_note import ClinicalNote
 from app.models.nutritionist_patient import NutritionistPatient
 from app.models.user import User
 from app.utils.jwt import create_access_token, get_current_user_optional
@@ -456,3 +461,269 @@ async def listar_pacientes(
             })
 
     return {"patients": patients, "total": len(patients)}
+
+
+# ── B2B-2: Perfil do paciente ─────────────────────────────────────────────────
+
+@router.get("/nutricionista/paciente/{patient_id}", response_class=HTMLResponse)
+async def perfil_paciente(
+    patient_id: str,
+    request: Request,
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Perfil completo do paciente: gráfico 30 dias, registros diários, notas clínicas."""
+    if user is None:
+        return RedirectResponse(url="/login", status_code=302)
+    if not user.is_nutritionist:
+        return RedirectResponse(url="/dashboard", status_code=302)
+
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(patient_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ID inválido")
+
+    # Verifica vínculo ativo
+    link_result = await db.execute(
+        select(NutritionistPatient).where(
+            NutritionistPatient.nutritionist_id == user.id,
+            NutritionistPatient.patient_id == pid,
+            NutritionistPatient.status == "active",
+        )
+    )
+    link = link_result.scalar_one_or_none()
+    if not link:
+        raise HTTPException(status_code=403, detail="Sem acesso a este paciente")
+
+    pat_result = await db.execute(select(User).where(User.id == pid))
+    patient = pat_result.scalar_one_or_none()
+    if not patient or patient.deleted_at:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+
+    from datetime import timedelta as _td
+    from app.models.meal_log import MealLog
+    from sqlalchemy.orm import selectinload
+
+    tz = ZoneInfo("America/Sao_Paulo")
+    now = datetime.now(tz)
+    today = now.date()
+
+    # ── Gráfico kcal — últimos 30 dias ────────────────────────────────────────
+    chart_labels: list[str] = []
+    chart_kcal: list[float] = []
+    for i in range(29, -1, -1):
+        d = today - _td(days=i)
+        ds = datetime(d.year, d.month, d.day, 0, 0, tzinfo=tz)
+        de = datetime(d.year, d.month, d.day, 23, 59, 59, tzinfo=tz)
+        r = await db.execute(
+            select(MealLog).where(
+                MealLog.user_id == pid,
+                MealLog.confirmed.is_(True),
+                MealLog.logged_at >= ds,
+                MealLog.logged_at <= de,
+            )
+        )
+        day_meals = r.scalars().all()
+        chart_labels.append(d.strftime("%d/%m"))
+        chart_kcal.append(round(sum(m.total_calories_kcal for m in day_meals), 1))
+
+    # ── Registros por dia — últimos 30 dias ───────────────────────────────────
+    period_start = datetime(
+        (today - _td(days=29)).year,
+        (today - _td(days=29)).month,
+        (today - _td(days=29)).day,
+        0, 0, tzinfo=tz,
+    )
+    all_logs_result = await db.execute(
+        select(MealLog)
+        .options(selectinload(MealLog.food_items))
+        .where(
+            MealLog.user_id == pid,
+            MealLog.confirmed.is_(True),
+            MealLog.logged_at >= period_start,
+        )
+        .order_by(MealLog.logged_at.desc())
+    )
+    all_logs = all_logs_result.scalars().all()
+
+    # Agrupa por data
+    from collections import defaultdict
+    days_map: dict = defaultdict(list)
+    for log in all_logs:
+        d = log.logged_at.astimezone(tz).date()
+        days_map[d].append(log)
+    days_sorted = sorted(days_map.keys(), reverse=True)
+
+    _MEAL_LABELS = {
+        "breakfast": "☀️ Café",
+        "morning_snack": "🍌 Lanche manhã",
+        "lunch": "🍽️ Almoço",
+        "afternoon_snack": "🍊 Lanche tarde",
+        "dinner": "🌙 Jantar",
+        "snack": "🍎 Lanche",
+        "other": "🍴 Outro",
+    }
+
+    # ── Notas clínicas — mais recentes primeiro ────────────────────────────────
+    notes_result = await db.execute(
+        select(ClinicalNote)
+        .where(
+            ClinicalNote.nutritionist_id == user.id,
+            ClinicalNote.patient_id == pid,
+        )
+        .order_by(ClinicalNote.consultation_date.desc())
+    )
+    notes = notes_result.scalars().all()
+
+    # ── Resumo 7 dias ─────────────────────────────────────────────────────────
+    week_kcal = sum(chart_kcal[-7:])
+    days_with_data = sum(1 for v in chart_kcal[-7:] if v > 0)
+    avg_kcal_7d = round(week_kcal / days_with_data) if days_with_data else 0
+
+    return templates.TemplateResponse(
+        request=request,
+        name="nutricionista_paciente.html",
+        context={
+            "user": user,
+            "patient": patient,
+            "link": link,
+            "chart_labels": chart_labels,
+            "chart_kcal": chart_kcal,
+            "days_sorted": days_sorted,
+            "days_map": dict(days_map),
+            "meal_labels": _MEAL_LABELS,
+            "notes": notes,
+            "avg_kcal_7d": avg_kcal_7d,
+            "days_with_data_7d": days_with_data,
+            "goal_kcal": patient.daily_calorie_goal,
+        },
+    )
+
+
+# ── B2B-2: Adicionar nota clínica ────────────────────────────────────────────
+
+@router.post("/api/nutricionista/paciente/{patient_id}/nota")
+async def adicionar_nota(
+    patient_id: str,
+    note_text: str = Form(...),
+    consultation_date: str = Form(...),
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Adiciona nota clínica vinculada a uma data de consulta.
+    Escrita exclusiva da nutricionista — o paciente não vê esta nota.
+    """
+    nutri = _require_nutritionist(user)
+
+    import uuid as _uuid
+    from datetime import date as _date
+
+    try:
+        pid = _uuid.UUID(patient_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ID inválido")
+
+    try:
+        consult_date = _date.fromisoformat(consultation_date)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="Data inválida (use YYYY-MM-DD)")
+
+    if consult_date > _date.today():
+        raise HTTPException(status_code=422, detail="Data de consulta não pode ser futura")
+
+    if not note_text.strip():
+        raise HTTPException(status_code=422, detail="Nota não pode estar vazia")
+
+    # Verifica vínculo ativo
+    link_result = await db.execute(
+        select(NutritionistPatient).where(
+            NutritionistPatient.nutritionist_id == nutri.id,
+            NutritionistPatient.patient_id == pid,
+            NutritionistPatient.status == "active",
+        )
+    )
+    if not link_result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Sem vínculo ativo com este paciente")
+
+    note = ClinicalNote(
+        nutritionist_id=nutri.id,
+        patient_id=pid,
+        note_text=note_text.strip(),
+        consultation_date=consult_date,
+    )
+    db.add(note)
+    await db.commit()
+    await db.refresh(note)
+
+    return JSONResponse({
+        "id": str(note.id),
+        "consultation_date": note.consultation_date.isoformat(),
+        "note_text": note.note_text,
+        "created_at": note.created_at.isoformat(),
+    }, status_code=201)
+
+
+# ── B2B-2: Download PDF do paciente ──────────────────────────────────────────
+
+@router.get("/api/nutricionista/paciente/{patient_id}/pdf")
+async def baixar_pdf_paciente(
+    patient_id: str,
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Gera e retorna o PDF dos últimos 30 dias do paciente.
+
+    Reutiliza report_service.generate_report() existente.
+    O PDF não é salvo no banco (save=False) — geração sob demanda.
+    """
+    from datetime import date as _date, timedelta as _td
+    from fastapi.responses import Response as _Response
+    from app.services.report import report_service
+
+    nutri = _require_nutritionist(user)
+
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(patient_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ID inválido")
+
+    # Verifica vínculo ativo
+    link_result = await db.execute(
+        select(NutritionistPatient).where(
+            NutritionistPatient.nutritionist_id == nutri.id,
+            NutritionistPatient.patient_id == pid,
+            NutritionistPatient.status == "active",
+        )
+    )
+    if not link_result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Sem vínculo ativo com este paciente")
+
+    pat_result = await db.execute(select(User).where(User.id == pid))
+    patient = pat_result.scalar_one_or_none()
+    if not patient or patient.deleted_at:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+
+    end_date = _date.today()
+    start_date = end_date - _td(days=29)
+
+    try:
+        file_bytes, ext = await report_service.generate_report(
+            user=patient,
+            start_date=start_date,
+            end_date=end_date + _td(days=1),
+            period_type="monthly",
+            db=db,
+            save=False,
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao gerar PDF: {e}")
+
+    media_type = "application/pdf" if ext == "pdf" else "text/html"
+    fname = f"nutribot_{patient.first_name or 'paciente'}_{end_date.strftime('%Y-%m-%d')}.{ext}"
+    return _Response(
+        content=file_bytes,
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{fname}"'},
+    )
