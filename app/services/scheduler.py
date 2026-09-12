@@ -258,6 +258,31 @@ async def job_quarterly_report() -> None:
     await _send_periodic_report("quarterly")
 
 
+async def job_expire_invites() -> None:
+    """Meia-noite: marca como 'expired' os convites de nutricionistas vencidos.
+
+    Um convite é válido por 7 dias. Expirar garante que convites antigos não
+    fiquem eternamente em 'pending' no painel da nutricionista.
+    """
+    from app.db.session import AsyncSessionLocal
+    from app.models.nutritionist_patient import NutritionistPatient
+    from sqlalchemy import update as sa_update
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            sa_update(NutritionistPatient)
+            .where(
+                NutritionistPatient.status == "pending",
+                NutritionistPatient.expires_at < datetime.now(ZoneInfo("UTC")),
+            )
+            .values(status="expired")
+            .execution_options(synchronize_session=False)
+        )
+        expired_count = result.rowcount
+        await db.commit()
+        logger.info(f"[INVITES] {expired_count} convites marcados como expirados")
+
+
 async def job_reengagement() -> None:
     """Segunda 10h: re-engaja usuários que não acessam há 3+ dias."""
     from app.db.session import AsyncSessionLocal
@@ -347,6 +372,12 @@ async def start_scheduler() -> AsyncIOScheduler:
     scheduler.add_job(
         job_reengagement, CronTrigger(day_of_week="mon", hour=10, minute=0, timezone=SP_TZ),
         id="reengagement", replace_existing=True,
+    )
+
+    # B2B — expiração de convites de nutricionistas (meia-noite todo dia)
+    scheduler.add_job(
+        job_expire_invites, CronTrigger(hour=0, minute=5, timezone=SP_TZ),
+        id="expire_invites", replace_existing=True,
     )
 
     scheduler.start()

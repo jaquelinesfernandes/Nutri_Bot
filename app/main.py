@@ -143,6 +143,7 @@ from app.routers import (  # noqa: E402
     dashboard,
     health,
     meals,
+    nutritionist,
     reports,
     users,
     webhook_payment,
@@ -164,3 +165,6 @@ app.include_router(reports.router)
 
 # ── Plataforma web (Jinja2) ──
 app.include_router(dashboard.router)
+
+# ── Painel B2B Nutricionistas (HTML + API) ──
+app.include_router(nutritionist.router)

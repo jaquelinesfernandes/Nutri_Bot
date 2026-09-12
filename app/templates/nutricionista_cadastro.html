@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Cadastro Nutricionista — NutriBot{% endblock %}
+{% block body %}
+<style>
+  .auth-wrap {
+    min-height: 100dvh;
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px 16px;
+    background: var(--surface);
+  }
+  .auth-col {
+    width: 100%; max-width: 480px;
+    display: flex; flex-direction: column; gap: 20px;
+  }
+  .auth-logo { text-align: center; padding-bottom: 4px; }
+  .auth-logo .icon { font-size: 2.6rem; line-height: 1; display: block; }
+  .auth-logo h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.75rem; color: var(--text-1); margin: 8px 0 4px;
+  }
+  .auth-logo p { font-size: .875rem; color: var(--text-2); margin: 0; }
+
+  .auth-card {
+    background: var(--card);
+    border: 1px solid var(--card-b);
+    border-radius: 20px;
+    box-shadow: var(--shadow-md);
+    padding: 32px 28px;
+  }
+  .auth-card h2 {
+    font-size: 1.1rem; font-weight: 600; color: var(--text-1); margin-bottom: 20px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+  .form-group label {
+    font-size: 12px; font-weight: 600; color: var(--text-2); letter-spacing: .03em;
+    text-transform: uppercase;
+  }
+  .form-input {
+    width: 100%; padding: 11px 14px;
+    border: 1.5px solid var(--card-b); border-radius: 10px;
+    background: var(--surface); color: var(--text-1);
+    font-family: inherit; font-size: 14px;
+    transition: border-color .2s;
+    outline: none;
+  }
+  .form-input:focus { border-color: var(--primary); }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 480px) { .form-row { grid-template-columns: 1fr; } }
+
+  .hint { font-size: 11.5px; color: var(--text-3); margin-top: 3px; }
+
+  .submit-btn {
+    width: 100%; padding: 13px;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; border: none; border-radius: 12px;
+    font-family: inherit; font-size: 15px; font-weight: 600;
+    cursor: pointer; margin-top: 6px;
+    transition: opacity .2s, transform .15s;
+  }
+  .submit-btn:hover { opacity: .92; transform: translateY(-1px); }
+  .submit-btn:active { opacity: 1; transform: translateY(0); }
+
+  .error-box {
+    background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.3);
+    color: #EF4444; border-radius: 10px; padding: 11px 14px;
+    font-size: 13px; margin-bottom: 14px;
+  }
+
+  .trial-badge {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--primary-lt); border: 1px solid rgba(99,102,241,.2);
+    border-radius: 12px; padding: 13px 16px;
+    font-size: 13px; color: var(--primary);
+  }
+  .trial-badge strong { font-weight: 600; }
+
+  .divider { text-align: center; font-size: 12.5px; color: var(--text-3); margin: 10px 0; }
+  .login-link { text-align: center; font-size: 13px; color: var(--text-2); }
+  .login-link a { color: var(--primary); font-weight: 600; text-decoration: none; }
+  .login-link a:hover { text-decoration: underline; }
+
+  .terms-check { display: flex; align-items: flex-start; gap: 9px; margin-top: 4px; }
+  .terms-check input[type=checkbox] { margin-top: 2px; flex-shrink: 0; }
+  .terms-check span { font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .terms-check a { color: var(--primary); }
+</style>
+
+<div class="auth-wrap">
+  <div class="auth-col">
+    <div class="auth-logo">
+      <span class="icon">🥗</span>
+      <h1>NutriBot</h1>
+      <p>Painel para Nutricionistas</p>
+    </div>
+
+    <!-- Badge trial -->
+    <div class="trial-badge">
+      🎁 <span><strong>30 dias grátis</strong> — sem cartão de crédito. Cancele quando quiser.</span>
+    </div>
+
+    <div class="auth-card">
+      <h2>Criar conta de nutricionista</h2>
+
+      {% if error %}
+      <div class="error-box">⚠️ {{ error }}</div>
+      {% endif %}
+
+      <form method="POST" action="/api/nutricionista/register">
+        <div class="form-group">
+          <label for="name">Nome completo</label>
+          <input class="form-input" type="text" id="name" name="name"
+                 value="{{ form.name if form else '' }}"
+                 placeholder="Dra. Ana Lima" required autocomplete="name">
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="crn">CRN <span style="color:var(--over-c)">*</span></label>
+            <input class="form-input" type="text" id="crn" name="crn"
+                   value="{{ form.crn if form else '' }}"
+                   placeholder="CRN-3 12345/P" required>
+            <span class="hint">Validação manual no beta · sem consulta ao CFN</span>
+          </div>
+          <div class="form-group">
+            <label for="cpf_cnpj">CPF / CNPJ</label>
+            <input class="form-input" type="text" id="cpf_cnpj" name="cpf_cnpj"
+                   placeholder="Para emissão de NFS-e" required>
+            <span class="hint">Necessário para nota fiscal</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="email">E-mail profissional</label>
+          <input class="form-input" type="email" id="email" name="email"
+                 value="{{ form.email if form else '' }}"
+                 placeholder="dra.ana@clinica.com" required autocomplete="email">
+        </div>
+
+        <div class="form-group">
+          <label for="password">Senha</label>
+          <input class="form-input" type="password" id="password" name="password"
+                 placeholder="Mínimo 8 caracteres" required minlength="8"
+                 autocomplete="new-password">
+        </div>
+
+        <div class="terms-check">
+          <input type="checkbox" id="terms" required>
+          <span>Concordo com os <a href="#" target="_blank">Termos de Uso</a> e a
+                <a href="#" target="_blank">Política de Privacidade</a>
+                (inclui cláusula LGPD para dados de saúde dos pacientes)</span>
+        </div>
+
+        <button type="submit" class="submit-btn" style="margin-top: 18px;">
+          Criar conta e começar trial gratuito →
+        </button>
+      </form>
+    </div>
+
+    <div class="login-link">
+      Já tem conta? <a href="/login">Entrar no painel</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

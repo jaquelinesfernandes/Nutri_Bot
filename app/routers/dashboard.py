@@ -56,8 +56,10 @@ async def magic_link(
         return RedirectResponse(url="/login?error=usuario_nao_encontrado", status_code=302)
 
     # Gera sessão de longa duração e redireciona
+    # Nutricionistas vão ao painel B2B; demais usuários ao dashboard pessoal
     session_token = create_access_token(user.id)
-    return _cookie_response("/dashboard", session_token, settings.app_env == "production")
+    redirect_url = "/nutricionista/" if user.plan == "nutritionist" else "/dashboard"
+    return _cookie_response(redirect_url, session_token, settings.app_env == "production")
 
 
 _MEAL_LABELS = {
@@ -160,7 +162,9 @@ async def login_form(
         )
 
     token = create_access_token(user.id)
-    return _cookie_response("/dashboard", token, cfg.app_env == "production")
+    # Nutricionistas vão direto ao painel B2B
+    redirect_url = "/nutricionista/" if user.plan == "nutritionist" else "/dashboard"
+    return _cookie_response(redirect_url, token, cfg.app_env == "production")
 
 
 @router.get("/cadastro", response_class=HTMLResponse)

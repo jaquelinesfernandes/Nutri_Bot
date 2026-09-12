@@ -1,0 +1,447 @@
+{% extends "base.html" %}
+{% block title %}Painel Nutricionista — NutriBot{% endblock %}
+{% block body %}
+<style>
+  /* ── Layout específico nutricionista ─────────────────────────── */
+  .nutri-shell { display: flex; height: 100vh; }
+
+  /* Sidebar adaptada */
+  .nutri-sidebar {
+    width: 220px; flex-shrink: 0;
+    background: var(--sidebar-bg);
+    display: flex; flex-direction: column;
+    position: sticky; top: 0; height: 100vh; overflow: hidden;
+  }
+  .nsb-logo {
+    display: flex; align-items: center; gap: 10px;
+    padding: 22px 20px 18px;
+    border-bottom: 1px solid rgba(255,255,255,.06);
+  }
+  .nsb-leaf {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    border-radius: 9px; display: grid; place-items: center;
+    font-size: 16px; flex-shrink: 0;
+  }
+  .nsb-brand { font-weight: 600; font-size: 14px; color: #DDD8FF; }
+  .nsb-brand small { display: block; font-size: 11px; color: #7B78C8; font-weight: 400; }
+  .nsb-nav { flex: 1; padding: 14px 10px; }
+  .nsb-link {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 10px; border-radius: 8px;
+    font-size: 13.5px; font-weight: 500; color: rgba(255,255,255,.45);
+    transition: background .15s, color .15s;
+    border-left: 3px solid transparent; cursor: pointer;
+    text-decoration: none; margin-bottom: 2px;
+  }
+  .nsb-link:hover { background: var(--sidebar-hov); color: rgba(255,255,255,.8); }
+  .nsb-link.active { background: var(--sidebar-act); color: #A5B4FC; border-left-color: var(--primary); }
+  .nsb-foot { padding: 12px 10px; border-top: 1px solid rgba(255,255,255,.06); }
+  .nsb-user { display: flex; align-items: center; gap: 9px; padding: 7px 10px; margin-bottom: 4px; }
+  .nsb-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    display: grid; place-items: center;
+    font-size: 12px; font-weight: 600; color: #fff;
+  }
+  .nsb-username { font-size: 12px; color: rgba(255,255,255,.55); }
+  .nsb-logout {
+    display: flex; align-items: center; gap: 10px;
+    width: 100%; padding: 8px 10px; border-radius: 8px;
+    background: none; border: none; cursor: pointer;
+    font-size: 13px; color: rgba(255,255,255,.3); font-family: inherit;
+    transition: background .15s, color .15s;
+  }
+  .nsb-logout:hover { background: var(--sidebar-hov); color: rgba(255,255,255,.6); }
+
+  /* Main */
+  .nutri-main { flex: 1; overflow-y: auto; min-width: 0; }
+  .nutri-inner { max-width: 960px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  /* Trial banner */
+  .trial-banner {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; border-radius: 14px; padding: 14px 18px; margin-bottom: 22px;
+    flex-wrap: wrap;
+  }
+  .trial-banner p { font-size: 13.5px; margin: 0; }
+  .trial-banner strong { font-weight: 700; }
+  .trial-btn {
+    background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4);
+    color: #fff; border-radius: 8px; padding: 7px 16px;
+    font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    font-family: inherit; text-decoration: none;
+  }
+  .trial-btn:hover { background: rgba(255,255,255,.3); }
+
+  /* Stat cards */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
+  .stat-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 16px; padding: 18px 20px;
+    box-shadow: var(--shadow-sm);
+  }
+  .stat-card .num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem; color: var(--text-1); line-height: 1;
+  }
+  .stat-card .num.warn { color: #F59E0B; }
+  .stat-card .lbl { font-size: 12px; color: var(--text-3); margin-top: 5px; }
+
+  /* Convidar btn */
+  .invite-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
+  }
+  .pg-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--text-1); }
+  .btn-invite {
+    display: flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; border: none; border-radius: 10px; padding: 10px 18px;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: opacity .2s;
+  }
+  .btn-invite:hover { opacity: .88; }
+
+  /* Patient table */
+  .patients-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 18px; overflow: hidden;
+    box-shadow: var(--shadow-sm);
+  }
+  .pt-header {
+    display: grid;
+    grid-template-columns: 1fr 130px 100px 90px;
+    padding: 10px 18px;
+    font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+    text-transform: uppercase; color: var(--text-3);
+    border-bottom: 1px solid var(--card-b);
+  }
+  .pt-row {
+    display: grid;
+    grid-template-columns: 1fr 130px 100px 90px;
+    padding: 13px 18px; align-items: center;
+    border-bottom: 1px solid var(--card-b);
+    transition: background .15s;
+    text-decoration: none; color: inherit;
+  }
+  .pt-row:last-child { border-bottom: none; }
+  .pt-row:hover { background: rgba(99,102,241,.04); }
+  .pt-name { font-weight: 600; font-size: 13.5px; color: var(--text-1); }
+  .pt-plan { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+  .pt-last { font-size: 12.5px; color: var(--text-2); }
+  .pt-kcal { font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--text-2); }
+  .badge-inactive {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(245,158,11,.12); color: #D97706;
+    border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
+  .badge-pending {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(99,102,241,.1); color: var(--primary);
+    border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
+
+  /* Empty state */
+  .empty-state { text-align: center; padding: 56px 24px; }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+  .empty-state h3 { font-size: 1.1rem; color: var(--text-1); margin-bottom: 8px; }
+  .empty-state p { font-size: 13.5px; color: var(--text-2); max-width: 340px; margin: 0 auto; }
+
+  /* Modal */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 100;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card); border-radius: 20px; padding: 28px;
+    width: 100%; max-width: 460px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .modal h3 { font-size: 1.15rem; font-weight: 600; margin-bottom: 18px; color: var(--text-1); }
+  .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 14px; }
+  .form-group label { font-size: 11.5px; font-weight: 600; color: var(--text-2);
+    text-transform: uppercase; letter-spacing: .04em; }
+  .form-input {
+    width: 100%; padding: 10px 13px; border: 1.5px solid var(--card-b);
+    border-radius: 9px; background: var(--surface); color: var(--text-1);
+    font-family: inherit; font-size: 13.5px; outline: none;
+  }
+  .form-input:focus { border-color: var(--primary); }
+  .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 6px; }
+  .btn-cancel {
+    padding: 9px 18px; border-radius: 9px; border: 1.5px solid var(--card-b);
+    background: none; color: var(--text-2); font-family: inherit; font-size: 13.5px;
+    cursor: pointer;
+  }
+  .btn-cancel:hover { background: var(--primary-lt); }
+  .btn-primary {
+    padding: 9px 20px; border-radius: 9px; border: none;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; font-family: inherit; font-size: 13.5px; font-weight: 600;
+    cursor: pointer;
+  }
+
+  /* Link gerado */
+  .invite-result {
+    display: none; margin-top: 16px;
+    background: var(--primary-lt); border: 1px solid rgba(99,102,241,.2);
+    border-radius: 12px; padding: 14px;
+  }
+  .invite-result p { font-size: 12.5px; color: var(--text-2); margin-bottom: 8px; }
+  .link-row { display: flex; gap: 8px; align-items: center; }
+  .link-input {
+    flex: 1; padding: 8px 11px; border: 1.5px solid rgba(99,102,241,.25);
+    border-radius: 8px; background: var(--card); color: var(--text-1);
+    font-family: 'DM Mono', monospace; font-size: 12px; outline: none;
+  }
+  .btn-copy {
+    padding: 8px 14px; border-radius: 8px; border: none;
+    background: var(--primary); color: #fff; font-family: inherit; font-size: 12.5px;
+    cursor: pointer; font-weight: 600; white-space: nowrap;
+  }
+  .btn-copy:hover { background: var(--primary-d); }
+
+  @media (max-width: 640px) {
+    .nutri-sidebar { display: none; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .pt-header { display: none; }
+    .pt-row { grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 4px; }
+    .pt-last, .pt-kcal { font-size: 11px; }
+  }
+  @media (max-width: 400px) {
+    .stats-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<div class="nutri-shell">
+  <!-- Sidebar -->
+  <aside class="nutri-sidebar">
+    <div class="nsb-logo">
+      <div class="nsb-leaf">🥗</div>
+      <div class="nsb-brand">
+        NutriBot
+        <small>Nutricionista</small>
+      </div>
+    </div>
+    <nav class="nsb-nav">
+      <a href="/nutricionista/" class="nsb-link active">
+        👥 Pacientes
+      </a>
+      {# B2B-2: notas, histórico individual #}
+    </nav>
+    <div class="nsb-foot">
+      <div class="nsb-user">
+        <div class="nsb-avatar">{{ (user.first_name or 'N')[0].upper() }}</div>
+        <span class="nsb-username">{{ user.first_name or user.email }}</span>
+      </div>
+      <form method="POST" action="/api/auth/logout">
+        <button type="submit" class="nsb-logout">🚪 Sair</button>
+      </form>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main class="nutri-main">
+    <div class="nutri-inner">
+
+      {% if trial_days_left is not none %}
+      <div class="trial-banner">
+        <p>
+          🎁 <strong>Trial gratuito:</strong>
+          {% if trial_days_left > 0 %}
+            {{ trial_days_left }} dia{{ 's' if trial_days_left != 1 }} restante{{ 's' if trial_days_left != 1 }}
+          {% else %}
+            seu trial expirou hoje
+          {% endif %}
+          — ative o plano para continuar.
+        </p>
+        <a href="#" class="trial-btn">Assinar R$79,90/mês</a>
+      </div>
+      {% endif %}
+
+      <!-- Stats -->
+      <div class="stats-row">
+        <div class="stat-card">
+          <div class="num">{{ active_count }}</div>
+          <div class="lbl">Pacientes ativos</div>
+        </div>
+        <div class="stat-card">
+          <div class="num {% if inactive_count > 0 %}warn{% endif %}">{{ inactive_count }}</div>
+          <div class="lbl">Sem registro há +3 dias</div>
+        </div>
+        <div class="stat-card">
+          <div class="num">{{ pending_count }}</div>
+          <div class="lbl">Convites pendentes</div>
+        </div>
+      </div>
+
+      <!-- Header + botão convidar -->
+      <div class="invite-bar">
+        <span class="pg-title">Pacientes</span>
+        {% if active_count < max_patients %}
+        <button class="btn-invite" onclick="document.getElementById('modal-invite').classList.add('open')">
+          + Convidar paciente
+        </button>
+        {% else %}
+        <span style="font-size:12.5px;color:var(--text-3)">Limite de {{ max_patients }} pacientes atingido</span>
+        {% endif %}
+      </div>
+
+      <!-- Lista de pacientes -->
+      <div class="patients-card">
+        {% if patients_data %}
+        <div class="pt-header">
+          <span>Paciente</span>
+          <span>Último registro</span>
+          <span>Média kcal/7d</span>
+          <span>Status</span>
+        </div>
+        {% for p in patients_data %}
+        <a class="pt-row" href="/nutricionista/paciente/{{ p.patient.id }}">
+          <div>
+            <div class="pt-name">{{ p.patient.first_name or 'Paciente' }}</div>
+            <div class="pt-plan">{{ 'Premium' if p.patient.is_premium else 'Gratuito' }}</div>
+          </div>
+          <div class="pt-last">
+            {% if p.last_logged_at %}
+              {% set diff = (now_utc - p.last_logged_at.replace(tzinfo=none)).days if p.last_logged_at else 999 %}
+              {% if p.is_inactive %}
+                <span class="badge-inactive">⚠️ {{ diff }}d atrás</span>
+              {% else %}
+                {{ p.last_logged_at.strftime('%d/%m %H:%M') }}
+              {% endif %}
+            {% else %}
+              <span style="color:var(--text-3)">sem registro</span>
+            {% endif %}
+          </div>
+          <div class="pt-kcal">
+            {% if p.avg_kcal %}{{ p.avg_kcal | int }} kcal{% else %}—{% endif %}
+          </div>
+          <div>
+            {% if p.is_inactive %}<span class="badge-inactive">Inativo</span>{% endif %}
+          </div>
+        </a>
+        {% endfor %}
+
+        {% if pending_links %}
+        {% for lk in pending_links %}
+        <div class="pt-row" style="opacity:.65;cursor:default;">
+          <div>
+            <div class="pt-name">{{ lk.patient_name or 'Convidado' }}</div>
+            <div class="pt-plan">{{ lk.patient_phone or '—' }}</div>
+          </div>
+          <div class="pt-last">convite enviado</div>
+          <div class="pt-kcal">—</div>
+          <div><span class="badge-pending">⏳ Pendente</span></div>
+        </div>
+        {% endfor %}
+        {% endif %}
+
+        {% else %}
+        <div class="empty-state">
+          <div class="icon">👋</div>
+          <h3>Convide seu primeiro paciente</h3>
+          <p>Clique em "Convidar paciente" para gerar um link de acesso e enviar pelo WhatsApp ou Telegram.</p>
+        </div>
+        {% endif %}
+      </div>
+
+    </div>
+  </main>
+</div>
+
+<!-- Modal: Convidar Paciente -->
+<div class="modal-overlay" id="modal-invite" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <h3>Convidar paciente</h3>
+
+    <div class="form-group">
+      <label>Nome completo *</label>
+      <input class="form-input" type="text" id="inv-name" placeholder="Carlos Silva" required>
+    </div>
+    <div class="form-group">
+      <label>WhatsApp</label>
+      <input class="form-input" type="tel" id="inv-phone" placeholder="+55 11 99999-0000">
+    </div>
+    <div class="form-group">
+      <label>Telegram username</label>
+      <input class="form-input" type="text" id="inv-tg" placeholder="@carlos_silva">
+    </div>
+
+    <div class="invite-result" id="invite-result">
+      <p>🔗 Link gerado (válido por 7 dias) — envie ao paciente pelo WhatsApp ou Telegram:</p>
+      <div class="link-row">
+        <input class="link-input" type="text" id="invite-url" readonly>
+        <button class="btn-copy" onclick="copyInviteLink()">Copiar</button>
+      </div>
+      <p style="margin-top:10px;font-size:11.5px;color:var(--text-3)">
+        Quando o paciente clicar no link, o bot perguntará o consentimento automaticamente.
+      </p>
+    </div>
+
+    <p id="invite-error" style="display:none;color:#EF4444;font-size:13px;margin-top:8px;"></p>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="document.getElementById('modal-invite').classList.remove('open')">
+        Fechar
+      </button>
+      <button class="btn-primary" id="btn-gerar" onclick="gerarConvite()">
+        Gerar convite
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+async function gerarConvite() {
+  const name = document.getElementById('inv-name').value.trim();
+  const phone = document.getElementById('inv-phone').value.trim();
+  const tg = document.getElementById('inv-tg').value.trim();
+  const errEl = document.getElementById('invite-error');
+  const resultEl = document.getElementById('invite-result');
+  errEl.style.display = 'none';
+
+  if (!name) { errEl.textContent = 'Nome é obrigatório.'; errEl.style.display='block'; return; }
+  if (!phone && !tg) { errEl.textContent = 'Informe WhatsApp ou Telegram.'; errEl.style.display='block'; return; }
+
+  const btn = document.getElementById('btn-gerar');
+  btn.disabled = true; btn.textContent = 'Gerando…';
+
+  const body = new FormData();
+  body.append('patient_name', name);
+  body.append('patient_phone', phone);
+  body.append('patient_telegram', tg);
+
+  try {
+    const resp = await fetch('/api/nutricionista/convite', { method: 'POST', body });
+    const data = await resp.json();
+    if (!resp.ok) {
+      errEl.textContent = data.detail || 'Erro ao gerar convite.';
+      errEl.style.display = 'block';
+    } else {
+      document.getElementById('invite-url').value = data.invite_url;
+      resultEl.style.display = 'block';
+      btn.textContent = 'Gerar novo convite';
+    }
+  } catch(e) {
+    errEl.textContent = 'Erro de conexão. Tente novamente.';
+    errEl.style.display = 'block';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+function copyInviteLink() {
+  const url = document.getElementById('invite-url').value;
+  navigator.clipboard.writeText(url).then(() => {
+    const btn = document.querySelector('.btn-copy');
+    const orig = btn.textContent;
+    btn.textContent = 'Copiado ✓';
+    setTimeout(() => btn.textContent = orig, 2000);
+  });
+}
+</script>
+{% endblock %}

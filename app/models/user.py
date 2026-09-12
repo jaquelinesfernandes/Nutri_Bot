@@ -10,8 +10,10 @@ from sqlalchemy.sql import func
 from app.db.base import Base
 
 if TYPE_CHECKING:
+    from app.models.clinical_note import ClinicalNote
     from app.models.meal_log import MealLog
     from app.models.meal_window import MealWindow
+    from app.models.nutritionist_patient import NutritionistPatient
     from app.models.payment_subscription import PaymentSubscription
     from app.models.water_log import WaterLog
     from app.models.weekly_report import WeeklyReport
@@ -49,6 +51,8 @@ class User(Base):
     # Token temporário para vincular conta Telegram ao login web (expira em 10 min)
     web_link_token: Mapped[str | None] = mapped_column(String(8), nullable=True, index=True)
     web_link_token_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    # B2B — trial gratuito de 30 dias para nutricionistas (sem cartão)
+    trial_ends_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     meal_logs: Mapped[list["MealLog"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
@@ -65,11 +69,38 @@ class User(Base):
     payment_subscriptions: Mapped[list["PaymentSubscription"]] = relationship(
         back_populates="user", cascade="all, delete-orphan"
     )
+    # B2B: vínculos onde este usuário é a nutricionista
+    patients_as_nutritionist: Mapped[list["NutritionistPatient"]] = relationship(
+        "NutritionistPatient",
+        foreign_keys="NutritionistPatient.nutritionist_id",
+        back_populates="nutritionist",
+        cascade="all, delete-orphan",
+    )
+    # B2B: vínculos onde este usuário é o paciente
+    links_as_patient: Mapped[list["NutritionistPatient"]] = relationship(
+        "NutritionistPatient",
+        foreign_keys="NutritionistPatient.patient_id",
+        back_populates="patient",
+        cascade="all, delete-orphan",
+    )
 
     @property
     def is_premium(self) -> bool:
         if self.plan == "free":
             return False
+        if self.plan_expires_at is None:
+            return True
+        return datetime.utcnow() < self.plan_expires_at.replace(tzinfo=None)
+
+    @property
+    def is_nutritionist(self) -> bool:
+        """True quando o plano é 'nutritionist' e o trial ou assinatura está ativo."""
+        if self.plan != "nutritionist":
+            return False
+        # Trial ativo
+        if self.trial_ends_at is not None:
+            return datetime.utcnow() < self.trial_ends_at.replace(tzinfo=None)
+        # Assinatura sem expiração explícita (plan_expires_at controla via Asaas B2B-3)
         if self.plan_expires_at is None:
             return True
         return datetime.utcnow() < self.plan_expires_at.replace(tzinfo=None)

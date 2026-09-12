@@ -1,0 +1,1093 @@
+<title>Estratégia de Marketing</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&display=swap">
+
+<style>
+/* ── TOKENS ─────────────────────────────────────────────────────── */
+:root {
+  --bg:           #F0EBE0;
+  --bg-alt:       #E6DFD2;
+  --surface:      #FAF7F1;
+  --surface-2:    #EDE6D8;
+  --text:         #1C1208;
+  --text-2:       #5A4830;
+  --text-3:       #927C60;
+  --accent:       #1C3D2C;
+  --accent-mid:   #2A5C40;
+  --accent-light: #488C64;
+  --gold:         #C2870C;
+  --gold-warm:    #DDA020;
+  --gold-pale:    rgba(194,135,12,0.10);
+  --teal:         #1A5A7A;
+  --teal-pale:    rgba(26,90,122,0.10);
+  --border:       rgba(28,61,44,0.10);
+  --border-strong:rgba(28,61,44,0.22);
+  --phase1:       #1C3D2C;
+  --phase2:       #1A4A6A;
+  --phase3:       #5A2A1C;
+  --phase4:       #4A3A1A;
+  --phase5:       #2A1A4A;
+  --phase6:       #1A3A4A;
+}
+@media(prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:           #0B1410;
+    --bg-alt:       #111C15;
+    --surface:      #152019;
+    --surface-2:    #1B2A21;
+    --text:         #EDE7DB;
+    --text-2:       #9AB49A;
+    --text-3:       #658A68;
+    --accent:       #58AD82;
+    --accent-mid:   #72C49A;
+    --accent-light: #90D4B0;
+    --gold:         #DDA020;
+    --gold-warm:    #F4B830;
+    --gold-pale:    rgba(221,160,32,0.12);
+    --teal:         #4AA0C8;
+    --teal-pale:    rgba(74,160,200,0.12);
+    --border:       rgba(88,173,130,0.14);
+    --border-strong:rgba(88,173,130,0.28);
+    --phase1:       #2A6044;
+    --phase2:       #2A6090;
+    --phase3:       #8A4030;
+    --phase4:       #6A5020;
+    --phase5:       #4A2A7A;
+    --phase6:       #204A6A;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0B1410;--bg-alt:#111C15;--surface:#152019;--surface-2:#1B2A21;
+  --text:#EDE7DB;--text-2:#9AB49A;--text-3:#658A68;
+  --accent:#58AD82;--accent-mid:#72C49A;--accent-light:#90D4B0;
+  --gold:#DDA020;--gold-warm:#F4B830;--gold-pale:rgba(221,160,32,0.12);
+  --teal:#4AA0C8;--teal-pale:rgba(74,160,200,0.12);
+  --border:rgba(88,173,130,0.14);--border-strong:rgba(88,173,130,0.28);
+  --phase1:#2A6044;--phase2:#2A6090;--phase3:#8A4030;
+  --phase4:#6A5020;--phase5:#4A2A7A;--phase6:#204A6A;
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',system-ui,sans-serif;
+  background:var(--bg); color:var(--text);
+  line-height:1.6; padding-inline:24px;
+  padding-block-end:100px;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────── */
+.wrap  { max-width:860px; margin-inline:auto; }
+.wrap-w{ max-width:1040px; margin-inline:auto; }
+
+/* ── TYPE ────────────────────────────────────────────────────────── */
+.eyebrow{
+  font-size:.7rem; font-weight:600; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--accent); display:block;
+}
+h1,h2,h3,h4{text-wrap:balance}
+p { max-width:70ch; }
+
+/* ── HEADER / CAPA ──────────────────────────────────────────────── */
+.doc-header{
+  padding-block:64px 52px;
+  border-bottom:1px solid var(--border);
+}
+.doc-meta{
+  font-size:.74rem; font-weight:500; letter-spacing:.1em;
+  text-transform:uppercase; color:var(--text-3);
+  display:flex; align-items:center; gap:14px; margin-bottom:28px;
+}
+.doc-meta::after{
+  content:''; height:1px; width:48px;
+  background:var(--border-strong); display:block;
+}
+.doc-title{
+  font-family:'Cormorant Garamond',serif;
+  font-size:clamp(2.4rem,5.5vw,4.2rem);
+  font-weight:600; line-height:1.05; color:var(--text); margin-bottom:16px;
+}
+.doc-title em{ font-style:italic; color:var(--accent); }
+.doc-subtitle{
+  font-size:1rem; color:var(--text-2); line-height:1.75;
+  max-width:62ch; margin-bottom:36px;
+}
+.doc-chips{
+  display:flex; flex-wrap:wrap; gap:8px;
+}
+.chip{
+  font-size:.72rem; font-weight:500; letter-spacing:.06em;
+  text-transform:uppercase; padding:4px 12px;
+  border:1px solid var(--border-strong); border-radius:2px;
+  color:var(--text-2);
+}
+.chip.hi{ background:var(--accent); color:white; border-color:var(--accent); }
+
+/* ── TOC ─────────────────────────────────────────────────────────── */
+.toc{
+  padding-block:40px;
+  border-bottom:1px solid var(--border);
+}
+.toc-title{
+  font-size:.7rem; font-weight:600; letter-spacing:.13em;
+  text-transform:uppercase; color:var(--text-3); margin-bottom:18px;
+}
+.toc-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+  gap:4px;
+}
+.toc-item{
+  display:flex; align-items:center; gap:12px;
+  padding:8px 0; border-bottom:1px solid var(--border);
+  text-decoration:none; color:var(--text-2);
+  font-size:.85rem; transition:color .15s;
+}
+.toc-item:hover{ color:var(--accent); }
+.toc-n{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.1rem; font-style:italic; color:var(--text-3);
+  width:20px; flex-shrink:0;
+}
+
+/* ── EXECUTIVE SUMMARY ───────────────────────────────────────────── */
+.exec{
+  padding-block:52px;
+  border-bottom:1px solid var(--border);
+}
+.exec-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(180px,1fr));
+  gap:1px; background:var(--border);
+  border:1px solid var(--border); margin-top:28px;
+}
+.exec-stat{
+  background:var(--surface); padding:20px 22px;
+}
+.exec-stat-v{
+  font-family:'Cormorant Garamond',serif;
+  font-size:2rem; font-weight:600; color:var(--accent);
+  line-height:1; font-variant-numeric:tabular-nums;
+}
+.exec-stat-l{
+  font-size:.74rem; color:var(--text-3);
+  margin-top:4px; line-height:1.4;
+}
+
+/* ── SECTION ─────────────────────────────────────────────────────── */
+.section{ padding-block:52px; border-bottom:1px solid var(--border); }
+.section-header{
+  display:flex; align-items:flex-start; gap:20px;
+  margin-bottom:32px;
+}
+.phase-badge{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:36px; height:36px; border-radius:2px; flex-shrink:0;
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.2rem; font-style:italic; color:white; font-weight:500;
+  margin-top:2px;
+}
+.section h2{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.9rem; font-weight:500;
+}
+.section-sub{
+  font-size:.8rem; color:var(--text-3); font-weight:500;
+  letter-spacing:.06em; text-transform:uppercase; margin-top:2px;
+}
+
+/* ── CHECKLIST ───────────────────────────────────────────────────── */
+.checklist{ display:flex; flex-direction:column; gap:0; }
+.check-item{
+  display:flex; align-items:flex-start; gap:12px;
+  padding-block:13px; border-bottom:1px solid var(--border);
+  font-size:.88rem; color:var(--text-2); line-height:1.5;
+}
+.check-item:last-child{ border-bottom:none; }
+.check-icon{
+  width:18px; height:18px; border:1.5px solid var(--border-strong);
+  border-radius:2px; flex-shrink:0; margin-top:1px;
+  display:flex; align-items:center; justify-content:center;
+}
+.check-item strong{ color:var(--text); font-weight:500; }
+
+/* ── CALLOUT ─────────────────────────────────────────────────────── */
+.callout{
+  background:var(--surface); border-left:3px solid var(--accent);
+  padding:16px 20px; margin-block:20px;
+  font-size:.88rem; line-height:1.65; color:var(--text-2);
+}
+.callout strong{ color:var(--text); font-weight:500; }
+.callout.gold{ border-color:var(--gold); }
+.callout.gold strong{ color:var(--gold); }
+
+/* ── DELIVERABLE LIST ────────────────────────────────────────────── */
+.deliverables{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(240px,1fr));
+  gap:1px; background:var(--border);
+  border:1px solid var(--border); margin-top:20px;
+}
+.deliverable{
+  background:var(--surface); padding:16px 18px;
+}
+.del-name{
+  font-size:.84rem; font-weight:600; color:var(--text);
+  margin-bottom:4px;
+}
+.del-desc{ font-size:.78rem; color:var(--text-2); line-height:1.5; }
+
+/* ── PITCH SLIDES ────────────────────────────────────────────────── */
+.slides-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:1px; background:var(--border); border:1px solid var(--border);
+  margin-top:20px;
+}
+.slide{
+  background:var(--surface); padding:16px 18px;
+  display:flex; flex-direction:column; gap:4px;
+}
+.slide-n{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.6rem; font-style:italic; color:var(--text-3);
+  line-height:1;
+}
+.slide-title{
+  font-size:.85rem; font-weight:600; color:var(--text);
+}
+.slide-desc{
+  font-size:.76rem; color:var(--text-2); line-height:1.5;
+  margin-top:2px;
+}
+
+/* ── CHANNEL CARDS ───────────────────────────────────────────────── */
+.channels{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(250px,1fr));
+  gap:2px; background:var(--border);
+  border:1px solid var(--border); margin-top:20px;
+}
+.channel-card{
+  background:var(--surface); padding:22px 22px;
+}
+.channel-icon{
+  font-size:1.4rem; margin-bottom:10px;
+  display:block; line-height:1;
+}
+.channel-name{
+  font-size:.88rem; font-weight:600; color:var(--text);
+  margin-bottom:4px;
+}
+.channel-meta{
+  font-size:.72rem; font-weight:500; letter-spacing:.06em;
+  text-transform:uppercase; color:var(--accent); margin-bottom:10px;
+}
+.channel-desc{
+  font-size:.81rem; color:var(--text-2); line-height:1.6;
+}
+.channel-action{
+  margin-top:12px; font-size:.76rem; color:var(--text-3);
+  font-style:italic;
+}
+
+/* ── TABLE ───────────────────────────────────────────────────────── */
+.table-wrap{ overflow-x:auto; margin-top:20px; }
+table{
+  width:100%; border-collapse:collapse;
+  font-size:.83rem; min-width:520px;
+}
+thead th{
+  text-align:left; padding:10px 14px;
+  font-size:.68rem; font-weight:600;
+  letter-spacing:.09em; text-transform:uppercase;
+  color:var(--text-3); border-bottom:2px solid var(--border-strong);
+}
+tbody td{
+  padding:11px 14px; border-bottom:1px solid var(--border);
+  color:var(--text-2); vertical-align:top; line-height:1.5;
+}
+tbody td:first-child{ color:var(--text); font-weight:500; }
+tbody tr:last-child td{ border-bottom:none; }
+.t-total td{
+  border-top:2px solid var(--border-strong) !important;
+  font-weight:600; color:var(--accent) !important;
+}
+
+/* ── TIMELINE ────────────────────────────────────────────────────── */
+.timeline{ display:flex; flex-direction:column; gap:0; margin-top:20px; }
+.tl-row{
+  display:grid; grid-template-columns:120px 1fr;
+  gap:20px; padding-block:16px; border-bottom:1px solid var(--border);
+  align-items:start;
+}
+.tl-row:last-child{ border-bottom:none; }
+.tl-week{
+  font-size:.72rem; font-weight:600; letter-spacing:.08em;
+  text-transform:uppercase; color:var(--text-3); padding-top:2px;
+}
+.tl-content h4{
+  font-size:.88rem; font-weight:600; color:var(--text);
+  margin-bottom:5px;
+}
+.tl-pills{
+  display:flex; flex-wrap:wrap; gap:5px;
+}
+.pill{
+  font-size:.68rem; font-weight:500; padding:2px 8px;
+  border-radius:2px; background:var(--surface-2); color:var(--text-2);
+}
+.pill.p1{ background:rgba(28,61,44,0.12); color:var(--accent); }
+.pill.p2{ background:rgba(26,90,122,0.12); color:var(--teal); }
+.pill.p3{ background:var(--gold-pale); color:var(--gold); }
+
+/* ── KEY METRICS ─────────────────────────────────────────────────── */
+.metrics-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(160px,1fr));
+  gap:1px; background:var(--border);
+  border:1px solid var(--border); margin-top:20px;
+}
+.metric{
+  background:var(--surface); padding:18px 18px;
+}
+.metric-v{
+  font-family:'Cormorant Garamond',serif;
+  font-size:1.8rem; font-weight:600; color:var(--accent);
+  line-height:1; font-variant-numeric:tabular-nums;
+}
+.metric-l{
+  font-size:.73rem; color:var(--text-3); margin-top:4px;
+}
+
+/* ── FOOTER ──────────────────────────────────────────────────────── */
+.doc-footer{
+  margin-top:56px; padding-top:28px; border-top:1px solid var(--border);
+  display:flex; justify-content:space-between; flex-wrap:wrap;
+  gap:12px; font-size:.74rem; color:var(--text-3);
+}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────────── */
+@media(max-width:640px){
+  .tl-row{ grid-template-columns:1fr; gap:6px; }
+  .tl-week{ padding-top:0; }
+  p{ max-width:100%; }
+}
+</style>
+
+<!-- ══════════════════════════════════════ HEADER -->
+<div class="doc-header">
+  <div class="wrap">
+    <div class="doc-meta">Documento de Estratégia · Setembro 2026</div>
+    <h1 class="doc-title">Plano de Marketing<br><em>NutriBot → Marca</em></h1>
+    <p class="doc-subtitle">
+      Roteiro completo — do nome registrado à marca em produção — cobrindo identidade visual, pitch para capital, canais de aquisição, landing page e estratégia B2B com nutricionistas. Documento de referência para apresentação a investidores e parceiros.
+    </p>
+    <div class="doc-chips">
+      <span class="chip hi">6 fases</span>
+      <span class="chip">12 semanas</span>
+      <span class="chip">B2C + B2B</span>
+      <span class="chip">WhatsApp · Telegram · Instagram · TikTok</span>
+      <span class="chip">Mercado BR — R$ 4,2 bi</span>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ TOC -->
+<div class="toc">
+  <div class="wrap">
+    <div class="toc-title">Neste documento</div>
+    <div class="toc-list">
+      <a href="#exec" class="toc-item"><span class="toc-n">—</span>Sumário Executivo</a>
+      <a href="#fase1" class="toc-item"><span class="toc-n">1</span>Nome e Registro de Marca</a>
+      <a href="#fase2" class="toc-item"><span class="toc-n">2</span>Identidade Visual (Branding)</a>
+      <a href="#fase3" class="toc-item"><span class="toc-n">3</span>Pitch Deck para Capital</a>
+      <a href="#fase4" class="toc-item"><span class="toc-n">4</span>Estratégia de Canais</a>
+      <a href="#fase5" class="toc-item"><span class="toc-n">5</span>Landing Page</a>
+      <a href="#fase6" class="toc-item"><span class="toc-n">6</span>B2B — Painel Nutricionistas</a>
+      <a href="#timeline" class="toc-item"><span class="toc-n">—</span>Cronograma 12 Semanas</a>
+      <a href="#orcamento" class="toc-item"><span class="toc-n">—</span>Orçamento Estimado</a>
+      <a href="#metricas" class="toc-item"><span class="toc-n">—</span>Métricas de Sucesso</a>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ EXEC SUMMARY -->
+<div class="exec" id="exec">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:12px">Sumário Executivo</span>
+    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:500; margin-bottom:16px;">A oportunidade</h2>
+    <p style="color:var(--text-2); line-height:1.75; margin-bottom:12px;">
+      O produto está funcionando em produção com usuários reais — 411 testes passando, 80.6% de cobertura, integração TACO + TBCA (2.300 alimentos brasileiros) e canal Telegram + WhatsApp ativos. Falta apenas uma coisa: uma <strong style="color:var(--text)">marca</strong> que permita crescer com intenção.
+    </p>
+    <p style="color:var(--text-2); line-height:1.75;">
+      O mercado de health digital no Brasil está estimado em <strong style="color:var(--text)">R$ 4,2 bilhões (2025)</strong>, com 97% dos smartphones tendo WhatsApp ativo. Nenhum concorrente combina canal WhatsApp + base nutricional brasileira (TACO/TBCA) + NLP em PT-BR coloquial. A janela de execução é agora, antes que players internacionais ou startups bem financiadas se posicionem.
+    </p>
+    <div class="exec-grid">
+      <div class="exec-stat">
+        <div class="exec-stat-v">R$ 4,2bi</div>
+        <div class="exec-stat-l">Mercado health digital BR (2025)</div>
+      </div>
+      <div class="exec-stat">
+        <div class="exec-stat-v">97%</div>
+        <div class="exec-stat-l">Smartphones BR com WhatsApp ativo</div>
+      </div>
+      <div class="exec-stat">
+        <div class="exec-stat-v">2.325</div>
+        <div class="exec-stat-l">Alimentos BR no banco (TACO + TBCA + USDA)</div>
+      </div>
+      <div class="exec-stat">
+        <div class="exec-stat-v">R$ 19,90</div>
+        <div class="exec-stat-l">Ticket mensal Premium — CAC estimado R$ 5–15</div>
+      </div>
+      <div class="exec-stat">
+        <div class="exec-stat-v">R$ 79,90</div>
+        <div class="exec-stat-l">Ticket mensal B2B Nutricionista — 30 pacientes</div>
+      </div>
+      <div class="exec-stat">
+        <div class="exec-stat-v">&lt; 1 mês</div>
+        <div class="exec-stat-l">Payback period no canal orgânico</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ FASE 1 — NOME -->
+<div class="section" id="fase1">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="phase-badge" style="background:var(--phase1)">1</div>
+      <div>
+        <h2>Nome e Registro de Marca</h2>
+        <span class="section-sub">Prazo: Semanas 1–2 · Decisão única, consequências longas</span>
+      </div>
+    </div>
+
+    <p style="color:var(--text-2); line-height:1.75; margin-bottom:24px;">
+      A escolha do nome precede tudo — ela define o domínio, o logo, o registro no INPI, os handles de redes sociais e a voz da marca. Os três finalistas são <strong style="color:var(--text)">Nouri</strong> (recomendado), <strong style="color:var(--text)">NutriZap</strong> e <strong style="color:var(--text)">ComeBem</strong> — análise completa no documento de naming. Após a decisão, o processo é:
+    </p>
+
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Pesquisa de marca no INPI</strong> — verificar conflito nas classes 35 (serviços de negócio) e 42 (software/SaaS) antes de qualquer investimento em identidade visual. Busca gratuita em busca.inpi.gov.br.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Registro de marca no INPI</strong> — protocolo de pedido de registro (R$ 355 para ME/EPP nas duas classes). Prazo de aprovação: 12–18 meses, mas o protocolo já dá prioridade de data.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Domínios</strong> — registrar .com.br e .app (ou .com) no mesmo dia da decisão. Registro.br para .com.br (R$ 40/ano). Godaddy/Namecheap para .app/.com.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Handles de redes sociais</strong> — Instagram, TikTok, LinkedIn, YouTube: @nomescolhido em todos os canais antes de anunciar publicamente. Usar Namecheckr para verificar disponibilidade em paralelo.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>E-mail profissional</strong> — contato@dominio.com.br via Google Workspace (R$ 30/mês) ou Zoho Mail (gratuito). Necessário para comunicações com nutricionistas B2B.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Comunicação com usuários beta</strong> — mensagem no bot avisando sobre a mudança de nome, mantendo NutriBot como nome técnico interno durante a transição. Tom: celebração, não ruptura.</div>
+      </div>
+    </div>
+
+    <div class="callout gold" style="margin-top:24px">
+      <strong>Decisão irreversível:</strong> Não comece nenhuma produção de conteúdo, logo ou material antes de confirmar que o nome está livre no INPI e os domínios foram registrados. O custo de reverter é muito alto.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ FASE 2 — BRANDING -->
+<div class="section" id="fase2">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="phase-badge" style="background:var(--phase2)">2</div>
+      <div>
+        <h2>Identidade Visual — Branding</h2>
+        <span class="section-sub">Prazo: Semanas 2–4 · Entregáveis: brand book + assets kit</span>
+      </div>
+    </div>
+
+    <p style="color:var(--text-2); line-height:1.75; margin-bottom:24px;">
+      A identidade visual é o sistema que faz o produto parecer uma empresa, não um projeto. Ela precisa funcionar em contextos muito diferentes: ícone de 32×32px dentro do WhatsApp, capa do relatório PDF semanal, post de Instagram, slide de pitch e fachada de landing page. Cada peça abaixo é indispensável antes de qualquer divulgação.
+    </p>
+
+    <div class="deliverables">
+      <div class="deliverable">
+        <div class="del-name">Logo — símbolo + wordmark</div>
+        <div class="del-desc">Versão primária colorida, versão monocromática, versão invertida (fundo escuro). Formato SVG + PNG em múltiplas resoluções.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Paleta de cores</div>
+        <div class="del-desc">Cor primária, secundária, accent, neutrals. Valores HEX, RGB e CMYK. Regras de uso — o que pode combinar com o quê.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Tipografia</div>
+        <div class="del-desc">1–2 fontes definidas com hierarquia clara: H1 tamanho/peso, H2, body, label, caption. Fonte disponível no Google Fonts para uso no bot e web.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Tom de voz escrito</div>
+        <div class="del-desc">5 princípios de como a marca fala. Exemplos do que dizer e não dizer. Alinhado ao PT-BR coloquial do PRD (seção 9).</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Template — relatório PDF</div>
+        <div class="del-desc">Atualização do report_template.html com a nova identidade. O relatório semanal é o principal vetor de WOM — precisa ter a cara da marca.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Ícone do bot</div>
+        <div class="del-desc">Foto de perfil do bot no Telegram e WhatsApp. 512×512px, fundo sólido da cor primária da marca, símbolo branco centralizado.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Templates de post</div>
+        <div class="del-desc">3 templates reutilizáveis: dica nutricional, depoimento de usuário, demonstração de feature. Formato 1:1 (feed) e 9:16 (stories/reels).</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Brand book (PDF)</div>
+        <div class="del-desc">Documento de referência consolidando tudo acima. Para uso interno, parceiros e futuros colaboradores. 12–16 páginas.</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:24px">
+      <strong>Prioridade de execução:</strong> Logo → Paleta → Tom de voz → Template de post → Brand book. Nessa ordem. Não esperar ter tudo para começar a publicar — logo + paleta + tom de voz já são suficientes para os primeiros conteúdos.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ FASE 3 — PITCH DECK -->
+<div class="section" id="fase3">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="phase-badge" style="background:var(--phase3)">3</div>
+      <div>
+        <h2>Pitch Deck para Capital</h2>
+        <span class="section-sub">Prazo: Semanas 3–4 · Destino: anjos, aceleradoras, grants de saúde digital</span>
+      </div>
+    </div>
+
+    <p style="color:var(--text-2); line-height:1.75; margin-bottom:24px;">
+      O objetivo do deck não é explicar o produto — é criar urgência para o investidor entrar agora. A tração real (produto funcionando, usuários beta ativos, 411 testes, cobertura 80%) é a maior força. Cada slide tem um trabalho específico.
+    </p>
+
+    <div class="slides-grid">
+      <div class="slide">
+        <span class="slide-n">01</span>
+        <div class="slide-title">Capa</div>
+        <div class="slide-desc">Nome da marca. Tagline de uma linha. "O assistente nutricional que vive no WhatsApp." Logo, visual limpo.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">02</span>
+        <div class="slide-title">O Problema</div>
+        <div class="slide-desc">80% dos brasileiros que tentam controlar alimentação abandonam o diário em 7 dias. Motivo: fricção. Apps exigem instalação, cadastro, busca manual.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">03</span>
+        <div class="slide-title">A Solução</div>
+        <div class="slide-desc">3 prints do bot em ação: usuário digita → bot responde com kcal/macros em 4s → saldo do dia. Sem instalar nada.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">04</span>
+        <div class="slide-title">Mercado</div>
+        <div class="slide-desc">R$ 4,2 bi health digital BR (2025). 97% WA penetration. TAM/SAM/SOM com números reais e fontes citadas.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">05</span>
+        <div class="slide-title">Diferencial</div>
+        <div class="slide-desc">Tabela competidora: NutriBot vs MyFitnessPal vs YAZIO vs Samsung Health. 3 vantagens únicas que nenhum concorrente tem.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">06</span>
+        <div class="slide-title">Tração</div>
+        <div class="slide-desc">Produto em produção. Usuários beta ativos. 411 testes / 80.6% cobertura. Taxa de retenção D7 do beta. Precisão de reconhecimento &gt;80%.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">07</span>
+        <div class="slide-title">Modelo de Negócio</div>
+        <div class="slide-desc">Freemium B2C (R$ 19,90/mês) + B2B Nutricionistas (R$ 79,90/mês). Funil de conversão: 100% instala → 15% recebe relatório → 5–8% converte.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">08</span>
+        <div class="slide-title">Unit Economics</div>
+        <div class="slide-desc">CAC orgânico R$ 5–15. LTV Premium anual R$ 149,90. Payback &lt;1 mês (orgânico). Margem bruta ~70%. Custo por usuário ativo &lt;R$ 5/mês.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">09</span>
+        <div class="slide-title">Plano de Marketing</div>
+        <div class="slide-desc">Onde vai o capital: canal (conteúdo + ads), branding, nutricionistas parceiros, landing page. Meta: 500 usuários M1, 2.000 M3, R$ 5k MRR M6.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">10</span>
+        <div class="slide-title">Roadmap</div>
+        <div class="slide-desc">Fase 2 B2B (painel nutricionistas Q4 2026) → Fase 3 app nativo (2027) → escala GCP Cloud Run São Paulo. Milestones claros por trimestre.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">11</span>
+        <div class="slide-title">Time</div>
+        <div class="slide-desc">Quem é quem, o que já construiu, por que é a equipe certa para esse mercado. Honestidade sobre gaps e plano de contratação com o capital.</div>
+      </div>
+      <div class="slide">
+        <span class="slide-n">12</span>
+        <div class="slide-title">O Pedido</div>
+        <div class="slide-desc">Valor buscado, valuation, uso do capital (% por categoria), o que muda com esse recurso. CTA direto: "Vamos conversar?"</div>
+      </div>
+    </div>
+
+    <div class="callout" style="margin-top:24px">
+      <strong>Regra de ouro do pitch:</strong> Se o investidor sair da sala conseguindo explicar o produto para outra pessoa em 30 segundos, o deck funcionou. Teste isso com alguém de fora antes de usar em reunião real.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ FASE 4 — CANAIS -->
+<div class="section" id="fase4">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="phase-badge" style="background:var(--phase4)">4</div>
+      <div>
+        <h2>Estratégia de Canais</h2>
+        <span class="section-sub">Prazo: Semanas 5–8 · Foco: orgânico primeiro, pago depois</span>
+      </div>
+    </div>
+
+    <p style="color:var(--text-2); line-height:1.75; margin-bottom:24px;">
+      A aquisição orgânica tem custo zero e qualidade alta — cada usuário que chega por indicação já entende o produto. O canal pago amplifica o que já funciona organicamente, não substitui. Prioridade: provar o conteúdo orgânico antes de investir em ads.
+    </p>
+
+    <div class="channels">
+
+      <div class="channel-card">
+        <span class="channel-icon">📱</span>
+        <div class="channel-name">TikTok &amp; Instagram Reels</div>
+        <div class="channel-meta">Prioridade Alta · Orgânico</div>
+        <p class="channel-desc">Demos de 30–60s do bot em ação são o formato perfeito: usuário manda "almocei x-burguer" → bot responde com kcal em 4 segundos. Conteúdo que surpreende, que a pessoa quer mostrar para amigos.</p>
+        <p class="channel-action">Frequência: 3x/semana. Hooks: "você não vai acreditar o quanto tem nesse lanche" / "testei registrar meu almoço por voz" / "a IA reconheceu a moqueca".</p>
+      </div>
+
+      <div class="channel-card">
+        <span class="channel-icon">💬</span>
+        <div class="channel-name">Grupos WhatsApp &amp; Telegram</div>
+        <div class="channel-meta">Prioridade Alta · Orgânico · CAC zero</div>
+        <p class="channel-desc">Grupos de fitness, musculação, corrida, emagrecimento, mamães, diabetes — cada um tem usuários perfeitos. Participar com valor (responder dúvidas nutricionais), não apenas divulgar. Sempre pedir permissão ao admin antes.</p>
+        <p class="channel-action">Meta: 20 grupos ativos. Kit de divulgação pronto para participantes compartilharem (texto + print do bot funcionando).</p>
+      </div>
+
+      <div class="channel-card">
+        <span class="channel-icon">🔍</span>
+        <div class="channel-name">SEO / Blog</div>
+        <div class="channel-meta">Prioridade Média · Orgânico · Resultado em 3–6 meses</div>
+        <p class="channel-desc">Palavras-chave com alta intenção: "como contar calorias no WhatsApp", "tabela nutricional brasileira TACO", "diário alimentar sem app", "calorias do arroz com feijão". Conteúdo longo que responde de verdade.</p>
+        <p class="channel-action">1 artigo/semana. Indexação leva tempo — começar agora para colher em 90 dias.</p>
+      </div>
+
+      <div class="channel-card">
+        <span class="channel-icon">🥗</span>
+        <div class="channel-name">Parcerias com Nutricionistas</div>
+        <div class="channel-meta">Prioridade Alta · Orgânico · Valida B2B</div>
+        <p class="channel-desc">Cada nutricionista tem 30–100 pacientes que precisam de diário alimentar. Proposta: 60 dias grátis do Plano Nutricionista durante o beta. Em troca: indicação para pacientes + feedback de uso clínico.</p>
+        <p class="channel-action">Meta: 10 nutricionistas parceiros nas primeiras 8 semanas. Canal: Instagram profissional de nutrição + grupos de CRN + indicação direta.</p>
+      </div>
+
+      <div class="channel-card">
+        <span class="channel-icon">📊</span>
+        <div class="channel-name">LinkedIn</div>
+        <div class="channel-meta">Prioridade Média · Orgânico · B2B</div>
+        <p class="channel-desc">Conteúdo sobre construção do produto, dados do mercado de saúde digital, bastidores da IA nutricional. Audiência: nutricionistas, investidores, profissionais de saúde. Não é canal de aquisição B2C — é de credibilidade e B2B.</p>
+        <p class="channel-action">1–2 posts/semana. Foco em aprendizados reais do produto, não autopromoção vazia.</p>
+      </div>
+
+      <div class="channel-card">
+        <span class="channel-icon">🎯</span>
+        <div class="channel-name">Anúncios Pagos</div>
+        <div class="channel-meta">Prioridade Baixa · Fase 2 · Amplificador</div>
+        <p class="channel-desc">Meta Ads (Instagram/Facebook) e Google Ads. Ativar somente após ter pelo menos 3 conteúdos orgânicos comprovadamente viralizando — ads amplificam o que já funciona. Segmentação: mulheres 25–40 BR interessadas em fitness, emagrecimento, nutrição.</p>
+        <p class="channel-action">Budget inicial sugerido: R$ 1.500/mês de teste por 30 dias. Medir CAC real antes de escalar.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ FASE 5 — LANDING PAGE -->
+<div class="section" id="fase5">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="phase-badge" style="background:var(--phase5)">5</div>
+      <div>
+        <h2>Landing Page</h2>
+        <span class="section-sub">Prazo: Semanas 5–6 · Único objetivo: clique no botão "Começar no WhatsApp"</span>
+      </div>
+    </div>
+
+    <p style="color:var(--text-2); line-height:1.75; margin-bottom:24px;">
+      A landing page não explica tudo — ela converte visitantes em usuários. Uma página longa e completa mata a conversão. Estrutura recomendada: 6 seções, máximo de 800 palavras no total, CTA a cada 2 seções.
+    </p>
+
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Hero (above the fold)</strong> — Título forte (máx. 8 palavras), subtítulo (1 frase), botão "Começar no WhatsApp agora — é grátis" com ícone do WhatsApp. GIF ou vídeo de 15s do bot respondendo uma refeição.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Como funciona</strong> — 3 passos visuais: 1) Manda o que comeu, 2) O bot calcula, 3) Você acompanha o dia. Ícones simples, texto mínimo. Não explicar a IA, mostrar o resultado.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Prova social</strong> — 3 depoimentos reais de usuários beta com foto e contexto (Ana, professora / Ricardo, academia / Carla, nutricionista). Aspas, nome, cidade. Reais, nunca inventados.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Planos</strong> — Tabela simples: Free vs Premium (R$ 19,90/mês). Destacar o que o Premium adiciona. Botão "Começar grátis" no Free, "Assinar Premium" no pago. Link direto para o bot no Telegram como alternativa.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>FAQ</strong> — 5–7 perguntas reais dos usuários beta: "Funciona no iPhone?", "Meus dados ficam seguros?", "E se eu comer um prato que o bot não conhece?", "Precisa pagar para começar?". Respostas diretas e honestas.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Footer com LGPD</strong> — Link para Política de Privacidade, direitos LGPD, e-mail de contato. Obrigatório conforme Lei 13.709/2018. Manter tom humano, não jurídico demais.</div>
+      </div>
+    </div>
+
+    <div class="callout gold" style="margin-top:24px">
+      <strong>Métrica da landing page:</strong> Conversão saudável = 8–15% de visitantes clicando no CTA. Se estiver abaixo de 5%, o problema geralmente é o hero ou o CTA — testar variações antes de investir em tráfego pago.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ FASE 6 — B2B -->
+<div class="section" id="fase6">
+  <div class="wrap">
+    <div class="section-header">
+      <div class="phase-badge" style="background:var(--phase6)">6</div>
+      <div>
+        <h2>B2B — Painel Nutricionistas</h2>
+        <span class="section-sub">Prazo: Semanas 7–12 · R$ 79,90/mês por nutricionista</span>
+      </div>
+    </div>
+
+    <p style="color:var(--text-2); line-height:1.75; margin-bottom:24px;">
+      A Dra. Camila tem 40 pacientes e usa planilha Excel. Cada nutricionista onboardado traz 30–100 novos usuários B2C sem custo de aquisição. É o canal de maior ROI do produto — e a validação mais forte para futuros investidores.
+    </p>
+
+    <div class="deliverables" style="margin-bottom:24px">
+      <div class="deliverable">
+        <div class="del-name">One-pager para pacientes</div>
+        <div class="del-desc">Material que a nutricionista entrega ou envia: "Seu novo diário alimentar — funciona no WhatsApp, é fácil e gratuito". QR code para o bot. A3 ou PDF A4.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Demo do painel B2B</div>
+        <div class="del-desc">Vídeo de 3 min mostrando o painel de nutricionista: lista de pacientes, histórico de refeições, alertas de baixo engajamento. Para reuniões de parceria.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">E-mail de parceria</div>
+        <div class="del-desc">Template de e-mail para abordar nutricionistas cold: proposta de valor em 3 linhas, 60 dias grátis, link para demo de 15 min. Máx. 150 palavras.</div>
+      </div>
+      <div class="deliverable">
+        <div class="del-name">Landing page B2B</div>
+        <div class="del-desc">Página separada da B2C. Hero: "Seus pacientes vão finalmente preencher o diário alimentar". CTA: "Começar 60 dias grátis". Depoimento de nutricionista parceira.</div>
+      </div>
+    </div>
+
+    <div class="checklist">
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Canal de aquisição B2B</strong> — Instagram profissional de nutricionistas (hashtags #nutricionista, #nutricionistabrasil), grupos de CRN no WhatsApp/Telegram, eventos de nutrição (CONBRAN, ENA). Participar como especialista, não como vendedor.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Proposta de período beta</strong> — 60 dias gratuitos para as primeiras 10 nutricionistas parceiras. Em troca: feedback estruturado (formulário mensal), depoimento para uso no site, indicação para colegas. Formalizar em acordo simples de parceria.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>Suporte dedicado</strong> — Canal de WhatsApp exclusivo para nutricionistas parceiras. Resposta em &lt;4h. A experiência do parceiro B2B precisa ser premium desde o primeiro dia — eles são multiplicadores da marca.</div>
+      </div>
+      <div class="check-item">
+        <div class="check-icon"></div>
+        <div><strong>NFS-e via Asaas</strong> — Integrar gateway Asaas (gratuito por transação) para emissão automática de Nota Fiscal de Serviço Eletrônica após confirmação de pagamento. Obrigatório para nutricionistas PJ deduzirem o custo como despesa.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ CRONOGRAMA -->
+<div class="section" id="timeline">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:16px">Cronograma</span>
+    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:500; margin-bottom:24px;">12 semanas da marca ao crescimento</h2>
+
+    <div class="timeline">
+      <div class="tl-row">
+        <div class="tl-week">Sem 1–2</div>
+        <div class="tl-content">
+          <h4>Nome, registro e domínio</h4>
+          <div class="tl-pills">
+            <span class="pill p1">Decisão do nome</span>
+            <span class="pill p1">Pesquisa INPI</span>
+            <span class="pill p1">Domínios .com.br + .app</span>
+            <span class="pill p1">Handles redes sociais</span>
+          </div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Sem 2–4</div>
+        <div class="tl-content">
+          <h4>Identidade visual + brand book</h4>
+          <div class="tl-pills">
+            <span class="pill p2">Logo</span>
+            <span class="pill p2">Paleta e tipografia</span>
+            <span class="pill p2">Tom de voz</span>
+            <span class="pill p2">Templates de post</span>
+            <span class="pill p2">Ícone do bot</span>
+          </div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Sem 3–4</div>
+        <div class="tl-content">
+          <h4>Pitch deck completo</h4>
+          <div class="tl-pills">
+            <span class="pill p3">12 slides</span>
+            <span class="pill p3">Unit economics</span>
+            <span class="pill p3">Dados de mercado</span>
+            <span class="pill p3">Versão revisada por 3 pessoas externas</span>
+          </div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Sem 5–6</div>
+        <div class="tl-content">
+          <h4>Landing page + primeiros conteúdos</h4>
+          <div class="tl-pills">
+            <span class="pill p1">Landing page no ar</span>
+            <span class="pill p2">5 posts publicados</span>
+            <span class="pill p2">1 Reel de demo publicado</span>
+            <span class="pill p1">Blog: primeiro artigo SEO</span>
+          </div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Sem 6–8</div>
+        <div class="tl-content">
+          <h4>Lançamento de canais + nutricionistas</h4>
+          <div class="tl-pills">
+            <span class="pill p3">10 grupos WA/TG ativados</span>
+            <span class="pill p3">5 nutricionistas parceiras abordadas</span>
+            <span class="pill p3">E-mail de parceria enviado para 30 contatos</span>
+            <span class="pill p2">Conteúdo 3x/semana</span>
+          </div>
+        </div>
+      </div>
+      <div class="tl-row">
+        <div class="tl-week">Sem 9–12</div>
+        <div class="tl-content">
+          <h4>Escala, otimização e aquisição paga</h4>
+          <div class="tl-pills">
+            <span class="pill p1">Meta Ads — teste R$ 1.500</span>
+            <span class="pill p1">Google Ads — keywords de intenção</span>
+            <span class="pill p3">10 nutricionistas parceiras ativas</span>
+            <span class="pill p2">NPS survey — primeiros 100 usuários</span>
+            <span class="pill p1">Review de métricas e ajuste de estratégia</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ ORÇAMENTO -->
+<div class="section" id="orcamento">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:16px">Orçamento estimado</span>
+    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:500; margin-bottom:8px;">Investimento por fase</h2>
+    <p style="color:var(--text-2); margin-bottom:20px; line-height:1.7;">
+      Valores estimados para execução lean — priorizando ferramentas gratuitas/baratas e conteúdo orgânico antes de tráfego pago. O custo real depende de fazer in-house vs contratar designer/agência.
+    </p>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Item</th>
+            <th>Modalidade</th>
+            <th>Custo estimado</th>
+            <th>Observação</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Registro INPI (2 classes)</td>
+            <td>Único</td>
+            <td>R$ 710</td>
+            <td>ME/EPP — R$ 355 por classe</td>
+          </tr>
+          <tr>
+            <td>Domínio .com.br + .app</td>
+            <td>Anual</td>
+            <td>R$ 150</td>
+            <td>Registro.br + Namecheap</td>
+          </tr>
+          <tr>
+            <td>E-mail profissional</td>
+            <td>Mensal</td>
+            <td>R$ 0–30</td>
+            <td>Zoho Mail gratuito ou Google Workspace R$ 30</td>
+          </tr>
+          <tr>
+            <td>Identidade visual (designer)</td>
+            <td>Único</td>
+            <td>R$ 1.500–4.000</td>
+            <td>Freelancer BR. Canva Pro (R$ 55/mês) se in-house</td>
+          </tr>
+          <tr>
+            <td>Landing page (dev/no-code)</td>
+            <td>Único + R$/mês</td>
+            <td>R$ 200–800</td>
+            <td>Framer/Webflow (R$ 30/mês) ou dev próprio</td>
+          </tr>
+          <tr>
+            <td>Produção de conteúdo (12 semanas)</td>
+            <td>Recorrente</td>
+            <td>R$ 0–1.500</td>
+            <td>Celular + CapCut são suficientes para começar</td>
+          </tr>
+          <tr>
+            <td>Meta Ads — teste inicial</td>
+            <td>30 dias</td>
+            <td>R$ 1.500</td>
+            <td>Ativar somente após validação orgânica</td>
+          </tr>
+          <tr>
+            <td>Google Ads — keywords SEO</td>
+            <td>30 dias</td>
+            <td>R$ 500–1.000</td>
+            <td>Foco em "diário alimentar WhatsApp" e similares</td>
+          </tr>
+          <tr>
+            <td>Pitch deck (design)</td>
+            <td>Único</td>
+            <td>R$ 500–1.200</td>
+            <td>Usar template premium + customizar. Ou in-house</td>
+          </tr>
+          <tr class="t-total">
+            <td>Total conservador (sem ads)</td>
+            <td></td>
+            <td>R$ 3.060–6.690</td>
+            <td>Primeiras 12 semanas, foco orgânico</td>
+          </tr>
+          <tr class="t-total">
+            <td>Total com ads (teste)</td>
+            <td></td>
+            <td>R$ 5.060–9.690</td>
+            <td>Inclui R$ 2.000–3.000 em tráfego pago</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="callout" style="margin-top:24px">
+      <strong>Recomendação:</strong> Nos primeiros 60 dias, investir apenas no que não tem como fazer de graça: INPI, domínio, e identidade visual (um bom logo mal feito custa mais caro para refazer depois). Todo o resto começa orgânico e com ferramentas gratuitas.
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ MÉTRICAS -->
+<div class="section" id="metricas" style="border-bottom:none">
+  <div class="wrap">
+    <span class="eyebrow" style="margin-bottom:16px">Métricas de sucesso</span>
+    <h2 style="font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:500; margin-bottom:8px;">O que medir — e quando</h2>
+    <p style="color:var(--text-2); margin-bottom:20px; line-height:1.7;">
+      Cada fase tem uma métrica-chave. Não acompanhar tudo ao mesmo tempo — foco no número que diz se a estratégia está funcionando.
+    </p>
+
+    <div class="metrics-row">
+      <div class="metric">
+        <div class="metric-v">&gt; 50%</div>
+        <div class="metric-l">Usuários que registram refeição no D1 — "momento uau"</div>
+      </div>
+      <div class="metric">
+        <div class="metric-v">&gt; 35%</div>
+        <div class="metric-l">Retenção D7 — quem voltou depois de uma semana</div>
+      </div>
+      <div class="metric">
+        <div class="metric-v">5–8%</div>
+        <div class="metric-l">Conversão Free → Premium — após 1º relatório semanal</div>
+      </div>
+      <div class="metric">
+        <div class="metric-v">&gt; 8%</div>
+        <div class="metric-l">Conversão da landing page — visitante → clique no bot</div>
+      </div>
+      <div class="metric">
+        <div class="metric-v">&gt; 40</div>
+        <div class="metric-l">NPS pós-relatório semanal — mede satisfação real</div>
+      </div>
+      <div class="metric">
+        <div class="metric-v">R$ 5k</div>
+        <div class="metric-l">MRR ao final de 90 dias — ~250 assinantes Premium</div>
+      </div>
+    </div>
+
+    <div class="table-wrap" style="margin-top:28px">
+      <table>
+        <thead>
+          <tr>
+            <th>Métrica</th>
+            <th>Meta M1 (30 dias)</th>
+            <th>Meta M3 (90 dias)</th>
+            <th>Ferramenta</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Novos usuários/semana</td>
+            <td>50+ (orgânico)</td>
+            <td>200+ (orgânico + pago)</td>
+            <td>PostHog</td>
+          </tr>
+          <tr>
+            <td>Seguidores Instagram/TikTok</td>
+            <td>500</td>
+            <td>3.000</td>
+            <td>Nativo das plataformas</td>
+          </tr>
+          <tr>
+            <td>Nutricionistas parceiras ativas</td>
+            <td>3</td>
+            <td>15</td>
+            <td>Planilha interna</td>
+          </tr>
+          <tr>
+            <td>MRR</td>
+            <td>R$ 500+</td>
+            <td>R$ 5.000+</td>
+            <td>Mercado Pago dashboard</td>
+          </tr>
+          <tr>
+            <td>Usuários premium ativos</td>
+            <td>25</td>
+            <td>250</td>
+            <td>Banco de dados</td>
+          </tr>
+          <tr>
+            <td>Posição Google — keyword principal</td>
+            <td>Top 50</td>
+            <td>Top 10</td>
+            <td>Google Search Console</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════ FOOTER -->
+<div class="wrap">
+  <div class="doc-footer">
+    <span>Estratégia de Marketing — NutriBot | Setembro 2026</span>
+    <span>Documento confidencial — uso interno e apresentação a investidores</span>
+  </div>
+</div>

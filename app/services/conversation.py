@@ -25,7 +25,7 @@ from app.services import analytics
 logger = logging.getLogger(__name__)
 
 ConversationState = Literal[
-    "IDLE", "ONBOARDING", "CONFIRMING", "CORRECTING", "DELETING"
+    "IDLE", "ONBOARDING", "CONFIRMING", "CORRECTING", "DELETING", "INVITE_PENDING"
 ]
 
 CONFIRM_WORDS = {"sim", "s", "yes", "y", "ok", "confirmar", "confirma", "certo", "isso", "exato", "correto"}
@@ -51,10 +51,11 @@ GOAL_SUGGESTIONS = {
 }
 
 _STATE_TIMEOUTS = {
-    "CONFIRMING": timedelta(minutes=10),
-    "CORRECTING": timedelta(minutes=5),
-    "DELETING":   timedelta(minutes=5),
-    "BACKDATING": timedelta(minutes=10),
+    "CONFIRMING":     timedelta(minutes=10),
+    "CORRECTING":     timedelta(minutes=5),
+    "DELETING":       timedelta(minutes=5),
+    "BACKDATING":     timedelta(minutes=10),
+    "INVITE_PENDING": timedelta(minutes=30),
 }
 
 # Hora padrão (local) usada ao salvar um registro retroativo por tipo de refeição
@@ -170,6 +171,9 @@ class ConversationService:
 
         if state == "BACKDATING":
             return await self._handle_backdating(user, str(content), db)
+
+        if state == "INVITE_PENDING":
+            return await self._handle_invite_pending(user, str(content), db)
 
         # IDLE
         if message_type == "text":
@@ -1296,6 +1300,11 @@ class ConversationService:
     # ── Comandos ──────────────────────────────────────────────────────────────
 
     async def _cmd_start(self, user: User, args, db: AsyncSession) -> str:
+        # Deep link de convite nutricionista: /start convite_TOKEN
+        if args and str(args).startswith("convite_"):
+            token = str(args)[len("convite_"):]
+            return await self._iniciar_convite(user, token, db)
+
         # Sempre libera estado preso — /start funciona como escape de emergência
         if user.conversation_state not in ("IDLE", "ONBOARDING"):
             user.conversation_state = "IDLE"
@@ -1699,15 +1708,56 @@ class ConversationService:
             "WhatsApp ainda não suporta envio de arquivos JSON."
         )
 
-    async def _cmd_privacidade(self, user: User, args, db) -> str:
-        return (
+    async def _cmd_privacidade(self, user: User, args, db: AsyncSession) -> str:
+        # Lista nutricionistas com acesso ativo (LGPD — Art. 11)
+        from app.models.nutritionist_patient import NutritionistPatient
+        from sqlalchemy import select as sa_select
+        from sqlalchemy.orm import selectinload
+
+        nutri_links: list[str] = []
+        if db and user.id:
+            result = await db.execute(
+                sa_select(NutritionistPatient)
+                .where(
+                    NutritionistPatient.patient_id == user.id,
+                    NutritionistPatient.status == "active",
+                )
+                .order_by(NutritionistPatient.consented_at)
+            )
+            links = result.scalars().all()
+            for lk in links:
+                nutri_result = await db.execute(
+                    sa_select(User).where(User.id == lk.nutritionist_id)
+                )
+                nutri = nutri_result.scalar_one_or_none()
+                if nutri:
+                    crn = (nutri.state_data or {}).get("crn", "CRN não informado")
+                    consented = lk.consented_at.strftime("%d/%m/%Y") if lk.consented_at else "?"
+                    nutri_links.append(
+                        f"• {nutri.first_name or 'Nutricionista'} ({crn}) — desde {consented}"
+                    )
+
+        base_text = (
             "🔒 *Privacidade e LGPD*\n\n"
             "Seus dados de saúde são protegidos conforme a LGPD (Lei 13.709/2018) "
             "como *dados sensíveis* (Art. 11).\n\n"
+        )
+
+        if nutri_links:
+            base_text += (
+                "👩‍⚕️ *Nutricionistas com acesso ativo:*\n"
+                + "\n".join(nutri_links)
+                + "\n\nPara revogar o acesso, responda com: *revogar [nome da nutricionista]*\n\n"
+            )
+        else:
+            base_text += "👩‍⚕️ Nenhuma nutricionista tem acesso aos seus dados no momento.\n\n"
+
+        base_text += (
             "• /exportar\\_dados — baixar seus dados\n"
             "• /deletar\\_dados — apagar tudo em até 72h\n\n"
             "📄 [Política de Privacidade completa](https://nutri.bot/privacidade)"
         )
+        return base_text
 
     async def _cmd_vincular(self, user: User, args, db: AsyncSession) -> str:
         """Gera um código temporário para vincular a conta Telegram ao painel web."""
@@ -2092,6 +2142,127 @@ class ConversationService:
             f"↩️ *{name}* ({hora} — {kcal:.0f} kcal) desfeito!\n"
             "Use /hoje para ver o resumo atualizado."
         )
+
+    # ── Convites de nutricionista (B2B-1) ─────────────────────────────────────
+
+    async def _iniciar_convite(self, user: User, token: str, db: AsyncSession) -> str:
+        """Processa deep link /start convite_TOKEN — exibe a pergunta de consentimento LGPD."""
+        from app.models.nutritionist_patient import NutritionistPatient
+        from sqlalchemy import select as sa_select
+
+        result = await db.execute(
+            sa_select(NutritionistPatient).where(
+                NutritionistPatient.invite_token == token
+            )
+        )
+        link = result.scalar_one_or_none()
+
+        if not link:
+            return (
+                "❌ Link de convite inválido ou expirado.\n"
+                "Peça à sua nutricionista um novo convite."
+            )
+        if link.status != "pending":
+            status_msgs = {
+                "active":   "Este convite já foi aceito anteriormente.",
+                "declined": "Este convite já foi recusado.",
+                "expired":  "Este convite expirou. Peça à sua nutricionista um novo link.",
+                "revoked":  "Este vínculo foi revogado.",
+            }
+            return status_msgs.get(link.status, "Este convite não está mais disponível.")
+
+        if datetime.utcnow() > link.expires_at.replace(tzinfo=None):
+            link.status = "expired"
+            await db.commit()
+            return "⌛ Este convite expirou (válido por 7 dias). Peça à sua nutricionista um novo link."
+
+        # Busca dados da nutricionista para exibir no consentimento
+        from sqlalchemy import select as _sel
+        nutri_result = await db.execute(
+            _sel(User).where(User.id == link.nutritionist_id)
+        )
+        nutri = nutri_result.scalar_one_or_none()
+        nutri_name = nutri.first_name or "Sua nutricionista" if nutri else "Sua nutricionista"
+        crn = (nutri.state_data or {}).get("crn", "CRN não informado") if nutri else "CRN não informado"
+
+        # Salva token no state_data para processar a resposta SIM/NÃO
+        user.conversation_state = "INVITE_PENDING"
+        user.state_data = {"invite_token": token, "nutri_name": nutri_name, "crn": crn}
+        self._set_timed_state(user, "INVITE_PENDING")
+        await db.commit()
+
+        return (
+            f"👩‍⚕️ *{nutri_name}* ({crn}) quer acompanhar sua alimentação pelo NutriBot.\n\n"
+            "Ela poderá ver seus registros diários e relatórios.\n"
+            "Você pode revogar esse acesso quando quiser digitando /privacidade.\n\n"
+            "✅ Aceita? Responda *SIM* ou *NÃO*."
+        )
+
+    async def _handle_invite_pending(self, user: User, text: str, db: AsyncSession) -> str:
+        """Processa a resposta SIM/NÃO ao convite da nutricionista."""
+        txt = text.strip().lower()
+        data = user.state_data or {}
+        token = data.get("invite_token", "")
+        nutri_name = data.get("nutri_name", "nutricionista")
+
+        # Reseta estado independente da resposta
+        user.conversation_state = "IDLE"
+        user.state_data = None
+        user.state_expires_at = None
+
+        if not token:
+            await db.commit()
+            return "Ocorreu um erro ao processar o convite. Por favor, tente o link novamente."
+
+        if txt in CONFIRM_WORDS:
+            aceitar = True
+        elif txt in DENY_WORDS:
+            aceitar = False
+        else:
+            # Resposta não reconhecida — mantém o estado e repergunata
+            user.conversation_state = "INVITE_PENDING"
+            user.state_data = data
+            self._set_timed_state(user, "INVITE_PENDING")
+            await db.commit()
+            return "Não entendi. Responda *SIM* para aceitar ou *NÃO* para recusar."
+
+        await db.commit()
+
+        # Chama o endpoint interno de aceite/recusa
+        import httpx
+        from app.config import settings
+        base = (settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+        try:
+            async with httpx.AsyncClient(timeout=5.0) as client:
+                resp = await client.patch(
+                    f"{base}/api/nutricionista/convite/{token}",
+                    params={
+                        "aceitar": aceitar,
+                        "patient_user_id": str(user.id),
+                        "include_history": False,
+                    },
+                )
+            if resp.status_code not in (200, 409):
+                raise ValueError(f"HTTP {resp.status_code}")
+        except Exception as e:
+            logger.error(f"[INVITE] Erro ao processar resposta do convite: {e}")
+            return (
+                "Ocorreu um erro ao registrar sua resposta. "
+                "Por favor, tente clicar no link de convite novamente."
+            )
+
+        if aceitar:
+            return (
+                f"✅ *Pronto!* {nutri_name} agora pode acompanhar sua alimentação.\n\n"
+                "Você pode revogar esse acesso quando quiser digitando /privacidade.\n\n"
+                "Continue usando o NutriBot normalmente — nada muda para você! 🥗"
+            )
+        else:
+            return (
+                f"❌ Convite de {nutri_name} recusado.\n\n"
+                "Seus dados continuam 100% privados. "
+                "Se mudar de ideia, peça à nutricionista um novo convite."
+            )
 
 
 conversation_service = ConversationService()

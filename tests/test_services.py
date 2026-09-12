@@ -909,8 +909,9 @@ class TestSchedulerJobs:
         assert result is mock_sched
         mock_sched.start.assert_called_once()
         # 5 alertas (café/lanche-manhã/almoço/lanche-tarde/jantar)
-        # + 3 relatórios (weekly/monthly/quarterly) + 1 re-engajamento = 9
-        assert mock_sched.add_job.call_count == 9
+        # + 3 relatórios (weekly/monthly/quarterly) + 1 re-engajamento
+        # + 1 expiração de convites B2B = 10
+        assert mock_sched.add_job.call_count == 10
 
 
 # ═════════════════════════════════════════════════════════════════════════════

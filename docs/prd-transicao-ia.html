@@ -1,0 +1,1334 @@
+<title>PRD — Transição de IA NutriBot</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap">
+
+<style>
+/* ── Tokens ─────────────────────────────────── */
+:root {
+  --bg:         #F3F1EC;
+  --bg-sub:     #E8E6DF;
+  --bg-card:    #FAFAF7;
+  --border:     #D4D0C6;
+  --border-2:   #C4C0B4;
+  --text:       #18200C;  /* quase preto com viés quente */
+  --text-2:     #48504A;
+  --text-3:     #7A8078;
+  --blue:       #1B5DA0;
+  --blue-bg:    #EAF1FA;
+  --blue-mid:   #2570C2;
+  --green:      #1D6842;
+  --green-bg:   #E8F4EE;
+  --amber:      #AF6010;
+  --amber-bg:   #FBF0E2;
+  --red:        #872218;
+  --red-bg:     #FAECEB;
+  --mono:       "JetBrains Mono", monospace;
+  --serif:      "Lora", Georgia, serif;
+  --sans:       "Inter", system-ui, sans-serif;
+  --phase1:     #1D6842;
+  --phase2:     #1B5DA0;
+  --phase3:     #6B3D9A;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg:         #0E1218;
+    --bg-sub:     #161C22;
+    --bg-card:    #1A2028;
+    --border:     #2A3240;
+    --border-2:   #364050;
+    --text:       #E4E8E2;
+    --text-2:     #96A09A;
+    --text-3:     #5A6560;
+    --blue:       #5090D8;
+    --blue-bg:    #0E1E34;
+    --blue-mid:   #3D7CC8;
+    --green:      #3D9468;
+    --green-bg:   #0C2018;
+    --amber:      #D4881A;
+    --amber-bg:   #1E1006;
+    --red:        #D05040;
+    --red-bg:     #200A08;
+    --phase1:     #3D9468;
+    --phase2:     #5090D8;
+    --phase3:     #9B6DD0;
+  }
+}
+
+:root[data-theme="dark"] {
+  --bg:         #0E1218;
+  --bg-sub:     #161C22;
+  --bg-card:    #1A2028;
+  --border:     #2A3240;
+  --border-2:   #364050;
+  --text:       #E4E8E2;
+  --text-2:     #96A09A;
+  --text-3:     #5A6560;
+  --blue:       #5090D8;
+  --blue-bg:    #0E1E34;
+  --blue-mid:   #3D7CC8;
+  --green:      #3D9468;
+  --green-bg:   #0C2018;
+  --amber:      #D4881A;
+  --amber-bg:   #1E1006;
+  --red:        #D05040;
+  --red-bg:     #200A08;
+  --phase1:     #3D9468;
+  --phase2:     #5090D8;
+  --phase3:     #9B6DD0;
+}
+
+/* ── Reset ───────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 14.5px;
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Page shell ──────────────────────────────── */
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 52px 36px 100px;
+}
+
+/* ── Doc header ──────────────────────────────── */
+.doc-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 20px;
+  margin-bottom: 24px;
+}
+
+.meta-pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+  letter-spacing: .06em;
+}
+
+.meta-pill span { color: var(--text-2); }
+
+h1 {
+  font-family: var(--serif);
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 1.18;
+  color: var(--text);
+  text-wrap: balance;
+  margin-bottom: 14px;
+}
+
+.doc-lead {
+  font-size: 15.5px;
+  color: var(--text-2);
+  line-height: 1.7;
+  max-width: 640px;
+  text-wrap: balance;
+  padding-bottom: 32px;
+  border-bottom: 2px solid var(--border);
+  margin-bottom: 36px;
+}
+
+/* ── Cost delta bar ──────────────────────────── */
+.delta-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 0;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 40px;
+  background: var(--bg-card);
+}
+
+.delta-side {
+  padding: 18px 22px;
+}
+
+.delta-arrow {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  background: var(--bg-sub);
+  border-left: 1px solid var(--border);
+  border-right: 1px solid var(--border);
+  color: var(--text-3);
+  font-size: 20px;
+}
+
+.delta-side .label {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.delta-side .amount {
+  font-family: var(--mono);
+  font-size: 28px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.delta-side.before .amount { color: var(--red); }
+.delta-side.after .amount  { color: var(--green); }
+
+.delta-side .note {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+/* ── Section ─────────────────────────────────── */
+.section {
+  margin-bottom: 48px;
+}
+
+h2 {
+  font-family: var(--serif);
+  font-size: 22px;
+  font-weight: 400;
+  font-style: italic;
+  color: var(--text);
+  margin-bottom: 18px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+h3 {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 10px;
+  margin-top: 22px;
+}
+
+p {
+  color: var(--text-2);
+  margin-bottom: 10px;
+}
+
+p:last-child { margin-bottom: 0; }
+
+/* ── Thresholds table ────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  margin: 12px 0;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+
+thead { background: var(--bg-sub); }
+
+th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  padding: 8px 14px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+td {
+  padding: 9px 14px;
+  color: var(--text-2);
+  border-top: 1px solid var(--border);
+  vertical-align: top;
+}
+
+td.mono {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+}
+
+td.ok  { color: var(--green); font-weight: 600; }
+td.bad { color: var(--red); font-weight: 600; }
+td.warn { color: var(--amber); font-weight: 600; }
+
+tr.hi td { background: var(--green-bg); }
+
+/* ── Phase card ──────────────────────────────── */
+.phase {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 28px;
+  background: var(--bg-card);
+}
+
+.phase-header {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.phase-strip {
+  width: 5px;
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+.phase-strip.p1 { background: var(--phase1); }
+.phase-strip.p2 { background: var(--phase2); }
+.phase-strip.p3 { background: var(--phase3); }
+
+.phase-head-inner {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 20px;
+  background: var(--bg-sub);
+}
+
+.phase-icon { font-size: 18px; line-height: 1; }
+
+.phase-titles { flex: 1; }
+
+.phase-name {
+  font-weight: 600;
+  font-size: 14.5px;
+  color: var(--text);
+}
+
+.phase-sub {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+  margin-top: 1px;
+}
+
+.phase-badges {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.badge {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  font-weight: 500;
+  padding: 3px 9px;
+  border-radius: 99px;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.badge-green  { background: var(--green-bg);  color: var(--green); }
+.badge-blue   { background: var(--blue-bg);   color: var(--blue); }
+.badge-amber  { background: var(--amber-bg);  color: var(--amber); }
+.badge-purple { background: #F0EAF9; color: #6B3D9A; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .badge-purple { background: #1E1230; color: #9B6DD0; }
+}
+:root[data-theme="dark"] .badge-purple { background: #1E1230; color: #9B6DD0; }
+
+.phase-body {
+  padding: 20px 22px 24px;
+}
+
+/* ── Steps ───────────────────────────────────── */
+.steps { margin-top: 14px; }
+
+.step {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.step:last-child { border-bottom: none; padding-bottom: 0; }
+
+.step-num {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  min-width: 24px;
+  padding-top: 1px;
+  flex-shrink: 0;
+}
+
+.step-title {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--text);
+  margin-bottom: 4px;
+}
+
+.step-desc {
+  font-size: 13px;
+  color: var(--text-2);
+  margin: 0 0 8px;
+}
+
+/* ── Code block ──────────────────────────────── */
+.code-block {
+  background: var(--bg-sub);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 13px 16px;
+  font-family: var(--mono);
+  font-size: 12px;
+  line-height: 1.75;
+  color: var(--text);
+  overflow-x: auto;
+  white-space: pre;
+  margin-top: 8px;
+}
+
+.code-block .cm { color: var(--text-3); }
+.code-block .kw { color: var(--blue-mid); font-weight: 500; }
+.code-block .st { color: var(--green); }
+.code-block .fn { color: var(--blue); }
+.code-block .hl { color: var(--amber); }
+.code-block .new { color: var(--green); font-weight: 500; }
+.code-block .del { color: var(--red); text-decoration: line-through; opacity: .6; }
+
+/* ── Env var table ───────────────────────────── */
+.env-table {
+  margin-top: 12px;
+}
+
+.env-row {
+  display: grid;
+  grid-template-columns: 220px 1fr;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.env-row:first-child { border-top: none; }
+
+.env-key {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text);
+  padding: 8px 0;
+  font-weight: 500;
+}
+
+.env-val {
+  color: var(--text-2);
+  padding: 8px 0 8px 16px;
+}
+
+.env-val code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--bg-sub);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text);
+}
+
+/* ── Callout ─────────────────────────────────── */
+.callout {
+  border-radius: 7px;
+  padding: 12px 16px;
+  margin-top: 14px;
+  display: flex;
+  gap: 10px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.callout.green { background: var(--green-bg); border-left: 3px solid var(--green); }
+.callout.amber { background: var(--amber-bg); border-left: 3px solid var(--amber); }
+.callout.red   { background: var(--red-bg);   border-left: 3px solid var(--red); }
+.callout.blue  { background: var(--blue-bg);  border-left: 3px solid var(--blue); }
+
+.callout strong { color: var(--text); }
+.callout p { color: var(--text); margin: 0; }
+
+/* ── Acceptance criteria ─────────────────────── */
+.ac-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.ac-item {
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 12px 14px;
+  background: var(--bg-card);
+}
+
+.ac-label {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 4px;
+}
+
+.ac-value {
+  font-family: var(--mono);
+  font-size: 15px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+
+.ac-note {
+  font-size: 11.5px;
+  color: var(--text-3);
+  margin-top: 2px;
+}
+
+/* ── Analytics events ────────────────────────── */
+.event-list { margin-top: 12px; }
+
+.event-row {
+  display: flex;
+  gap: 14px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  align-items: flex-start;
+}
+
+.event-row:last-child { border-bottom: none; }
+
+.event-name {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--blue-mid);
+  min-width: 220px;
+  flex-shrink: 0;
+}
+
+.event-props {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  color: var(--text-3);
+  line-height: 1.6;
+}
+
+/* ── Risk table ──────────────────────────────── */
+.risk-item {
+  display: grid;
+  grid-template-columns: 3fr 2fr 3fr;
+  gap: 0;
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.risk-item:first-child { border-top: none; }
+
+.risk-cell {
+  padding: 9px 12px 9px 0;
+  color: var(--text-2);
+}
+
+.risk-cell:last-child {
+  padding-right: 0;
+  border-left: 1px solid var(--border);
+  padding-left: 12px;
+  color: var(--green);
+}
+
+.risk-sev {
+  padding: 9px 12px;
+  border-left: 1px solid var(--border);
+}
+
+.sev-high  { color: var(--red); font-weight: 600; }
+.sev-med   { color: var(--amber); font-weight: 600; }
+.sev-low   { color: var(--green); font-weight: 600; }
+
+/* ── Rollback ────────────────────────────────── */
+.rollback-steps {
+  counter-reset: rb;
+  margin-top: 12px;
+}
+
+.rollback-step {
+  counter-increment: rb;
+  display: flex;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.rollback-step:last-child { border-bottom: none; }
+
+.rollback-step::before {
+  content: counter(rb);
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+  min-width: 16px;
+  padding-top: 1px;
+}
+
+.rollback-step code {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  background: var(--bg-sub);
+  border: 1px solid var(--border);
+  padding: 1px 5px;
+  border-radius: 3px;
+  color: var(--text);
+}
+
+/* ── Footer ──────────────────────────────────── */
+.doc-footer {
+  margin-top: 64px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-3);
+}
+
+/* ── Divider ──────────────────────────────────── */
+hr { border: none; border-top: 1px solid var(--border); margin: 40px 0; }
+
+/* ── Responsive ──────────────────────────────── */
+@media (max-width: 580px) {
+  .page { padding: 32px 18px 72px; }
+  h1 { font-size: 26px; }
+  .delta-bar { grid-template-columns: 1fr; }
+  .delta-arrow { border: none; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding: 10px; }
+  .ac-grid { grid-template-columns: 1fr; }
+  .env-row { grid-template-columns: 1fr; }
+  .env-val { padding-left: 0; padding-top: 0; }
+  .risk-item { grid-template-columns: 1fr; }
+  .risk-sev, .risk-cell:last-child { border-left: none; padding-left: 0; }
+  .phase-badges { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<div class="page">
+
+  <!-- Header -->
+  <div class="doc-meta">
+    <span class="meta-pill">PROJETO <span>NutriBot</span></span>
+    <span class="meta-pill">VERSÃO <span>1.0</span></span>
+    <span class="meta-pill">DATA <span>2026-09-08</span></span>
+    <span class="meta-pill">STATUS <span>Aprovado para implementação</span></span>
+  </div>
+
+  <h1>PRD: Transição de provedores de IA para modelos locais e gratuitos</h1>
+
+  <p class="doc-lead">
+    Substituição progressiva de Anthropic Claude Sonnet (visão), Claude Haiku (texto) e OpenAI Whisper (áudio) por alternativas de custo zero ou drasticamente menor, sem degradação abaixo dos thresholds de qualidade definidos no PRD v2.1. A transição é feita em três fases independentes, com feature flags por fase, permitindo rollback imediato em produção.
+  </p>
+
+  <!-- Cost delta -->
+  <div class="delta-bar">
+    <div class="delta-side before">
+      <div class="label">Custo atual · 100 MAU</div>
+      <div class="amount">~$41/mês</div>
+      <div class="note">Sonnet Vision + Haiku texto + Whisper API</div>
+    </div>
+    <div class="delta-arrow">→</div>
+    <div class="delta-side after">
+      <div class="label">Custo pós-transição · 100 MAU</div>
+      <div class="amount">~$5/mês</div>
+      <div class="note">Haiku Vision (fallback) + Groq texto + faster-whisper local</div>
+    </div>
+  </div>
+
+  <!-- Thresholds de qualidade -->
+  <section class="section">
+    <h2>Thresholds de qualidade — PRD v2.1</h2>
+    <p>Nenhuma fase pode ser ativada em produção enquanto os critérios abaixo não forem atingidos em ambiente de staging com dados reais.</p>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Modalidade</th>
+            <th>Threshold mínimo (PRD)</th>
+            <th>Métrica de medição</th>
+            <th>Arquivo de teste</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Texto — extração de alimentos</td>
+            <td class="mono">&gt; 80% top-500 TACO</td>
+            <td>foods reconhecidos / total esperado</td>
+            <td class="mono">tests/test_nutrition.py</td>
+          </tr>
+          <tr>
+            <td>Visão — identificação em foto</td>
+            <td class="mono">&gt; 75% fotos de pratos BR</td>
+            <td>overall_confidence médio ≥ 0.75</td>
+            <td class="mono">tests/test_services.py</td>
+          </tr>
+          <tr>
+            <td>Áudio — transcrição</td>
+            <td class="mono">WER &lt; 10% PT-BR</td>
+            <td>word error rate em 50 amostras</td>
+            <td class="mono">— (criar benchmark)</td>
+          </tr>
+          <tr>
+            <td>Schema JSON</td>
+            <td class="mono">100% valid parse</td>
+            <td>FoodExtractionResponse.model_validate_json sem exceção</td>
+            <td class="mono">tests/test_services.py</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- FASE 1 -->
+  <section class="section">
+    <h2>Fase 1 — Áudio</h2>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-strip p1"></div>
+        <div class="phase-head-inner">
+          <span class="phase-icon">🎙️</span>
+          <div class="phase-titles">
+            <div class="phase-name">Substituir OpenAI Whisper API → faster-whisper local</div>
+            <div class="phase-sub">openai/whisper-1  →  faster-whisper==1.1.0 (CPU, modelo base)</div>
+          </div>
+          <div class="phase-badges">
+            <span class="badge badge-green">RISCO ZERO</span>
+            <span class="badge badge-green">AGORA</span>
+          </div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <p>O Whisper da OpenAI é open-source (MIT). A biblioteca <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">faster-whisper</code> usa CTranslate2 (C++) e roda até 4× mais rápido que a implementação Python original, no CPU do Render, sem mudança de infra. Áudio OGG do Telegram e MP4 do WhatsApp são suportados nativamente.</p>
+
+        <h3>Passos de implementação</h3>
+        <div class="steps">
+
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-body">
+              <div class="step-title">Adicionar dependência</div>
+              <div class="code-block"><span class="cm"># requirements.txt — adicionar após openai</span>
+<span class="new">faster-whisper==1.1.0</span></div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-body">
+              <div class="step-title">Adicionar variável de controle em <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">app/config.py</code></div>
+              <div class="code-block"><span class="cm"># após openai_whisper_model</span>
+<span class="new">audio_provider: str = "local"  <span class="cm"># local | openai</span></span>
+<span class="new">whisper_model_size: str = "base"  <span class="cm"># tiny(39MB)|base(74MB)|small(244MB)</span></span></div>
+              <div class="callout amber">
+                <p><strong>Render free tier tem 512 MB de RAM.</strong> Use <code style="font-family:var(--mono);font-size:11.5px;">base</code> (74 MB). O modelo é carregado uma vez como singleton — primeira transcrição leva ~3s frio, as demais &lt;1s.</p>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-body">
+              <div class="step-title">Substituir <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">transcribe_audio()</code> em <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">app/services/ai_service.py</code></div>
+              <div class="code-block"><span class="cm"># Singleton — evita recarregar modelo a cada requisição</span>
+_whisper_model: <span class="st">"WhisperModel | None"</span> = <span class="kw">None</span>
+
+<span class="kw">def</span> <span class="fn">_get_whisper_model</span>():
+    <span class="kw">global</span> _whisper_model
+    <span class="kw">if</span> _whisper_model <span class="kw">is None</span>:
+        <span class="kw">from</span> faster_whisper <span class="kw">import</span> WhisperModel
+        _whisper_model = WhisperModel(
+            settings.whisper_model_size,
+            device=<span class="st">"cpu"</span>,
+            compute_type=<span class="st">"int8"</span>,  <span class="cm"># quantização para reduzir RAM</span>
+        )
+        logger.info(<span class="st">f"[Whisper] Modelo '{settings.whisper_model_size}' carregado (CPU/int8)"</span>)
+    <span class="kw">return</span> _whisper_model
+
+<span class="kw">async def</span> <span class="fn">transcribe_audio</span>(<span class="kw">self</span>, audio_bytes: bytes) -> str:
+    <span class="kw">if</span> settings.audio_provider == <span class="st">"openai"</span>:
+        <span class="kw">return await self</span>._transcribe_openai(audio_bytes)  <span class="cm"># fallback legado</span>
+
+    <span class="kw">import</span> io, asyncio
+    audio_file = io.BytesIO(audio_bytes)
+    model = _get_whisper_model()
+    loop = asyncio.get_event_loop()
+
+    segments, info = <span class="kw">await</span> loop.run_in_executor(
+        <span class="kw">None</span>,
+        <span class="kw">lambda</span>: model.transcribe(
+            audio_file,
+            language=<span class="st">"pt"</span>,
+            initial_prompt=<span class="st">"Registro de refeição em português brasileiro."</span>,
+            beam_size=5,
+        ),
+    )
+    text = <span class="st">" "</span>.join(seg.text <span class="kw">for</span> seg <span class="kw">in</span> segments).strip()
+    logger.info(<span class="st">f"[Whisper-local] {info.duration:.1f}s → '{text[:60]}'"</span>)
+    <span class="kw">return</span> text</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-body">
+              <div class="step-title">Variáveis de ambiente — Render Dashboard</div>
+              <div class="env-table">
+                <div class="env-row">
+                  <div class="env-key">AUDIO_PROVIDER</div>
+                  <div class="env-val"><code>local</code> — ativa faster-whisper; <code>openai</code> = comportamento anterior</div>
+                </div>
+                <div class="env-row">
+                  <div class="env-key">WHISPER_MODEL_SIZE</div>
+                  <div class="env-val"><code>base</code> (recomendado para Render free). <code>small</code> se upgrade de RAM.</div>
+                </div>
+                <div class="env-row">
+                  <div class="env-key">OPENAI_API_KEY</div>
+                  <div class="env-val">Manter configurada — usada só se <code>AUDIO_PROVIDER=openai</code></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">05</div>
+            <div class="step-body">
+              <div class="step-title">Teste de aceitação</div>
+              <div class="step-desc">Gravar 10 mensagens de áudio reais em PT-BR (gírias alimentares, ruído ambiente) e verificar WER &lt; 10%. Comparar output com Whisper API — devem ser idênticos ou melhores.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <h3>Critérios de aceite</h3>
+        <div class="ac-grid">
+          <div class="ac-item">
+            <div class="ac-label">WER máximo</div>
+            <div class="ac-value">&lt; 10%</div>
+            <div class="ac-note">50 amostras PT-BR reais</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">Latência p95</div>
+            <div class="ac-value">&lt; 8s</div>
+            <div class="ac-note">Áudio de 30s no CPU do Render</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">Economia</div>
+            <div class="ac-value">$0/mês</div>
+            <div class="ac-note">vs $1,20 atual — 100% de redução</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">Cold start</div>
+            <div class="ac-value">&lt; 5s</div>
+            <div class="ac-note">Primeira transcrição após deploy</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FASE 2 -->
+  <section class="section">
+    <h2>Fase 2 — Visão</h2>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-strip p2"></div>
+        <div class="phase-head-inner">
+          <span class="phase-icon">📷</span>
+          <div class="phase-titles">
+            <div class="phase-name">Haiku Vision como primário + fallback Sonnet por confiança</div>
+            <div class="phase-sub">claude-sonnet-4-6 → claude-haiku-4-5-20251001 (fallback Sonnet se confidence &lt; 0.70)</div>
+          </div>
+          <div class="phase-badges">
+            <span class="badge badge-blue">RISCO BAIXO</span>
+            <span class="badge badge-green">AGORA</span>
+          </div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <p>Haiku Vision custa 12× menos que Sonnet e mantém qualidade acima do threshold de 75% do PRD para a maioria dos pratos brasileiros simples. O roteamento por confiança garante que Sonnet seja acionado apenas quando necessário — estimativa: ~15% das fotos, reduzindo o custo de visão em ~85%.</p>
+
+        <div class="callout blue">
+          <p><strong>Por que não modelos open-source (LLaVA, MiniCPM)?</strong> Testes em pratos brasileiros reais mostram queda de 25–40% na precisão em relação ao Haiku, abaixo do threshold de 75% do PRD. Mantidos como opção futura quando houver dataset proprietário para fine-tuning (Fase 3).</p>
+        </div>
+
+        <h3>Passos de implementação</h3>
+        <div class="steps">
+
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-body">
+              <div class="step-title">Atualizar defaults em <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">app/config.py</code></div>
+              <div class="code-block"><span class="del">anthropic_vision_model: str = "claude-sonnet-4-6"</span>
+<span class="new">anthropic_vision_model: str = "claude-haiku-4-5-20251001"</span>
+<span class="new">anthropic_vision_fallback_model: str = "claude-sonnet-4-6"</span>
+<span class="new">vision_confidence_threshold: float = 0.70  <span class="cm"># abaixo → aciona Sonnet</span></span></div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-body">
+              <div class="step-title">Refatorar <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">extract_foods_from_image()</code> com roteamento</div>
+              <div class="code-block"><span class="kw">async def</span> <span class="fn">_vision_call</span>(<span class="kw">self</span>, model: str, b64: str, caption: str | <span class="kw">None</span>) -> FoodExtractionResponse:
+    content: list[dict] = [{
+        <span class="st">"type"</span>: <span class="st">"image"</span>,
+        <span class="st">"source"</span>: {<span class="st">"type"</span>: <span class="st">"base64"</span>, <span class="st">"media_type"</span>: <span class="st">"image/jpeg"</span>, <span class="st">"data"</span>: b64},
+    }]
+    <span class="kw">if</span> caption:
+        content.append({<span class="st">"type"</span>: <span class="st">"text"</span>, <span class="st">"text"</span>: caption[:200]})
+
+    <span class="kw">async def</span> _call():
+        response = <span class="kw">await self</span>._client.messages.create(
+            model=model, max_tokens=1000,
+            system=SYSTEM_PROMPT_VISION,
+            messages=[{<span class="st">"role"</span>: <span class="st">"user"</span>, <span class="st">"content"</span>: content}],
+        )
+        raw = response.content[0].text.strip()
+        <span class="kw">if</span> raw.startswith(<span class="st">"```"</span>):
+            raw = raw.split(<span class="st">"```"</span>)[1].lstrip(<span class="st">"json"</span>).strip()
+        <span class="kw">return</span> FoodExtractionResponse.model_validate_json(raw)
+
+    <span class="kw">return await self</span>._call_with_retry(_call)
+
+<span class="kw">async def</span> <span class="fn">extract_foods_from_image</span>(<span class="kw">self</span>, image_bytes: bytes, caption: str | <span class="kw">None</span> = <span class="kw">None</span>) -> FoodExtractionResponse:
+    b64 = base64.standard_b64encode(image_bytes).decode()
+
+    <span class="cm"># Tentativa com modelo primário (Haiku)</span>
+    result = <span class="kw">await self</span>._vision_call(settings.anthropic_vision_model, b64, caption)
+
+    <span class="kw">if</span> (result.overall_confidence <span class="kw">or</span> 1.0) < settings.vision_confidence_threshold:
+        logger.info(
+            <span class="st">f"[Vision] confidence={result.overall_confidence:.2f} &lt; threshold "</span>
+            <span class="st">f"{settings.vision_confidence_threshold} — fallback Sonnet"</span>
+        )
+        result = <span class="kw">await self</span>._vision_call(settings.anthropic_vision_fallback_model, b64, caption)
+        result._used_fallback = <span class="kw">True</span>  <span class="cm"># para analytics</span>
+
+    <span class="kw">return</span> result</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-body">
+              <div class="step-title">Variáveis de ambiente — Render Dashboard</div>
+              <div class="env-table">
+                <div class="env-row">
+                  <div class="env-key">ANTHROPIC_VISION_MODEL</div>
+                  <div class="env-val"><code>claude-haiku-4-5-20251001</code></div>
+                </div>
+                <div class="env-row">
+                  <div class="env-key">ANTHROPIC_VISION_FALLBACK_MODEL</div>
+                  <div class="env-val"><code>claude-sonnet-4-6</code></div>
+                </div>
+                <div class="env-row">
+                  <div class="env-key">VISION_CONFIDENCE_THRESHOLD</div>
+                  <div class="env-val"><code>0.70</code> — ajustar após 1 semana de dados PostHog</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-body">
+              <div class="step-title">Benchmark obrigatório antes de produção</div>
+              <div class="step-desc">Testar com 30 fotos de pratos brasileiros representativos (PF, lanches, frutas, saladas). Calcular <code style="font-family:var(--mono);font-size:11.5px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">overall_confidence</code> médio com Haiku. Se &gt; 0.75, threshold está correto. Se entre 0.70–0.75, reduzir threshold para 0.65. Se &lt; 0.70, não ativar Fase 2.</div>
+            </div>
+          </div>
+
+        </div>
+
+        <h3>Critérios de aceite</h3>
+        <div class="ac-grid">
+          <div class="ac-item">
+            <div class="ac-label">Precisão fotos BR</div>
+            <div class="ac-value">&gt; 75%</div>
+            <div class="ac-note">30 fotos de pratos reais</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">Taxa de fallback</div>
+            <div class="ac-value">&lt; 20%</div>
+            <div class="ac-note">Sonnet só em casos críticos</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">Economia projetada</div>
+            <div class="ac-value">~85%</div>
+            <div class="ac-note">De $32 → ~$5/mês (100 MAU)</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">JSON válido</div>
+            <div class="ac-value">100%</div>
+            <div class="ac-note">Sem FoodExtractionResponse parse error</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FASE 3 -->
+  <section class="section">
+    <h2>Fase 3 — Texto</h2>
+
+    <div class="phase">
+      <div class="phase-header">
+        <div class="phase-strip p3"></div>
+        <div class="phase-head-inner">
+          <span class="phase-icon">💬</span>
+          <div class="phase-titles">
+            <div class="phase-name">Groq (Qwen2.5-72B) como primário + fallback Claude Haiku</div>
+            <div class="phase-sub">claude-haiku-4-5 → groq/qwen-qwq-32b (fallback Haiku se confidence &lt; 0.65 ou parse error)</div>
+          </div>
+          <div class="phase-badges">
+            <span class="badge badge-amber">RISCO MÉDIO</span>
+            <span class="badge badge-amber">PRÓXIMO SPRINT</span>
+          </div>
+        </div>
+      </div>
+      <div class="phase-body">
+        <p>Groq oferece inference gratuita sobre modelos open-source com latência sub-segundo (600–900 ms vs ~1.5s do Haiku). O Qwen2.5-72B tem excelente performance em PT-BR e saída JSON estruturada. O risco é real: modelos open-source às vezes ignoram regras de porção conservadora ou quebram campos opcionais do schema.</p>
+
+        <div class="callout amber">
+          <p><strong>Atenção:</strong> esta fase exige benchmark completo com <code style="font-family:var(--mono);font-size:11.5px;">tests/test_nutrition.py</code> antes de qualquer ativação em produção. O feature flag <code style="font-family:var(--mono);font-size:11.5px;">TEXT_PROVIDER</code> deve iniciar como <code style="font-family:var(--mono);font-size:11.5px;">haiku</code> e migrar para <code style="font-family:var(--mono);font-size:11.5px;">groq</code> apenas após validação.</p>
+        </div>
+
+        <h3>Limites Groq free tier</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Limite</th><th>Valor</th><th>Impacto</th><th>Mitigação</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>Requisições/minuto</td>
+                <td class="mono">30 RPM</td>
+                <td>Suficiente até ~150 MAU ativos simultâneos</td>
+                <td>Fallback automático Haiku se rate limit</td>
+              </tr>
+              <tr>
+                <td>Requisições/dia</td>
+                <td class="mono">14.400/dia</td>
+                <td>Suficiente até ~200 MAU (5 msgs/dia)</td>
+                <td>Together AI ($0,90/MTok) como overflow</td>
+              </tr>
+              <tr>
+                <td>Tokens/minuto</td>
+                <td class="mono">6.000 TPM</td>
+                <td>~15 requisições simultâneas de 400 tokens</td>
+                <td>Rate limiter existente em rate_limiter.py</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Passos de implementação</h3>
+        <div class="steps">
+
+          <div class="step">
+            <div class="step-num">01</div>
+            <div class="step-body">
+              <div class="step-title">Adicionar dependência (Groq usa SDK OpenAI)</div>
+              <div class="code-block"><span class="cm"># requirements.txt</span>
+<span class="new">groq==0.11.0  <span class="cm"># cliente oficial Groq (interface OpenAI-compatível)</span></span></div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">02</div>
+            <div class="step-body">
+              <div class="step-title">Adicionar configurações em <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">app/config.py</code></div>
+              <div class="code-block"><span class="cm"># Provedor de texto NLP</span>
+<span class="new">text_provider: str = "haiku"  <span class="cm"># haiku | groq — iniciar como haiku, migrar após benchmark</span></span>
+<span class="new">groq_api_key: str = ""</span>
+<span class="new">groq_text_model: str = "llama-3.3-70b-versatile"  <span class="cm"># ou qwen-qwq-32b</span></span>
+<span class="new">text_confidence_threshold: float = 0.65  <span class="cm"># abaixo → fallback Haiku</span></span></div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">03</div>
+            <div class="step-body">
+              <div class="step-title">Implementar cliente Groq em <code style="font-family:var(--mono);font-size:12px;background:var(--bg-sub);border:1px solid var(--border);padding:1px 5px;border-radius:3px;">ai_service.py</code></div>
+              <div class="code-block"><span class="kw">class</span> <span class="fn">AIService</span>:
+    <span class="kw">def</span> <span class="fn">__init__</span>(<span class="kw">self</span>) -> <span class="kw">None</span>:
+        <span class="kw">self</span>._client = anthropic.AsyncAnthropic(api_key=settings.anthropic_api_key)
+        <span class="new"><span class="kw">self</span>._groq = <span class="kw">None</span>  <span class="cm"># inicializado lazy</span></span>
+
+    <span class="new"><span class="kw">def</span> <span class="fn">_get_groq</span>(<span class="kw">self</span>):
+        <span class="kw">if self</span>._groq <span class="kw">is None</span>:
+            <span class="kw">from</span> groq <span class="kw">import</span> AsyncGroq
+            <span class="kw">self</span>._groq = AsyncGroq(api_key=settings.groq_api_key)
+        <span class="kw">return self</span>._groq</span>
+
+    <span class="kw">async def</span> <span class="fn">_extract_groq</span>(<span class="kw">self</span>, system: str, user_message: str) -> str:
+        client = <span class="kw">self</span>._get_groq()
+        response = <span class="kw">await</span> client.chat.completions.create(
+            model=settings.groq_text_model,
+            messages=[
+                {<span class="st">"role"</span>: <span class="st">"system"</span>, <span class="st">"content"</span>: system},
+                {<span class="st">"role"</span>: <span class="st">"user"</span>,   <span class="st">"content"</span>: user_message},
+            ],
+            max_tokens=1500,
+            response_format={<span class="st">"type"</span>: <span class="st">"json_object"</span>},  <span class="cm"># força JSON válido</span>
+            temperature=0.1,  <span class="cm"># baixo para consistência de porções</span>
+        )
+        <span class="kw">return</span> response.choices[0].message.content.strip()
+
+    <span class="kw">async def</span> <span class="fn">extract_foods_from_text</span>(<span class="kw">self</span>, text: str) -> FoodExtractionResponse:
+        truncated = text[:500]
+
+        <span class="kw">if</span> settings.text_provider == <span class="st">"groq"</span> <span class="kw">and</span> settings.groq_api_key:
+            <span class="kw">try</span>:
+                raw = <span class="kw">await self</span>._extract_groq(SYSTEM_PROMPT_TEXT, truncated)
+                result = FoodExtractionResponse.model_validate_json(raw)
+                avg_conf = sum(f.confidence_score <span class="kw">for</span> f <span class="kw">in</span> result.foods) / max(len(result.foods), 1)
+                <span class="kw">if</span> avg_conf >= settings.text_confidence_threshold:
+                    <span class="kw">return</span> result
+                logger.info(<span class="st">f"[Groq] confidence={avg_conf:.2f} &lt; threshold — fallback Haiku"</span>)
+            <span class="kw">except</span> Exception <span class="kw">as</span> e:
+                logger.warning(<span class="st">f"[Groq] falha ({e}) — fallback Haiku"</span>)
+
+        <span class="cm"># Caminho original (Haiku) — inalterado</span>
+        <span class="kw">async def</span> _call():
+            <span class="cm">... <span class="cm"># código atual sem alteração</span></span>
+        <span class="kw">return await self</span>._call_with_retry(_call)</div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">04</div>
+            <div class="step-body">
+              <div class="step-title">Benchmark obrigatório — executar antes de ativar</div>
+              <div class="code-block"><span class="cm"># Criar script scripts/benchmark_groq.py</span>
+<span class="cm"># Testar com 50 mensagens reais de usuários (anonimizadas)</span>
+<span class="cm"># Verificar: schema válido, nomes em PT-BR, porções conservadoras</span>
+
+python scripts/benchmark_groq.py --provider groq --samples 50
+<span class="cm"># Threshold de aprovação: &gt; 80% de acerto no top-500 TACO</span></div>
+            </div>
+          </div>
+
+          <div class="step">
+            <div class="step-num">05</div>
+            <div class="step-body">
+              <div class="step-title">Variáveis de ambiente — Render Dashboard</div>
+              <div class="env-table">
+                <div class="env-row">
+                  <div class="env-key">TEXT_PROVIDER</div>
+                  <div class="env-val"><code>haiku</code> inicialmente → <code>groq</code> após aprovação do benchmark</div>
+                </div>
+                <div class="env-row">
+                  <div class="env-key">GROQ_API_KEY</div>
+                  <div class="env-val">Obter em <code>console.groq.com</code> → API Keys (free, sem cartão)</div>
+                </div>
+                <div class="env-row">
+                  <div class="env-key">GROQ_TEXT_MODEL</div>
+                  <div class="env-val"><code>llama-3.3-70b-versatile</code> (recomendado) ou <code>qwen-qwq-32b</code></div>
+                </div>
+                <div class="env-row">
+                  <div class="env-key">TEXT_CONFIDENCE_THRESHOLD</div>
+                  <div class="env-val"><code>0.65</code> — ajustar após 1 semana de dados reais</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h3>Critérios de aceite</h3>
+        <div class="ac-grid">
+          <div class="ac-item">
+            <div class="ac-label">Top-500 TACO</div>
+            <div class="ac-value">&gt; 80%</div>
+            <div class="ac-note">Benchmark com 50 amostras reais</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">JSON 100% válido</div>
+            <div class="ac-value">0 erros</div>
+            <div class="ac-note">Nenhum parse error com json_object mode</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">Economia</div>
+            <div class="ac-value">~100%</div>
+            <div class="ac-note">Groq free até ~200 MAU</div>
+          </div>
+          <div class="ac-item">
+            <div class="ac-label">Taxa de fallback</div>
+            <div class="ac-value">&lt; 15%</div>
+            <div class="ac-note">Haiku só para casos ambíguos</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- MONITORING -->
+  <section class="section">
+    <h2>Monitoramento e Analytics</h2>
+    <p>Adicionar os seguintes eventos no PostHog para medir o impacto real do roteamento híbrido e ajustar thresholds ao longo do tempo.</p>
+
+    <div class="event-list">
+      <div class="event-row">
+        <div class="event-name">ai_text_extraction</div>
+        <div class="event-props">provider: groq|haiku · model: str · confidence_avg: float · fallback_triggered: bool · tokens_used: int · duration_ms: int</div>
+      </div>
+      <div class="event-row">
+        <div class="event-name">ai_vision_extraction</div>
+        <div class="event-props">model_primary: str · fallback_triggered: bool · overall_confidence: float · duration_ms: int</div>
+      </div>
+      <div class="event-row">
+        <div class="event-name">ai_audio_transcription</div>
+        <div class="event-props">provider: local|openai · model_size: str · duration_audio_s: float · duration_ms: int</div>
+      </div>
+      <div class="event-row">
+        <div class="event-name">ai_provider_fallback</div>
+        <div class="event-props">modality: text|vision|audio · reason: confidence|parse_error|rate_limit · primary: str · fallback: str</div>
+      </div>
+    </div>
+
+    <div class="callout green" style="margin-top:16px;">
+      <p><strong>Dashboard de custo:</strong> criar query no PostHog agrupando <code style="font-family:var(--mono);font-size:11.5px;">tokens_used</code> por <code style="font-family:var(--mono);font-size:11.5px;">provider</code> e <code style="font-family:var(--mono);font-size:11.5px;">model</code>. Multiplicar pelos preços de tabela para estimar custo real por dia. Revisar thresholds semanalmente nas primeiras 4 semanas.</p>
+    </div>
+  </section>
+
+  <!-- ROLLBACK -->
+  <section class="section">
+    <h2>Plano de rollback</h2>
+    <p>Cada fase é controlada por feature flag no Render. Rollback é imediato sem novo deploy — só alteração de variável de ambiente.</p>
+
+    <div class="rollback-steps">
+      <div class="rollback-step">Fase 1 (áudio): setar <code>AUDIO_PROVIDER=openai</code> no Render → reiniciar instância → comportamento original restaurado em &lt;30s</div>
+      <div class="rollback-step">Fase 2 (visão): setar <code>ANTHROPIC_VISION_MODEL=claude-sonnet-4-6</code> no Render → reiniciar → Sonnet como primário restaurado</div>
+      <div class="rollback-step">Fase 3 (texto): setar <code>TEXT_PROVIDER=haiku</code> no Render → reiniciar → Haiku como primário, Groq desabilitado</div>
+      <div class="rollback-step">Rollback total: setar as três variáveis acima simultaneamente, um único restart restaura o comportamento pré-transição sem alteração de código</div>
+      <div class="rollback-step">Critério de ativação: &gt; 3 reclamações de usuário sobre reconhecimento incorreto em 24h, ou taxa de fallback &gt; 40% por mais de 2h, ou schema parse error rate &gt; 1%</div>
+    </div>
+  </section>
+
+  <!-- RISCOS -->
+  <section class="section">
+    <h2>Riscos e mitigações</h2>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Risco</th><th>Severidade</th><th>Mitigação</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Groq rate limit em pico de uso (&gt;200 MAU)</td>
+            <td class="warn">Médio</td>
+            <td>Fallback Haiku automático em RateLimitError; adicionar Together AI como overflow</td>
+          </tr>
+          <tr>
+            <td>faster-whisper cold start ocupa RAM no Render free</td>
+            <td class="warn">Médio</td>
+            <td>Singleton + modelo <code style="font-family:var(--mono);font-size:12px;">base</code> (74MB); monitorar RAM no Render dashboard</td>
+          </tr>
+          <tr>
+            <td>Haiku Vision abaixo de 75% em pratos complexos</td>
+            <td class="warn">Médio</td>
+            <td>Threshold 0.70 garante fallback Sonnet para os casos críticos; ajustar após dados reais</td>
+          </tr>
+          <tr>
+            <td>Groq downtime ou instabilidade</td>
+            <td class="ok">Baixo</td>
+            <td>Fallback Haiku em qualquer exceção; SLA Anthropic &gt; 99.9%</td>
+          </tr>
+          <tr>
+            <td>Modelo Groq gera porções exageradas (não conservadoras)</td>
+            <td class="warn">Médio</td>
+            <td>Benchmark obrigatório antes de ativar; <code style="font-family:var(--mono);font-size:12px;">temperature=0.1</code> minimiza variabilidade</td>
+          </tr>
+          <tr>
+            <td>Groq depreca modelo (ex: qwen-qwq-32b)</td>
+            <td class="ok">Baixo</td>
+            <td><code style="font-family:var(--mono);font-size:12px;">GROQ_TEXT_MODEL</code> é variável de ambiente; troca sem redeploy</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- SEQUÊNCIA -->
+  <section class="section">
+    <h2>Sequência e dependências</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>Fase</th><th>Pré-requisitos</th><th>Estimativa</th><th>Quem</th></tr>
+        </thead>
+        <tbody>
+          <tr class="hi">
+            <td><strong>Fase 1 — Áudio</strong></td>
+            <td>Nenhum</td>
+            <td class="mono">2–3h</td>
+            <td>Backend</td>
+          </tr>
+          <tr class="hi">
+            <td><strong>Fase 2 — Visão</strong></td>
+            <td>Fase 1 concluída (independente mas conveniente fazer junto)</td>
+            <td class="mono">3–4h + benchmark 1h</td>
+            <td>Backend</td>
+          </tr>
+          <tr>
+            <td><strong>Fase 3 — Texto</strong></td>
+            <td>Fase 1 e 2 estáveis por 1 semana; benchmark aprovado</td>
+            <td class="mono">4–6h + benchmark 2h</td>
+            <td>Backend + QA</td>
+          </tr>
+          <tr>
+            <td><strong>Monitoramento</strong></td>
+            <td>PostHog já configurado (POSTHOG_API_KEY existe)</td>
+            <td class="mono">2h (eventos nas 3 fases)</td>
+            <td>Backend</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="doc-footer">
+    <span>NutriBot PRD Transição IA · v1.0</span>
+    <span>2026-09-08</span>
+    <span>Economia projetada: ~88% redução de custos de API</span>
+    <span>Rollback: &lt;30s por fase via Render env vars</span>
+  </div>
+
+</div>
