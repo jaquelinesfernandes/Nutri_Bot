@@ -13,11 +13,23 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
-from app.routers.webhook_telegram import _process_update, _send_message
+from app.routers.webhook_telegram import _process_update, _send_message, _SEEN_UPDATE_IDS
 from app.schemas.telegram import TelegramUpdate
 
 
 # ── Fixtures helpers ──────────────────────────────────────────────────────────
+
+
+@pytest.fixture(autouse=True)
+def clear_seen_update_ids():
+    """Limpa o cache de update_ids processados antes de cada teste.
+
+    _SEEN_UPDATE_IDS é um deque global usado para deduplicação de retentativas
+    do Telegram. Entre testes, deve estar vazio para evitar falsos positivos.
+    """
+    _SEEN_UPDATE_IDS.clear()
+    yield
+    _SEEN_UPDATE_IDS.clear()
 
 def _make_update(text: str | None = "oi", photo=None, voice=None, **msg_extra) -> TelegramUpdate:
     """Cria um TelegramUpdate mínimo válido."""

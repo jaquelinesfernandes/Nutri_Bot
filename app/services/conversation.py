@@ -31,6 +31,26 @@ ConversationState = Literal[
 CONFIRM_WORDS = {"sim", "s", "yes", "y", "ok", "confirmar", "confirma", "certo", "isso", "exato", "correto"}
 DENY_WORDS = {"não", "nao", "n", "no", "errado", "corrigir", "incorreto", "errada"}
 
+
+def _matches_intent(normalized: str, words: set[str]) -> bool:
+    """Verifica se o texto normalizado *corresponde* a uma palavra de intenção.
+
+    Usa correspondência de palavras inteiras (não substring), para que textos
+    longos como "carne bovina + salada" não ativem acidentalmente "s" ou "n".
+
+    Regras:
+    - O texto completo está no conjunto (ex.: "sim", "não")
+    - Ou ALGUMA palavra do texto (split por espaços) está no conjunto
+      E o texto tem no máximo 4 palavras (resposta curta deliberada)
+    """
+    if normalized in words:
+        return True
+    parts = normalized.split()
+    # Só aceita palavra isolada do conjunto em respostas curtas (≤ 4 palavras)
+    if len(parts) <= 4:
+        return any(p in words for p in parts)
+    return False
+
 MEAL_EMOJI = {
     "breakfast":      "🌅",
     "morning_snack":  "🍌",
@@ -102,7 +122,10 @@ class ConversationService:
     def _append_panel_link(self, reply: str, user: User) -> str:
         """Adiciona o link do painel no final, evitando duplicação."""
         if reply and "auth/magic" not in reply:
-            return reply + self._panel_link(user)
+            try:
+                return reply + self._panel_link(user)
+            except Exception as e:
+                logger.warning(f"[CONV] _panel_link falhou (user={user.channel_id}): {e}")
         return reply
 
     # ── Handlers públicos ──────────────────────────────────────────────────────
@@ -380,10 +403,10 @@ class ConversationService:
             return await self._handle_delete_confirm(user, normalized, db, pending)
 
         # Fluxo padrão: confirmação de refeição registrada
-        if any(w in normalized for w in CONFIRM_WORDS):
+        if _matches_intent(normalized, CONFIRM_WORDS):
             return await self._save_confirmed_meal(user, db)
 
-        if any(w in normalized for w in DENY_WORDS):
+        if _matches_intent(normalized, DENY_WORDS):
             food_items = pending.get("food_items", [])
             self._set_timed_state(user, "CORRECTING")
             # Preserva todo o state_data + marca modo de edição por item
@@ -742,7 +765,7 @@ class ConversationService:
         import uuid as _uuid
         summary = pending.get("meal_summary", "refeição")
 
-        if any(w in text for w in CONFIRM_WORDS):
+        if _matches_intent(text, CONFIRM_WORDS):
             meal_log_id = pending.get("meal_log_id")
             if meal_log_id:
                 result = await db.execute(
@@ -759,7 +782,7 @@ class ConversationService:
             await db.commit()
             return f"✅ *{summary}* deletado com sucesso!"
 
-        if any(w in text for w in DENY_WORDS):
+        if _matches_intent(text, DENY_WORDS):
             user.conversation_state = "IDLE"
             user.state_data = None
             await db.commit()

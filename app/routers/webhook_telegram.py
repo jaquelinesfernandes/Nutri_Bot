@@ -1,4 +1,5 @@
 import logging
+from collections import deque
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -13,6 +14,11 @@ from app.schemas.telegram import TelegramUpdate
 
 logger = logging.getLogger(__name__)
 router = APIRouter(tags=["telegram"])
+
+# ── Deduplicação de updates do Telegram ───────────────────────────────────────
+# Telegram retenta o webhook se não receber 2xx em ~60 s (cold start no Render).
+# Guardamos os últimos N update_ids processados para ignorar retentativas.
+_SEEN_UPDATE_IDS: deque[int] = deque(maxlen=200)
 
 _TG_BASE = "https://api.telegram.org/bot{token}"
 
@@ -69,6 +75,13 @@ async def _get_or_create_user(db, channel_id: str, first_name: str | None) -> Us
 
 
 async def _process_update(update: TelegramUpdate) -> None:
+    # ── Deduplicação: ignora retentativas do Telegram ─────────────────────────
+    if update.update_id in _SEEN_UPDATE_IDS:
+        logger.warning(f"[TG] Update {update.update_id} já processado — ignorando retry.")
+        return
+    _SEEN_UPDATE_IDS.append(update.update_id)
+    # ─────────────────────────────────────────────────────────────────────────
+
     msg = update.message
     if not msg:
         return
