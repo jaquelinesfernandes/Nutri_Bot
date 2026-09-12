@@ -12,7 +12,7 @@ The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, pri
 
 **All 6 sprints + Post-6 UX polish complete — in production on Render + Neon. TBCA integrated.**
 
-- 411 tests passing · coverage 80.60% (threshold ≥ 55%)
+- 454 tests passing · coverage 76% (threshold ≥ 55%)
 - Deployed at: `https://nutri-bot-ot0p.onrender.com`
 - Beta open: reports unlocked for all users via `REPORTS_OPEN_BETA=true`
 - Sessions persist for 365 days with sliding-expiration renewal (no re-login needed)
@@ -221,5 +221,6 @@ docs/
 | 6 | Deploy Render + Neon · UptimeRobot · auditoria segurança · beta aberto | ✅ |
 | Post-6 | Registro retroativo sem limite · entrada manual no painel · relatórios pelo painel (gerar/limpar/baixar) · acesso automático após 7 dias | ✅ |
 | Post-6 UX | Login redesenhado (Telegram como primário) · recuperação de senha via magic link · sessão 365 dias sem re-login · calculadora TDEE no cadastro · banner CTA Telegram · countdown preciso no rate-limit · datepicker bloqueia datas futuras | ✅ |
-| Fase 2 | Painel B2B para nutricionistas (R$ 79,90/mês) | 🗓️ Próxima |
+| B2B-1 | Infra · cadastro nutricionista · convites · deep link Telegram · scheduler expiração · LGPD consentimento | ✅ |
+| B2B-2 | Perfil do paciente · gráfico kcal 30d · notas clínicas · PDF on-demand · revogação pelo bot (estado REVOKING) | ✅ |
 | Fase 3 | App nativo / Web | 🗓️ Planejado |
