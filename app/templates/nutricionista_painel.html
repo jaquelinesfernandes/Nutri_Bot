@@ -282,7 +282,7 @@
       <div class="invite-bar">
         <span class="pg-title">Pacientes</span>
         {% if active_count < max_patients %}
-        <button class="btn-invite" onclick="document.getElementById('modal-invite').classList.add('open')">
+        <button class="btn-invite">
           + Convidar paciente
         </button>
         {% else %}
@@ -354,7 +354,7 @@
 </div>
 
 <!-- Modal: Convidar Paciente -->
-<div class="modal-overlay" id="modal-invite" onclick="if(event.target===this)this.classList.remove('open')">
+<div class="modal-overlay" id="modal-invite">
   <div class="modal">
     <h3>Convidar paciente</h3>
 
@@ -385,7 +385,7 @@
     <p id="invite-error" style="display:none;color:#EF4444;font-size:13px;margin-top:8px;"></p>
 
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="document.getElementById('modal-invite').classList.remove('open')">
+      <button class="btn-cancel" onclick="fecharModalConvite()">
         Fechar
       </button>
       <button class="btn-primary" id="btn-gerar" onclick="gerarConvite()">
@@ -396,19 +396,66 @@
 </div>
 
 <script>
+function _resetModalConvite() {
+  document.getElementById('inv-name').value = '';
+  document.getElementById('inv-phone').value = '';
+  document.getElementById('inv-tg').value = '';
+  document.getElementById('invite-result').style.display = 'none';
+  document.getElementById('invite-error').style.display = 'none';
+  document.getElementById('btn-gerar').textContent = 'Gerar convite';
+  document.getElementById('inv-name').focus();
+}
+
+// Fecha o modal E limpa o formulário
+function fecharModalConvite() {
+  document.getElementById('modal-invite').classList.remove('open');
+  _resetModalConvite();
+}
+
+// Abre o modal sempre com campos limpos
+document.addEventListener('DOMContentLoaded', () => {
+  const openBtn = document.querySelector('.btn-invite');
+  if (openBtn) {
+    openBtn.addEventListener('click', () => {
+      _resetModalConvite();
+      document.getElementById('modal-invite').classList.add('open');
+    });
+  }
+  // Clique fora do modal também limpa
+  document.getElementById('modal-invite').addEventListener('click', (e) => {
+    if (e.target === e.currentTarget) fecharModalConvite();
+  });
+});
+
 async function gerarConvite() {
-  const name = document.getElementById('inv-name').value.trim();
-  const phone = document.getElementById('inv-phone').value.trim();
-  const tg = document.getElementById('inv-tg').value.trim();
-  const errEl = document.getElementById('invite-error');
+  const btn = document.getElementById('btn-gerar');
   const resultEl = document.getElementById('invite-result');
+
+  // Se já há um resultado visível, "Gerar novo convite" = limpar e recomeçar
+  if (resultEl.style.display !== 'none') {
+    _resetModalConvite();
+    return;
+  }
+
+  const name  = document.getElementById('inv-name').value.trim();
+  const phone = document.getElementById('inv-phone').value.trim();
+  const tg    = document.getElementById('inv-tg').value.trim();
+  const errEl = document.getElementById('invite-error');
   errEl.style.display = 'none';
 
-  if (!name) { errEl.textContent = 'Nome é obrigatório.'; errEl.style.display='block'; return; }
-  if (!phone && !tg) { errEl.textContent = 'Informe WhatsApp ou Telegram.'; errEl.style.display='block'; return; }
+  if (!name) {
+    errEl.textContent = 'Nome é obrigatório.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if (!phone && !tg) {
+    errEl.textContent = 'Informe WhatsApp ou Telegram.';
+    errEl.style.display = 'block';
+    return;
+  }
 
-  const btn = document.getElementById('btn-gerar');
-  btn.disabled = true; btn.textContent = 'Gerando…';
+  btn.disabled = true;
+  btn.textContent = 'Gerando…';
 
   const body = new FormData();
   body.append('patient_name', name);
@@ -421,14 +468,16 @@ async function gerarConvite() {
     if (!resp.ok) {
       errEl.textContent = data.detail || 'Erro ao gerar convite.';
       errEl.style.display = 'block';
+      btn.textContent = 'Gerar convite';
     } else {
       document.getElementById('invite-url').value = data.invite_url;
       resultEl.style.display = 'block';
       btn.textContent = 'Gerar novo convite';
     }
-  } catch(e) {
+  } catch (e) {
     errEl.textContent = 'Erro de conexão. Tente novamente.';
     errEl.style.display = 'block';
+    btn.textContent = 'Gerar convite';
   } finally {
     btn.disabled = false;
   }
