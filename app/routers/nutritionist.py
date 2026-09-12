@@ -91,6 +91,174 @@ async def cadastro_page(request: Request):
     )
 
 
+# ── Landing page do convite ────────────────────────────────────────────────────
+
+@router.get("/convite/{token}", response_class=HTMLResponse)
+async def landing_convite(
+    token: str,
+    request: Request,
+    db: AsyncSession = Depends(get_db),
+):
+    """Página de destino do link de convite.
+
+    Valida o token, exibe informações do convite e um botão que abre o Telegram
+    com o deep link /start convite_TOKEN.
+    Acessível sem autenticação — é o link enviado à paciente.
+    """
+    from app.config import settings
+
+    result = await db.execute(
+        select(NutritionistPatient).where(NutritionistPatient.invite_token == token)
+    )
+    link = result.scalar_one_or_none()
+
+    bot_username = settings.telegram_bot_username or "Minha_nutri_bot"
+    tg_url = f"https://t.me/{bot_username}?start=convite_{token}"
+
+    if not link:
+        state = "invalid"
+        nutri_name = ""
+    elif link.status == "expired" or (
+        link.expires_at and datetime.now(ZoneInfo("UTC")) > link.expires_at
+    ):
+        state = "expired"
+        nutri_name = ""
+    elif link.status in ("active", "declined", "revoked"):
+        state = "used"
+        nutri_name = link.patient_name or ""
+    else:
+        # pending — válido
+        state = "valid"
+        # Busca nome da nutricionista
+        if link.nutritionist_id:
+            nutri_result = await db.execute(
+                select(User).where(User.id == link.nutritionist_id)
+            )
+            nutri = nutri_result.scalar_one_or_none()
+            nutri_name = nutri.first_name if nutri else "sua nutricionista"
+        else:
+            nutri_name = "sua nutricionista"
+
+    # Inline HTML — sem template externo para manter simples
+    pages = {
+        "valid": f"""<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Convite NutriBot</title>
+<style>
+  body{{margin:0;font-family:'Segoe UI',system-ui,sans-serif;
+    background:#F5F7F9;display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;box-sizing:border-box;}}
+  .card{{background:#fff;border-radius:20px;padding:36px 32px;max-width:400px;
+    width:100%;text-align:center;box-shadow:0 4px 32px rgba(0,0,0,.08);}}
+  .icon{{font-size:3rem;margin-bottom:16px;}}
+  h1{{font-size:1.4rem;color:#1C2B3A;margin:0 0 10px;line-height:1.3;}}
+  p{{font-size:14.5px;color:#3D5168;line-height:1.6;margin:0 0 24px;}}
+  .btn{{display:inline-block;background:#229ED9;color:#fff;
+    border-radius:12px;padding:14px 28px;font-size:15px;font-weight:700;
+    text-decoration:none;width:100%;box-sizing:border-box;transition:opacity .2s;}}
+  .btn:hover{{opacity:.88;}}
+  .note{{font-size:12px;color:#6B7E95;margin-top:16px;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="icon">🥗</div>
+  <h1>{nutri_name} quer acompanhar sua alimentação</h1>
+  <p>Você foi convidada para receber acompanhamento nutricional personalizado pelo NutriBot.<br>
+     Para aceitar ou recusar, abra o bot no Telegram.</p>
+  <a class="btn" href="{tg_url}">Abrir no Telegram</a>
+  <p class="note">Ao abrir o Telegram, o bot vai explicar o que será compartilhado e pedir sua confirmação.</p>
+</div>
+</body>
+</html>""",
+
+        "expired": """<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Convite expirado</title>
+<style>
+  body{{margin:0;font-family:'Segoe UI',system-ui,sans-serif;
+    background:#F5F7F9;display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;box-sizing:border-box;}}
+  .card{{background:#fff;border-radius:20px;padding:36px 32px;max-width:400px;
+    width:100%;text-align:center;box-shadow:0 4px 32px rgba(0,0,0,.08);}}
+  h1{{font-size:1.4rem;color:#1C2B3A;margin:16px 0 10px;}}
+  p{{font-size:14.5px;color:#3D5168;line-height:1.6;margin:0;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:3rem">⏰</div>
+  <h1>Convite expirado</h1>
+  <p>Este link de convite expirou (válido por 7 dias).<br>
+     Peça à sua nutricionista que gere um novo convite.</p>
+</div>
+</body>
+</html>""",
+
+        "used": """<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Convite já utilizado</title>
+<style>
+  body{{margin:0;font-family:'Segoe UI',system-ui,sans-serif;
+    background:#F5F7F9;display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;box-sizing:border-box;}}
+  .card{{background:#fff;border-radius:20px;padding:36px 32px;max-width:400px;
+    width:100%;text-align:center;box-shadow:0 4px 32px rgba(0,0,0,.08);}}
+  h1{{font-size:1.4rem;color:#1C2B3A;margin:16px 0 10px;}}
+  p{{font-size:14.5px;color:#3D5168;line-height:1.6;margin:0;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:3rem">✅</div>
+  <h1>Convite já utilizado</h1>
+  <p>Este convite já foi respondido anteriormente.<br>
+     Se precisar de ajuda, fale com sua nutricionista.</p>
+</div>
+</body>
+</html>""",
+
+        "invalid": """<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Convite inválido</title>
+<style>
+  body{{margin:0;font-family:'Segoe UI',system-ui,sans-serif;
+    background:#F5F7F9;display:flex;align-items:center;justify-content:center;
+    min-height:100vh;padding:24px;box-sizing:border-box;}}
+  .card{{background:#fff;border-radius:20px;padding:36px 32px;max-width:400px;
+    width:100%;text-align:center;box-shadow:0 4px 32px rgba(0,0,0,.08);}}
+  h1{{font-size:1.4rem;color:#1C2B3A;margin:16px 0 10px;}}
+  p{{font-size:14.5px;color:#3D5168;line-height:1.6;margin:0;}}
+</style>
+</head>
+<body>
+<div class="card">
+  <div style="font-size:3rem">❌</div>
+  <h1>Link inválido</h1>
+  <p>Este link de convite não é válido ou já foi removido.<br>
+     Verifique com sua nutricionista se o link está correto.</p>
+</div>
+</body>
+</html>""",
+    }
+
+    html = pages[state]
+    status_code = 200 if state == "valid" else (410 if state == "expired" else 404)
+    return HTMLResponse(content=html, status_code=status_code)
+
+
 # ── API — Registro ─────────────────────────────────────────────────────────────
 
 @router.post("/api/nutricionista/register")

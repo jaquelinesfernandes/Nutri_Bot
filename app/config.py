@@ -66,6 +66,7 @@ class Settings(BaseSettings):
 
     # Telegram
     telegram_bot_token: str = ""
+    telegram_bot_username: str = ""   # ex: "Minha_nutri_bot" (sem @) — usado em links t.me
     telegram_webhook_secret: str = ""
 
     # WhatsApp (Evolution API)
