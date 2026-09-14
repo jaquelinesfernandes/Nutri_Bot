@@ -71,6 +71,15 @@ class NutritionistPatient(Base):
         Integer, nullable=False, default=3, server_default="3"
     )
 
+    # Metas de macronutrientes prescritas pela nutricionista (todas nullable)
+    # Quando NULL → o sistema usa a distribuição padrão (25% prot, 50% carb, 25% fat)
+    # calculada a partir de daily_calorie_goal do paciente.
+    goal_protein_g: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    goal_carb_g:    Mapped[int | None] = mapped_column(Integer, nullable=True)
+    goal_fat_g:     Mapped[int | None] = mapped_column(Integer, nullable=True)
+    goal_fiber_g:   Mapped[int | None] = mapped_column(Integer, nullable=True)
+    goal_water_ml:  Mapped[int | None] = mapped_column(Integer, nullable=True)
+
     nutritionist: Mapped["User"] = relationship(
         "User",
         foreign_keys=[nutritionist_id],

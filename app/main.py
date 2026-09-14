@@ -112,6 +112,12 @@ async def _apply_pending_ddl() -> None:
         # RF-PAINEL-11: limiar de inatividade por paciente (migration f4a8b2c1d9e0)
         "ALTER TABLE nutritionist_patients "
         "ADD COLUMN IF NOT EXISTS inactivity_alert_days INTEGER NOT NULL DEFAULT 3",
+        # Metas de macronutrientes prescritas pela nutricionista (todas nullable)
+        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_protein_g INTEGER",
+        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_carb_g    INTEGER",
+        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_fat_g     INTEGER",
+        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_fiber_g   INTEGER",
+        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_water_ml  INTEGER",
     ]
     try:
         async with engine.begin() as conn:

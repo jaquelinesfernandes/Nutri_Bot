@@ -436,7 +436,60 @@
               value="{{ patient.daily_calorie_goal or '' }}"
               placeholder="ex: 1800" />
           </div>
-          <button class="meta-save-btn" onclick="salvarMetaPaciente()">💾 Salvar meta</button>
+        </div>
+
+        <!-- Separador + macros prescritos -->
+        <div style="border-top:1px solid var(--card-b); margin:14px 0 12px; padding-top:12px;">
+          <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px; font-weight:600; letter-spacing:.04em;">
+            MACRONUTRIENTES (g/dia) — deixe em branco para usar distribuição padrão automática
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px; align-items:flex-end;">
+            <div>
+              <div class="meta-field-label">🥩 Proteínas (g)</div>
+              <input type="number" id="metaProtein" class="meta-input"
+                min="1" max="500" step="1"
+                value="{{ link.goal_protein_g if link.goal_protein_g is not none else '' }}"
+                placeholder="auto" />
+            </div>
+            <div>
+              <div class="meta-field-label">🌾 Carboidratos (g)</div>
+              <input type="number" id="metaCarb" class="meta-input"
+                min="1" max="700" step="1"
+                value="{{ link.goal_carb_g if link.goal_carb_g is not none else '' }}"
+                placeholder="auto" />
+            </div>
+            <div>
+              <div class="meta-field-label">🥑 Gorduras (g)</div>
+              <input type="number" id="metaFat" class="meta-input"
+                min="1" max="300" step="1"
+                value="{{ link.goal_fat_g if link.goal_fat_g is not none else '' }}"
+                placeholder="auto" />
+            </div>
+            <div>
+              <div class="meta-field-label">🌿 Fibras (g)</div>
+              <input type="number" id="metaFiber" class="meta-input"
+                min="1" max="100" step="1"
+                value="{{ link.goal_fiber_g if link.goal_fiber_g is not none else '' }}"
+                placeholder="auto" />
+            </div>
+            <div>
+              <div class="meta-field-label">💧 Água (ml)</div>
+              <input type="number" id="metaWater" class="meta-input"
+                min="500" max="6000" step="100"
+                value="{{ link.goal_water_ml if link.goal_water_ml is not none else '' }}"
+                placeholder="auto" />
+            </div>
+            <button class="meta-save-btn" onclick="salvarMetaPaciente()">💾 Salvar metas</button>
+          </div>
+          {% if macros_prescribed %}
+          <div style="margin-top:8px; font-size:11px; color:var(--green,#22a854); font-weight:600;">
+            ✔ Metas de macros prescritas — refletidas no painel do paciente e nos relatórios PDF.
+          </div>
+          {% else %}
+          <div style="margin-top:8px; font-size:11px; color:var(--text-muted);">
+            ℹ Usando distribuição padrão: 25% proteína · 50% carboidrato · 25% gordura.
+          </div>
+          {% endif %}
         </div>
       </div>
 
@@ -714,17 +767,38 @@ async function salvarAlertaDias() {
 
 // ── Meta e Objetivo do Paciente ──────────────────────────────────────────────
 async function salvarMetaPaciente() {
-  const goalType = document.getElementById('metaGoalType')?.value;
-  const kcalRaw  = parseInt(document.getElementById('metaKcal')?.value, 10);
+  const goalType   = document.getElementById('metaGoalType')?.value ?? '';
+  const kcalRaw    = parseInt(document.getElementById('metaKcal')?.value,    10);
+  const protRaw    = parseInt(document.getElementById('metaProtein')?.value, 10);
+  const carbRaw    = parseInt(document.getElementById('metaCarb')?.value,    10);
+  const fatRaw     = parseInt(document.getElementById('metaFat')?.value,     10);
+  const fiberRaw   = parseInt(document.getElementById('metaFiber')?.value,   10);
+  const waterRaw   = parseInt(document.getElementById('metaWater')?.value,   10);
 
-  if (kcalRaw && (kcalRaw < 800 || kcalRaw > 5000)) {
-    showToast('Meta calórica deve estar entre 800 e 5000 kcal.', true);
-    return;
+  // Validações client-side
+  if (!isNaN(kcalRaw) && (kcalRaw < 800 || kcalRaw > 5000)) {
+    showToast('Meta calórica deve estar entre 800 e 5000 kcal.', true); return;
   }
+  if (!isNaN(protRaw)  && protRaw  > 500)  { showToast('Proteína máxima: 500 g/dia.', true); return; }
+  if (!isNaN(carbRaw)  && carbRaw  > 700)  { showToast('Carboidratos máximo: 700 g/dia.', true); return; }
+  if (!isNaN(fatRaw)   && fatRaw   > 300)  { showToast('Gorduras máximas: 300 g/dia.', true); return; }
+  if (!isNaN(fiberRaw) && fiberRaw > 100)  { showToast('Fibras máximas: 100 g/dia.', true); return; }
+  if (!isNaN(waterRaw) && waterRaw > 6000) { showToast('Água máxima: 6000 ml/dia.', true); return; }
 
   const form = new FormData();
-  if (goalType)  form.append('goal_type', goalType);
-  if (!isNaN(kcalRaw)) form.append('daily_calorie_goal', kcalRaw);
+  form.append('goal_type', goalType);
+  if (!isNaN(kcalRaw))  form.append('daily_calorie_goal', kcalRaw);
+  // Para macros: campo vazio → não envia (mantém valor atual)
+  // Para limpar um macro (voltar ao automático): envia -1
+  const macroField = document.getElementById('metaProtein');
+  if (macroField !== null) {
+    // Envia sempre os campos de macro para que o servidor possa atualizar
+    form.append('goal_protein_g', isNaN(protRaw)  ? -1 : protRaw);
+    form.append('goal_carb_g',    isNaN(carbRaw)  ? -1 : carbRaw);
+    form.append('goal_fat_g',     isNaN(fatRaw)   ? -1 : fatRaw);
+    form.append('goal_fiber_g',   isNaN(fiberRaw) ? -1 : fiberRaw);
+    form.append('goal_water_ml',  isNaN(waterRaw) ? -1 : waterRaw);
+  }
 
   try {
     const resp = await fetch('/api/nutricionista/paciente/' + _PDF_PATIENT_ID + '/meta', {
@@ -732,19 +806,25 @@ async function salvarMetaPaciente() {
     });
     if (resp.ok) {
       const data = await resp.json();
-      // Atualiza o card de resumo na mesma página (sem reload)
       const goalNames = {
-        perder_peso: '🎯 Perder peso',
-        ganhar_massa: '💪 Ganhar massa',
-        manter: '⚖️ Manter peso',
-        '': '—'
+        perder_peso: '🎯 Perder peso', ganhar_massa: '💪 Ganhar massa',
+        manter: '⚖️ Manter peso', '': '—'
       };
-      if (!isNaN(kcalRaw) && document.querySelector('.summary-card .num:last-of-type')) {
-        // atualiza GOAL_KCAL na linha do gráfico se existir variável global
-        if (typeof GOAL_KCAL !== 'undefined') window.GOAL_KCAL = kcalRaw;
-      }
-      showToast('✅ Meta salva: ' + (goalNames[goalType] || 'objetivo') +
-                (kcalRaw ? ' · ' + kcalRaw + ' kcal/dia' : '') + '.');
+      if (!isNaN(kcalRaw) && typeof GOAL_KCAL !== 'undefined') window.GOAL_KCAL = kcalRaw;
+      const macrosSalvos = [
+        !isNaN(protRaw)  && `prot: ${protRaw}g`,
+        !isNaN(carbRaw)  && `carb: ${carbRaw}g`,
+        !isNaN(fatRaw)   && `gord: ${fatRaw}g`,
+        !isNaN(fiberRaw) && `fib: ${fiberRaw}g`,
+        !isNaN(waterRaw) && `água: ${waterRaw}ml`,
+      ].filter(Boolean).join(' · ');
+      showToast(
+        '✅ Meta salva: ' + (goalNames[goalType] || 'objetivo') +
+        (kcalRaw && !isNaN(kcalRaw) ? ' · ' + kcalRaw + ' kcal/dia' : '') +
+        (macrosSalvos ? ' · ' + macrosSalvos : '') + '.'
+      );
+      // Recarrega a página para refletir o badge "prescritas / padrão"
+      setTimeout(() => location.reload(), 1200);
     } else {
       const err = await resp.json().catch(() => ({}));
       showToast('Erro: ' + (err.detail || 'Não foi possível salvar.'), true);

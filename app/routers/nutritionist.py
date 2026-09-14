@@ -59,6 +59,37 @@ _GOAL_LABELS: dict[str, tuple[str, str]] = {
 }
 
 
+def _effective_goals(link: NutritionistPatient, goal_kcal: int) -> dict:
+    """Retorna metas efetivas de macros — prescritas pela nutricionista ou distribuição padrão.
+
+    Quando a nutricionista não preencheu um macro (None), usa-se a distribuição
+    padrão baseada na meta calórica (25% prot · 50% carb · 25% fat):
+      - Proteína:  25% kcal ÷ 4 kcal/g
+      - Carboidr:  50% kcal ÷ 4 kcal/g
+      - Gordura:   25% kcal ÷ 9 kcal/g
+      - Fibra:     25 g/dia (DRI)
+      - Água:      2 000 ml/dia (recomendação geral)
+    """
+    kcal = goal_kcal or 2000
+    prescribed_protein = link.goal_protein_g
+    prescribed_carb    = link.goal_carb_g
+    prescribed_fat     = link.goal_fat_g
+    prescribed_fiber   = link.goal_fiber_g
+    prescribed_water   = link.goal_water_ml
+
+    return {
+        "goal_prot":  prescribed_protein if prescribed_protein is not None else round(kcal * 0.25 / 4),
+        "goal_carb":  prescribed_carb    if prescribed_carb    is not None else round(kcal * 0.50 / 4),
+        "goal_fat":   prescribed_fat     if prescribed_fat     is not None else round(kcal * 0.25 / 9),
+        "goal_fiber": prescribed_fiber   if prescribed_fiber   is not None else 25,
+        "goal_water": prescribed_water   if prescribed_water   is not None else 2000,
+        # Flag: indica se a nutricionista prescreveu pelo menos um macro
+        "macros_prescribed": any(
+            v is not None for v in [prescribed_protein, prescribed_carb, prescribed_fat]
+        ),
+    }
+
+
 async def _gerar_analise_ia(
     patient_name: str,
     goal_type: str | None,
@@ -940,6 +971,9 @@ async def perfil_paciente(
     days_with_data = sum(1 for v in chart_kcal[-7:] if v > 0)
     avg_kcal_7d = round(week_kcal / days_with_data) if days_with_data else 0
 
+    goal_kcal = patient.daily_calorie_goal or 2000
+    effective = _effective_goals(link, goal_kcal)
+
     return templates.TemplateResponse(
         request=request,
         name="nutricionista_paciente.html",
@@ -955,7 +989,9 @@ async def perfil_paciente(
             "notes": notes,
             "avg_kcal_7d": avg_kcal_7d,
             "days_with_data_7d": days_with_data,
-            "goal_kcal": patient.daily_calorie_goal,
+            "goal_kcal": goal_kcal,
+            # Metas efetivas de macros (prescritas ou distribuição padrão)
+            **effective,
         },
     )
 
@@ -1032,17 +1068,27 @@ async def configurar_meta_paciente(
     patient_id: str,
     goal_type: str = Form(default=""),
     daily_calorie_goal: int | None = Form(default=None),
+    # Macronutrientes prescritos (todos opcionais; None = usar distribuição padrão)
+    goal_protein_g: int | None = Form(default=None),
+    goal_carb_g:    int | None = Form(default=None),
+    goal_fat_g:     int | None = Form(default=None),
+    goal_fiber_g:   int | None = Form(default=None),
+    goal_water_ml:  int | None = Form(default=None),
     user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    """Nutricionista define/ajusta objetivo e meta calórica do paciente.
+    """Nutricionista define objetivo, meta calórica e metas de macros do paciente.
 
-    - goal_type: perder_peso | ganhar_massa | manter | "" (limpa)
-    - daily_calorie_goal: inteiro 800–5000 kcal ou omitido (não altera)
-
-    A alteração é gravada diretamente em users.goal_type e
-    users.daily_calorie_goal, refletindo imediatamente nos gráficos,
-    relatório PDF e análise de IA.
+    Campos (todos opcionais):
+      - goal_type:         perder_peso | ganhar_massa | manter | "" (limpa)
+      - daily_calorie_goal: 800–5 000 kcal
+      - goal_protein_g:    g/dia de proteína (≥ 0, None = padrão automático)
+      - goal_carb_g:       g/dia de carboidratos
+      - goal_fat_g:        g/dia de gorduras
+      - goal_fiber_g:      g/dia de fibras
+      - goal_water_ml:     ml/dia de água
+    Quando um macro não é enviado (None), mantém o valor atual do banco.
+    Para limpar um macro (voltar ao automático), envie -1.
     """
     nutri = _require_nutritionist(user)
 
@@ -1063,6 +1109,24 @@ async def configurar_meta_paciente(
             status_code=422, detail="daily_calorie_goal deve estar entre 800 e 5000"
         )
 
+    def _validate_macro(name: str, value: int | None, max_val: int) -> int | None:
+        """Retorna None (limpar) se value == -1, o value se válido, ou lança 422."""
+        if value is None:
+            return None  # não enviado — não altera
+        if value == -1:
+            return None  # sentinela de limpeza — será gravado como NULL
+        if not (0 < value <= max_val):
+            raise HTTPException(
+                status_code=422, detail=f"{name} deve ser entre 1 e {max_val} (ou -1 para limpar)"
+            )
+        return value
+
+    p_g  = _validate_macro("goal_protein_g", goal_protein_g, 500)
+    c_g  = _validate_macro("goal_carb_g",    goal_carb_g,    700)
+    f_g  = _validate_macro("goal_fat_g",     goal_fat_g,     300)
+    fi_g = _validate_macro("goal_fiber_g",   goal_fiber_g,   100)
+    w_ml = _validate_macro("goal_water_ml",  goal_water_ml,  6000)
+
     # Verifica vínculo ativo
     link_result = await db.execute(
         select(NutritionistPatient).where(
@@ -1071,7 +1135,8 @@ async def configurar_meta_paciente(
             NutritionistPatient.status == "active",
         )
     )
-    if not link_result.scalar_one_or_none():
+    link = link_result.scalar_one_or_none()
+    if not link:
         raise HTTPException(status_code=403, detail="Sem vínculo ativo com este paciente")
 
     pat_result = await db.execute(select(User).where(User.id == pid))
@@ -1079,22 +1144,40 @@ async def configurar_meta_paciente(
     if not patient or patient.deleted_at:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
 
-    if goal_type != "" or goal_type == "":
-        # Sempre atualiza goal_type (inclusive para limpar com "")
-        patient.goal_type = goal_type or None
-
+    # ── Atualiza campos do paciente (goal_type + kcal em users) ────────────────
+    patient.goal_type = goal_type or None
     if daily_calorie_goal is not None:
         patient.daily_calorie_goal = daily_calorie_goal
 
+    # ── Atualiza macros na tabela de vínculo (nutritionist_patients) ────────────
+    # Macros enviados sobrescrevem; não-enviados (None) são mantidos intactos.
+    if goal_protein_g is not None:
+        link.goal_protein_g = p_g   # pode ser None (se -1 → limpeza)
+    if goal_carb_g is not None:
+        link.goal_carb_g = c_g
+    if goal_fat_g is not None:
+        link.goal_fat_g = f_g
+    if goal_fiber_g is not None:
+        link.goal_fiber_g = fi_g
+    if goal_water_ml is not None:
+        link.goal_water_ml = w_ml
+
     await db.commit()
     logger.info(
-        "[META-PACIENTE] nutri=%s paciente=%s goal_type=%r kcal=%s",
+        "[META-PACIENTE] nutri=%s paciente=%s goal=%r kcal=%s prot=%s carb=%s fat=%s fiber=%s water=%s",
         nutri.id, pid, goal_type, daily_calorie_goal,
+        link.goal_protein_g, link.goal_carb_g, link.goal_fat_g,
+        link.goal_fiber_g, link.goal_water_ml,
     )
     return JSONResponse({
         "ok": True,
         "goal_type": patient.goal_type,
         "daily_calorie_goal": patient.daily_calorie_goal,
+        "goal_protein_g":  link.goal_protein_g,
+        "goal_carb_g":     link.goal_carb_g,
+        "goal_fat_g":      link.goal_fat_g,
+        "goal_fiber_g":    link.goal_fiber_g,
+        "goal_water_ml":   link.goal_water_ml,
     })
 
 
@@ -1208,18 +1291,18 @@ async def baixar_pdf_paciente(
     avg_carb_30d  = round(sum(all_carb)  / days_with_data, 1) if days_with_data else 0.0
     avg_fat_30d   = round(sum(all_fat)   / days_with_data, 1) if days_with_data else 0.0
     avg_fiber_30d = round(sum(all_fiber) / days_with_data, 1) if days_with_data else 0.0
-    goal_fiber = 25  # DRI: 25 g/dia
 
     days_on_goal = sum(
         1 for item in chart_days
         if item["kcal"] > 0 and goal_kcal * 0.85 <= item["kcal"] <= goal_kcal * 1.15
     )
 
-    # Metas de macros estimadas a partir da meta calórica (referência geral)
-    # P 25% · C 50% · G 25% (perfil default)
-    goal_prot = round(goal_kcal * 0.25 / 4)   # kcal → g (4 kcal/g)
-    goal_carb = round(goal_kcal * 0.50 / 4)
-    goal_fat  = round(goal_kcal * 0.25 / 9)   # kcal → g (9 kcal/g)
+    # Metas de macros — prescritas pela nutricionista ou distribuição padrão
+    _eff = _effective_goals(link, goal_kcal)
+    goal_prot  = _eff["goal_prot"]
+    goal_carb  = _eff["goal_carb"]
+    goal_fat   = _eff["goal_fat"]
+    goal_fiber = _eff["goal_fiber"]
 
     # ── Top alimentos ─────────────────────────────────────────────────────────
     food_counter: Counter = Counter()
