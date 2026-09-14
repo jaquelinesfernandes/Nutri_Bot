@@ -23,14 +23,11 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
-    op.add_column(
-        "nutritionist_patients",
-        sa.Column(
-            "inactivity_alert_days",
-            sa.Integer(),
-            nullable=False,
-            server_default="3",
-        ),
+    # Usa SQL direto para ser idempotente: IF NOT EXISTS evita falha se a coluna
+    # já existir (ex: adicionada manualmente ou migration rodada parcialmente).
+    op.execute(
+        "ALTER TABLE nutritionist_patients "
+        "ADD COLUMN IF NOT EXISTS inactivity_alert_days INTEGER NOT NULL DEFAULT 3"
     )
 
 
