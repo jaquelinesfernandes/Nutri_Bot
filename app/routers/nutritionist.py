@@ -11,8 +11,9 @@ Rotas API:
   PATCH /api/nutricionista/convite/{token}  — aceita/recusa convite (chamado pelo bot)
   PATCH /api/nutricionista/revogar/{id}     — revogação LGPD (chamado pelo bot)
   GET  /api/nutricionista/pacientes         — lista pacientes ativos (JSON)
-  POST /api/nutricionista/paciente/{id}/nota — adiciona nota clínica (B2B-2)
-  GET  /api/nutricionista/paciente/{id}/pdf  — download PDF do paciente (B2B-2)
+  POST   /api/nutricionista/paciente/{id}/nota  — adiciona nota clínica (B2B-2)
+  GET    /api/nutricionista/paciente/{id}/pdf   — download PDF do paciente (B2B-2)
+  DELETE /api/nutricionista/convite/{id}        — exclui convite expirado
 
 Autenticação: cookie JWT reutilizado do sistema existente.
 O login em /auth/login-form já redireciona para /nutricionista/ quando plan='nutritionist'.
@@ -1089,3 +1090,42 @@ async def baixar_pdf_paciente(
         media_type=media_type,
         headers={"Content-Disposition": f'attachment; filename="{fname}"'},
     )
+
+
+# ── DELETE convite expirado ────────────────────────────────────────────────────
+
+@router.delete("/api/nutricionista/convite/{link_id}")
+async def excluir_convite_expirado(
+    link_id: str,
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+) -> JSONResponse:
+    """Remove um convite expirado (status='expired') do banco de dados.
+
+    Apenas o nutricionista dono do convite pode excluí-lo, e somente
+    se o convite estiver com status 'expired'.
+    """
+    nutri = _require_nutritionist(user)
+
+    result = await db.execute(
+        select(NutritionistPatient).where(NutritionistPatient.id == link_id)
+    )
+    link = result.scalar_one_or_none()
+
+    if link is None:
+        raise HTTPException(status_code=404, detail="Convite não encontrado.")
+
+    if str(link.nutritionist_id) != str(nutri.id):
+        raise HTTPException(status_code=403, detail="Sem permissão para excluir este convite.")
+
+    if link.status != "expired":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Apenas convites expirados podem ser excluídos (status atual: '{link.status}').",
+        )
+
+    await db.delete(link)
+    await db.commit()
+
+    logger.info("[CONVITE] Nutricionista %s excluiu convite expirado %s (%s)", nutri.id, link_id, link.patient_name)
+    return JSONResponse({"ok": True, "message": "Convite excluído com sucesso."})
