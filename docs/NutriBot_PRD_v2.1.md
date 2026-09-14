@@ -1,10 +1,11 @@
 # NutriBot — Product Requirements Document v2.1
 
-**Status:** Draft para Revisão  
+**Status:** Em Produção (Render + Neon)  
 **Versão:** 2.1 (gaps de especificação preenchidos sobre v2.0)  
-**Data:** Junho 2026  
+**Data:** Setembro 2026  
 **Responsável:** Produto  
-**Changelog v2.1:** Adicionadas seções 15–22 cobrindo catálogo de comandos, máquina de estados, pagamento/billing, fusos horários, erros e edge cases, go-to-market, tom de voz, re-engajamento, analytics, segurança, dependências de features, capacidade de APIs externas e testes de IA.
+**Changelog v2.1:** Adicionadas seções 15–22 cobrindo catálogo de comandos, máquina de estados, pagamento/billing, fusos horários, erros e edge cases, go-to-market, tom de voz, re-engajamento, analytics, segurança, dependências de features, capacidade de APIs externas e testes de IA.  
+**Changelog 2026-09-14:** Seção 28 — Fase B2B (Nutricionistas) com sprints B2B-1 e B2B-2 implementados. Seção 29 — Rastreamento de Hidratação. Seção 30 — 12 melhorias do painel B2B priorizadas (RF-PAINEL-01 a RF-PAINEL-12).
 
 ---
 
@@ -1866,6 +1867,347 @@ Passo 5 — Meta personalizada (1h + migration)
 - [ ] Relatório PDF inclui linha de hidratação com cor correta (verde ≥80%, laranja ≥40%, vermelho <40%)
 - [ ] Com `daily_water_goal_ml = NULL`, sistema usa 2000ml sem erro
 - [ ] `/meta agua 2500` persiste o valor e é usado nos alertas e relatórios seguintes
+
+---
+
+## 30. Melhorias do Painel B2B — Nutricionista (Fase 3)
+
+**Status:** Especificado — aguardando implementação  
+**Adicionado em:** 2026-09-14  
+**Prioridade:** Alta (consolida a proposta de valor B2B)
+
+Este conjunto de 12 melhorias foi derivado da análise de uso do painel implementado nas Sprints B2B-1 e B2B-2. Organizado em três blocos por esforço e impacto.
+
+---
+
+### 30.1 Alta Prioridade — Impacto Imediato
+
+Estas quatro melhorias utilizam dados já entregues pelo router, exigem apenas alterações de template/JS e devem ser implementadas em um único sprint.
+
+---
+
+#### RF-PAINEL-01 — Objetivo do paciente na lista (badge)
+
+**Aba:** Área de Pacientes  
+**Motivação:** A nutricionista precisa do contexto clínico do paciente sem abrir o perfil completo.
+
+**Comportamento esperado:**
+- Na linha de cada paciente na tabela (`pt-row`), exibir um badge com ícone + texto do objetivo clínico logo abaixo do nome
+- Valores: `🎯 Perder peso` · `💪 Ganhar massa muscular` · `⚖️ Manter o peso`
+- Pacientes sem objetivo cadastrado: badge omitido (sem quebra de layout)
+- Dados vindos de `p.patient.goal_type` (campo já disponível no modelo)
+
+**Critérios de aceite:**
+- [ ] Badge visível em todos os pacientes com `goal_type` preenchido
+- [ ] Badge ausente (sem espaço vazio) quando `goal_type` é nulo
+- [ ] Layout da linha não quebra em mobile (≤400px)
+
+---
+
+#### RF-PAINEL-02 — Busca e filtros na lista de pacientes
+
+**Aba:** Área de Pacientes  
+**Motivação:** Nutricionistas com 10+ pacientes perdem tempo rolando a lista para localizar um paciente específico.
+
+**Comportamento esperado:**
+- Campo de busca (input texto) filtra as linhas da tabela em tempo real por nome ou telefone do paciente (case-insensitive, sem chamada ao servidor)
+- Dropdown "Filtrar por status": Todos · Ativos · Inativos
+- Cabeçalho das colunas "Último registro" e "Média kcal/7d" clicáveis para ordenação asc/desc (client-side)
+- Estado de busca preservado ao trocar de aba e voltar (sessionStorage)
+
+**Critérios de aceite:**
+- [ ] Busca por nome parcial funciona (ex.: "Jo" encontra "João" e "Joana")
+- [ ] Filtro "Inativos" mostra apenas linhas com badge inativo
+- [ ] Colunas ordenáveis indicam direção com ícone ▲/▼
+- [ ] Input limpo com `Esc` ou ×
+- [ ] Nenhuma requisição HTTP gerada durante busca/filtro
+
+---
+
+#### RF-PAINEL-03 — Painel "Atenção necessária"
+
+**Aba:** Dashboard  
+**Motivação:** A nutricionista precisa identificar pacientes em risco sem varrer a tabela completa de engajamento.
+
+**Comportamento esperado:**
+- Card de alertas exibido **somente** quando há ao menos um paciente em situação crítica
+- Situações que geram alerta (por prioridade):
+  1. **Inativo há 5+ dias** — sem nenhum registro de refeição (cor vermelha)
+  2. **Inativo há 3–4 dias** — risco de abandono (cor âmbar)
+  3. **Kcal média < 60% da meta calórica** (se meta disponível) — possível restrição severa (cor âmbar)
+- Cada alerta exibe: nome do paciente · dias sem registro ou desvio de kcal · botão "Ver perfil" (link)
+- Máximo de 5 alertas exibidos; se houver mais, link "ver todos (N)"
+- Card ocupa linha inteira acima da tabela de engajamento
+
+**Critérios de aceite:**
+- [ ] Card não aparece quando todos os pacientes estão ativos
+- [ ] Pacientes inativos há ≥5 dias aparecem em vermelho no topo da lista de alertas
+- [ ] Pacientes inativos há 3–4 dias aparecem em âmbar
+- [ ] Botão "Ver perfil" navega corretamente para `/nutricionista/paciente/{id}`
+
+---
+
+#### RF-PAINEL-04 — % Aderência 7 dias visual na tabela de engajamento
+
+**Aba:** Dashboard  
+**Motivação:** O texto "X/7 dias" exige cálculo mental; a barra colorida transmite o estado instantaneamente.
+
+**Comportamento esperado:**
+- Na coluna de aderência da activity-card, substituir o texto "X/7 dias" por:
+  - Número percentual grande (ex.: **71%**)
+  - Mini barra de progresso abaixo (largura proporcional ao percentual)
+  - Cor semântica: verde (`#10B981`) ≥70% · âmbar (`#F59E0B`) 40–69% · vermelho (`#EF4444`) <40%
+- O número de dias registrados permanece visível como subtexto menor (ex.: "5/7 dias")
+
+**Critérios de aceite:**
+- [ ] Barra e percentual exibidos para todos os pacientes na activity-card
+- [ ] Cores corretas nos três intervalos
+- [ ] Legível em tema escuro e claro
+
+---
+
+### 30.2 Média Prioridade — Queries e Endpoints Novos
+
+Estas quatro melhorias requerem trabalho no backend (queries adicionais ou novos endpoints), a ser implementado em sprint subsequente.
+
+---
+
+#### RF-PAINEL-05 — Aderência 30 dias e streak na lista de pacientes
+
+**Aba:** Área de Pacientes  
+**Motivação:** Aderência de 7 dias é muito curta para refletir comportamento; 30 dias e streak dão visão longitudinal.
+
+**Dados necessários (router `painel_nutricionista`):**
+```python
+# Para cada paciente ativo, calcular no mesmo loop existente:
+month_start = today - timedelta(days=29)
+month_dates = {row[0].astimezone(tz).date()
+               for row in await db.execute(
+                   select(MealLog.logged_at)
+                   .where(MealLog.user_id == patient_id,
+                          MealLog.confirmed == True,
+                          MealLog.logged_at >= month_start_dt)
+               ).all()}
+adh_30d = round(len(month_dates) / 30 * 100)
+streak = 0; d = today
+while d in month_dates and streak <= 30:
+    streak += 1; d -= timedelta(days=1)
+```
+
+**Comportamento esperado:**
+- Nova coluna "30d / streak" na tabela de pacientes (ou tooltip/expandir ao hover)
+- Exibição: `68% · 🔥 5d` (aderência + sequência atual)
+- Se streak = 0: exibir `— / sem sequência`
+
+**Critérios de aceite:**
+- [ ] Valores corretos para paciente com histórico de 30 dias
+- [ ] Sem degradação de performance para carteira com ≤20 pacientes (p95 < 2s)
+- [ ] Dados ausentes (paciente sem histórico) exibidos como `—` sem erro
+
+---
+
+#### RF-PAINEL-06 — Gráfico de engajamento coletivo (7 dias)
+
+**Aba:** Dashboard  
+**Motivação:** A tabela atual mostra dados por paciente; a nutricionista também precisa de visão agregada da carteira.
+
+**Dados necessários:**
+```python
+# Para cada um dos 7 dias anteriores:
+# Contar quantos pacientes distintos fizeram ao menos 1 registro
+# Resulta em: [{label: "Seg", count: 4, total: 5}, ...]
+```
+
+**Comportamento esperado:**
+- Gráfico de barras verticais (`<canvas>` com Canvas API, sem biblioteca externa)
+- Eixo Y: 0 → total de pacientes ativos
+- Eixo X: últimos 7 dias (labels de dia da semana + data curta)
+- Cor: barra verde se ≥70% dos pacientes registraram; âmbar se 40–69%; vermelha se <40%
+- Tooltip ao passar o mouse: "N de M pacientes registraram"
+- Substituir ou complementar a tabela de engajamento existente
+
+**Critérios de aceite:**
+- [ ] Gráfico renderizado sem erro quando há 0 pacientes
+- [ ] Tooltips visíveis em desktop (hover)
+- [ ] Gráfico responsivo (redimensiona ao alterar largura da janela)
+
+---
+
+#### RF-PAINEL-07 — Renovar convite expirado
+
+**Aba:** Convites  
+**Motivação:** Convites expiram em 7 dias; se o contato não viu o link a tempo, a nutricionista precisa reenviar sem perder o histórico.
+
+**Endpoint novo:**
+```
+PATCH /api/nutricionista/convite/{link_id}/renovar
+```
+- Valida: nutricionista proprietária + `status == "expired"`
+- Gera novo `invite_token` (`secrets.token_urlsafe(32)`)
+- Atualiza: `status = "pending"`, `expires_at = now + 7 dias`, `invited_at = now`
+- Mantém todos os demais campos (nome, telefone, histórico de consentimento)
+- Retorna novo link completo
+
+**Comportamento no frontend:**
+- Botão "🔄 Renovar" ao lado do botão "🗑 Excluir" nos convites expirados
+- Ao clicar: confirma → chama PATCH → exibe toast "Convite renovado — novo link copiado" → copia link para clipboard → recarrega página
+
+**Critérios de aceite:**
+- [ ] Link renovado gera novo token (diferente do anterior)
+- [ ] Status volta para "pending" e convite aparece na seção correta
+- [ ] Nutricionista de outra conta não consegue renovar (403)
+- [ ] Convite não-expirado retorna 422 com detalhe "apenas convites expirados podem ser renovados"
+
+---
+
+#### RF-PAINEL-08 — PDF clínico por período customizado
+
+**Aba:** Perfil do paciente  
+**Motivação:** O PDF atual cobre sempre os últimos 30 dias. A nutricionista pode querer um relatório quinzenal, semanal ou de um mês específico.
+
+**Interface:**
+- Na página `/nutricionista/paciente/{id}`, o botão "📄 Baixar PDF" abre um modal com seletor de período:
+  - Opções rápidas: Últimos 7 dias · Últimos 15 dias · Últimos 30 dias (padrão)
+  - Campo "Personalizado": dois date pickers (início e fim), máximo 90 dias
+- Ao confirmar, navega para `/api/nutricionista/paciente/{id}/pdf?days=N` ou `?start=YYYY-MM-DD&end=YYYY-MM-DD`
+
+**Ajuste no endpoint:**
+```python
+@router.get("/api/nutricionista/paciente/{patient_id}/pdf")
+async def baixar_pdf_paciente(
+    patient_id: int,
+    days: int = Query(30, ge=7, le=90),
+    start: date | None = Query(None),
+    end:   date | None = Query(None),
+):
+    # Se start/end fornecidos, usa esse range; senão, usa days
+    ...
+```
+
+**Critérios de aceite:**
+- [ ] PDF de 7 dias inclui apenas refeições do período
+- [ ] PDF com range customizado usa datas exatas (inclusive)
+- [ ] Período > 90 dias retorna 422
+- [ ] Modal fecha ao cancelar sem gerar download
+- [ ] Padrão (sem parâmetros) continua sendo 30 dias
+
+---
+
+### 30.3 Baixa Prioridade — Novos Recursos
+
+Implementar após consolidação das melhorias de alta e média prioridade. Dependem de novos modelos de dados ou lógica de negócio mais complexa.
+
+---
+
+#### RF-PAINEL-09 — Exportar lista de pacientes (CSV)
+
+**Aba:** Área de Pacientes  
+**Motivação:** Integração com prontuários e planos de saúde exige dados em formato portável.
+
+**Endpoint:**
+```
+GET /api/nutricionista/pacientes/csv
+Content-Type: text/csv
+Content-Disposition: attachment; filename="pacientes_{nutricionista_id}_{data}.csv"
+```
+
+**Colunas:** nome · telefone · objetivo · data_vinculo · aderencia_7d_pct · aderencia_30d_pct · streak · ultima_refeicao · media_kcal_7d
+
+**Critérios de aceite:**
+- [ ] CSV com encoding UTF-8-BOM (compatível com Excel)
+- [ ] Apenas pacientes da nutricionista autenticada
+- [ ] Botão "📤 Exportar CSV" visível na aba de Pacientes
+- [ ] Arquivo gerado com data no nome (formato `YYYY-MM-DD`)
+
+---
+
+#### RF-PAINEL-10 — Nota clínica rápida inline
+
+**Aba:** Área de Pacientes  
+**Motivação:** Fluxo atual exige abrir o perfil completo do paciente, rolar até a seção de notas e então digitar. Em pós-consulta com múltiplos pacientes, isso interrompe o ritmo.
+
+**Interface:**
+- Ícone 📝 na linha de cada paciente (coluna de ações, ao lado do botão PDF)
+- Clique abre modal compacto com: cabeçalho "Nova nota — {nome do paciente}", textarea, botão "Salvar" e "Cancelar"
+- Modal submete POST para endpoint existente `/api/nutricionista/paciente/{id}/nota`
+- Toast de confirmação; modal fecha sem recarregar a página
+
+**Critérios de aceite:**
+- [ ] Nota salva aparece no perfil completo do paciente
+- [ ] Modal acessível via teclado (Tab, Enter, Esc)
+- [ ] Textarea com limite de 1000 chars com contador visível
+- [ ] Erro de rede exibe mensagem no modal (não fecha)
+
+---
+
+#### RF-PAINEL-11 — Alertas configuráveis por paciente
+
+**Aba:** Perfil do paciente  
+**Motivação:** O limiar de inatividade hoje é fixo (3 dias no código). Pacientes em acompanhamento intensivo merecem limiares diferentes de pacientes em manutenção.
+
+**Modelo de dados — novo campo em `NutritionistPatient`:**
+```python
+inactivity_alert_days: int = 3    # dias sem registro → alerta no dashboard
+kcal_min_pct: int | None = None   # ex.: 60 → alerta se kcal < 60% da meta
+kcal_max_pct: int | None = None   # ex.: 130 → alerta se kcal > 130% da meta
+```
+
+**Interface:** Seção "Configurações de alerta" na página de perfil do paciente com inputs numéricos e botão salvar.
+
+**Critérios de aceite:**
+- [ ] Migration Alembic sem downtime (colunas nullable com default)
+- [ ] Painel dashboard usa `inactivity_alert_days` por paciente para colorir o alerta
+- [ ] Valores fora do range razoável (dias < 1 ou > 30; pct < 10 ou > 200) rejeitados com 422
+- [ ] Configuração de um paciente não afeta outros
+
+---
+
+#### RF-PAINEL-12 — Painel multi-nutricionista / clínica (B2B Fase 2)
+
+**Status:** Especificação preliminar — detalhar em sprint dedicado  
+**Motivação:** Clínicas e consultórios com múltiplos profissionais precisam compartilhar uma conta e dividir carteiras de pacientes.
+
+**Escopo preliminar:**
+- Novo modelo `Organization` (clínica) com relação 1:N para `User` (nutricionistas membros)
+- Papel "admin da clínica": gerencia membros, vê métricas agregadas, controla billing
+- Papel "nutricionista membro": acessa apenas sua própria carteira de pacientes
+- Dashboard administrativo com métricas da clínica (total de pacientes, aderência média, receita MRR)
+- Billing por organização (planos por número de nutricionistas ativos)
+
+**Dependências:**
+- RF-PAINEL-01 a RF-PAINEL-11 devem estar estáveis
+- Decisão de modelo de dados (organização vs. convite de membro)
+- Definição de preços do plano clínica
+
+**Critérios de aceite (preliminares):**
+- [ ] Nutricionista A não enxerga pacientes da Nutricionista B na mesma clínica
+- [ ] Admin da clínica vê métricas agregadas de todos os membros
+- [ ] Remoção de nutricionista membro preserva histórico de seus pacientes
+
+---
+
+### 30.4 Plano de Implementação
+
+| Grupo | Features | Sprints estimados | Pré-requisitos |
+|-------|----------|-------------------|----------------|
+| Alta prioridade | RF-PAINEL-01 a 04 | 1 sprint (~1 semana) | Nenhum |
+| Média prioridade | RF-PAINEL-05 a 08 | 1–2 sprints (~2 semanas) | Alta prioridade concluída |
+| Baixa prioridade | RF-PAINEL-09 a 11 | 2 sprints (~2 semanas) | Média prioridade concluída |
+| Multi-clínica | RF-PAINEL-12 | Sprint dedicado | Todos anteriores + ADR de modelo organizacional |
+
+**Ordem de implementação sugerida dentro de cada grupo (menor risco primeiro):**
+
+1. RF-PAINEL-04 (visual only) → RF-PAINEL-01 (template) → RF-PAINEL-02 (JS filtros) → RF-PAINEL-03 (dashboard card)
+2. RF-PAINEL-08 (parâmetro no endpoint existente) → RF-PAINEL-07 (novo endpoint PATCH) → RF-PAINEL-05 (query no router) → RF-PAINEL-06 (canvas chart)
+3. RF-PAINEL-09 (CSV simples) → RF-PAINEL-10 (modal JS) → RF-PAINEL-11 (migration + configuração)
+
+### 30.5 Critérios de Aceite Globais
+
+- [ ] Todas as melhorias de alta prioridade passam no suite de testes existente (454 testes, cobertura ≥ 55%)
+- [ ] Nenhuma melhoria degrada o tempo de carregamento do painel (p95 < 3s para carteira de 20 pacientes)
+- [ ] Dados de pacientes não vazam entre nutricionistas (teste explícito de autorização em cada endpoint novo)
+- [ ] Todas as telas funcionam em mobile (400px) e nos temas escuro e claro
+- [ ] PDF por período customizado gera arquivo válido (WeasyPrint sem erro) para qualquer range de 7 a 90 dias
 
 ---
 
