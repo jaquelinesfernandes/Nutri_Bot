@@ -1023,6 +1023,81 @@ async def adicionar_nota(
     }, status_code=201)
 
 
+# ── Meta e Objetivo do Paciente ──────────────────────────────────────────────
+
+_VALID_GOAL_TYPES = {"perder_peso", "ganhar_massa", "manter", ""}
+
+@router.patch("/api/nutricionista/paciente/{patient_id}/meta")
+async def configurar_meta_paciente(
+    patient_id: str,
+    goal_type: str = Form(default=""),
+    daily_calorie_goal: int | None = Form(default=None),
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Nutricionista define/ajusta objetivo e meta calórica do paciente.
+
+    - goal_type: perder_peso | ganhar_massa | manter | "" (limpa)
+    - daily_calorie_goal: inteiro 800–5000 kcal ou omitido (não altera)
+
+    A alteração é gravada diretamente em users.goal_type e
+    users.daily_calorie_goal, refletindo imediatamente nos gráficos,
+    relatório PDF e análise de IA.
+    """
+    nutri = _require_nutritionist(user)
+
+    import uuid as _uuid
+    try:
+        pid = _uuid.UUID(patient_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ID inválido")
+
+    if goal_type not in _VALID_GOAL_TYPES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"goal_type inválido. Use: {', '.join(sorted(_VALID_GOAL_TYPES - {''}))}"
+        )
+
+    if daily_calorie_goal is not None and not (800 <= daily_calorie_goal <= 5000):
+        raise HTTPException(
+            status_code=422, detail="daily_calorie_goal deve estar entre 800 e 5000"
+        )
+
+    # Verifica vínculo ativo
+    link_result = await db.execute(
+        select(NutritionistPatient).where(
+            NutritionistPatient.nutritionist_id == nutri.id,
+            NutritionistPatient.patient_id == pid,
+            NutritionistPatient.status == "active",
+        )
+    )
+    if not link_result.scalar_one_or_none():
+        raise HTTPException(status_code=403, detail="Sem vínculo ativo com este paciente")
+
+    pat_result = await db.execute(select(User).where(User.id == pid))
+    patient = pat_result.scalar_one_or_none()
+    if not patient or patient.deleted_at:
+        raise HTTPException(status_code=404, detail="Paciente não encontrado")
+
+    if goal_type != "" or goal_type == "":
+        # Sempre atualiza goal_type (inclusive para limpar com "")
+        patient.goal_type = goal_type or None
+
+    if daily_calorie_goal is not None:
+        patient.daily_calorie_goal = daily_calorie_goal
+
+    await db.commit()
+    logger.info(
+        "[META-PACIENTE] nutri=%s paciente=%s goal_type=%r kcal=%s",
+        nutri.id, pid, goal_type, daily_calorie_goal,
+    )
+    return JSONResponse({
+        "ok": True,
+        "goal_type": patient.goal_type,
+        "daily_calorie_goal": patient.daily_calorie_goal,
+    })
+
+
 # ── B2B-2: Download PDF do paciente (enriquecido) ────────────────────────────
 
 @router.get("/api/nutricionista/paciente/{patient_id}/pdf")
