@@ -132,14 +132,14 @@
     border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-sm);
   }
   .pt-header {
-    display: grid; grid-template-columns: 1fr 140px 110px 96px 76px;
+    display: grid; grid-template-columns: 1fr 140px 130px 96px 110px;
     padding: 10px 18px;
     font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
     text-transform: uppercase; color: var(--text-3);
     border-bottom: 1px solid var(--card-b);
   }
   .pt-row {
-    display: grid; grid-template-columns: 1fr 140px 110px 96px 76px;
+    display: grid; grid-template-columns: 1fr 140px 130px 96px 110px;
     padding: 13px 18px; align-items: center;
     border-bottom: 1px solid var(--card-b);
     transition: background .15s;
@@ -299,7 +299,82 @@
   .progress-bar-wrap { width: 80px; height: 6px; background: rgba(156,163,175,.18); border-radius: 9px; overflow: hidden; }
   .progress-bar-fill { height: 100%; border-radius: 9px; background: var(--primary); }
   .progress-bar-fill.ok { background: #10B981; }
-  .progress-bar-fill.warn { background: #F59E0B; }
+  .progress-bar-fill.warn { background: #EF4444; }
+
+  /* ── Goal badge ─────────────────────────────────────────────────────────── */
+  .badge-goal {
+    display: inline-flex; align-items: center; gap: 3px;
+    border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 600;
+  }
+  .badge-goal.goal-perder { background: rgba(99,102,241,.1); color: #818CF8; }
+  .badge-goal.goal-ganhar { background: rgba(16,185,129,.1); color: #059669; }
+  .badge-goal.goal-manter { background: rgba(245,158,11,.1); color: #D97706; }
+
+  /* ── Painel Atenção necessária ───────────────────────────────────────────── */
+  .alert-panel {
+    background: var(--card); border: 1px solid rgba(239,68,68,.25);
+    border-radius: 16px; padding: 16px 20px; margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .alert-panel-hdr {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; font-weight: 700; color: var(--text-1);
+    margin-bottom: 10px;
+  }
+  .alert-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 11px; border-radius: 9px; margin-bottom: 5px;
+  }
+  .alert-item:last-child { margin-bottom: 0; }
+  .alert-item.critical { background: rgba(239,68,68,.07); border: 1px solid rgba(239,68,68,.2); }
+  .alert-item.warning  { background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.18); }
+  .alert-item-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .alert-item.critical .alert-item-dot { background: #EF4444; }
+  .alert-item.warning  .alert-item-dot { background: #F59E0B; }
+  .alert-item-name { font-weight: 600; font-size: 12.5px; flex: 1; color: var(--text-1); }
+  .alert-item-days { font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
+
+  /* ── RF-PAINEL-10: Modal nota rápida inline ─────────────────────────────── */
+  .nota-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 200;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .nota-modal-overlay.open { display: flex; }
+  .nota-modal {
+    background: var(--card); border-radius: 18px; padding: 24px;
+    width: 100%; max-width: 420px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+  }
+  .nota-modal h3 { font-size: 1rem; font-weight: 600; margin-bottom: 14px; color: var(--text-1); }
+  .nota-textarea {
+    width: 100%; min-height: 90px; padding: 10px 12px;
+    border: 1.5px solid var(--card-b); border-radius: 9px;
+    background: var(--surface); color: var(--text-1);
+    font-family: inherit; font-size: 13px; resize: vertical; outline: none;
+  }
+  .nota-textarea:focus { border-color: var(--primary); }
+  .nota-char-count { font-size: 11px; color: var(--text-3); text-align: right; margin-top: 3px; }
+  .nota-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 12px; }
+
+  /* ── Filter bar (Pacientes) ─────────────────────────────────────────────── */
+  .filter-bar {
+    display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+    margin-bottom: 12px;
+  }
+  .filter-search {
+    flex: 1; min-width: 180px; max-width: 340px;
+    padding: 8px 12px; border: 1.5px solid var(--card-b);
+    border-radius: 9px; background: var(--card); color: var(--text-1);
+    font-family: inherit; font-size: 13px; outline: none;
+  }
+  .filter-search:focus { border-color: var(--primary); }
+  .filter-select {
+    padding: 8px 10px; border: 1.5px solid var(--card-b);
+    border-radius: 9px; background: var(--card); color: var(--text-2);
+    font-family: inherit; font-size: 13px; outline: none; cursor: pointer;
+  }
+  .filter-select:focus { border-color: var(--primary); }
+  .filter-count { font-size: 12px; color: var(--text-3); margin-left: auto; white-space: nowrap; }
 
   /* Responsive */
   @media (max-width: 800px) {
@@ -392,6 +467,49 @@
           </div>
         </div>
 
+        <!-- RF-PAINEL-06: Gráfico de engajamento coletivo -->
+        {% if patients_data %}
+        <div class="activity-card" style="margin-bottom:18px;">
+          <h2>📊 Engajamento Coletivo — últimos 7 dias</h2>
+          <canvas id="engChart" style="width:100%;height:140px;display:block;margin-top:12px;"></canvas>
+          <div style="display:flex;gap:14px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
+            {% for d in daily_engagement %}
+            <div style="text-align:center;min-width:42px;">
+              <div style="font-size:13px;font-weight:700;color:{% if d.pct >= 70 %}#10B981{% elif d.pct >= 40 %}#F59E0B{% else %}#EF4444{% endif %};">{{ d.count }}<span style="font-size:10px;color:var(--text-3)">/{{ d.total }}</span></div>
+              <div style="font-size:10.5px;color:var(--text-3);">{{ d.label }}</div>
+              <div style="font-size:10px;color:var(--text-3);">{{ d.date }}</div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- RF-PAINEL-03: Painel Atenção necessária -->
+        {% set inativos = patients_data | selectattr('is_inactive') | list %}
+        {% if inativos %}
+        <div class="alert-panel">
+          <div class="alert-panel-hdr">
+            🚨 Atenção necessária — {{ inativos | length }} paciente{{ 's' if inativos | length != 1 }}
+          </div>
+          {% for p in inativos %}
+            {% set diff = (now_utc - p.last_logged_at.replace(tzinfo=none)).days if p.last_logged_at else 999 %}
+            <div class="alert-item {% if diff >= 5 %}critical{% else %}warning{% endif %}">
+              <div class="alert-item-dot"></div>
+              <div class="alert-item-name">
+                <a href="/nutricionista/paciente/{{ p.patient.id }}" style="color:inherit;text-decoration:none;">
+                  {{ p.patient.first_name or 'Paciente' }}
+                </a>
+              </div>
+              <div class="alert-item-days">
+                {% if diff == 999 %}sem registros{% elif diff == 1 %}1 dia sem registro{% else %}{{ diff }} dias sem registro{% endif %}
+              </div>
+              <a class="btn-sm btn-sm-ghost" href="/nutricionista/paciente/{{ p.patient.id }}"
+                 style="font-size:11.5px;padding:4px 10px;">Ver perfil →</a>
+            </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
         <!-- Atividade recente -->
         <div class="activity-card">
           <h2>📅 Engajamento dos Pacientes — últimos 7 dias</h2>
@@ -422,11 +540,12 @@
                 {% if p.avg_kcal %}{{ p.avg_kcal | int }} kcal{% else %}—{% endif %}
               </div>
               <div>
-                <div style="font-size:12.5px;font-weight:700;color:var(--text-1);">
-                  {{ p.days_with_data_7d }}/7 dias
-                </div>
                 {% set pct7 = ((p.days_with_data_7d / 7) * 100) | int %}
-                <div class="progress-bar-wrap" style="margin-top:4px;">
+                <div style="font-size:19px;font-weight:700;line-height:1;color:{% if pct7 >= 70 %}#10B981{% elif pct7 >= 40 %}#F59E0B{% else %}#EF4444{% endif %};">
+                  {{ pct7 }}%
+                </div>
+                <div style="font-size:11px;color:var(--text-3);margin-top:2px;">{{ p.days_with_data_7d }}/7 dias</div>
+                <div class="progress-bar-wrap" style="margin-top:5px;">
                   <div class="progress-bar-fill {% if pct7 >= 70 %}ok{% elif pct7 >= 40 %}{% else %}warn{% endif %}"
                        style="width:{{ pct7 }}%;"></div>
                 </div>
@@ -486,6 +605,22 @@
           {% endif %}
         </div>
 
+        <!-- RF-PAINEL-02: Barra de filtros -->
+        <div class="filter-bar">
+          <input id="pt-search" class="filter-search" type="search"
+            placeholder="🔍 Buscar por nome…" oninput="filtrarPacientes()" />
+          <select id="pt-filter-status" class="filter-select" onchange="filtrarPacientes()">
+            <option value="">Todos</option>
+            <option value="ativo">Ativos</option>
+            <option value="inativo">Inativos</option>
+          </select>
+          <span class="filter-count" id="pt-count"></span>
+          <!-- RF-PAINEL-09: Exportar CSV -->
+          <a href="/api/nutricionista/pacientes/csv" class="btn-sm btn-sm-ghost" title="Exportar lista em CSV (Excel)">
+            📤 CSV
+          </a>
+        </div>
+
         <div class="patients-card">
           {% if patients_data %}
           <div class="pt-header">
@@ -496,10 +631,22 @@
             <span>Ações</span>
           </div>
           {% for p in patients_data %}
-          <div class="pt-row" onclick="window.location.href='/nutricionista/paciente/{{ p.patient.id }}'">
+          <div class="pt-row"
+            data-name="{{ (p.patient.first_name or '') | lower }}"
+            data-status="{{ 'inativo' if p.is_inactive else 'ativo' }}"
+            onclick="window.location.href='/nutricionista/paciente/{{ p.patient.id }}'">
             <div>
               <div class="pt-name">{{ p.patient.first_name or 'Paciente' }}</div>
-              <div class="pt-plan">{{ 'Premium' if p.patient.is_premium else 'Gratuito' }}</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:2px;align-items:center;">
+                <div class="pt-plan">{{ 'Premium' if p.patient.is_premium else 'Gratuito' }}</div>
+                {% if p.patient.goal_type == 'perder_peso' %}
+                <span class="badge-goal goal-perder">🎯 Perder peso</span>
+                {% elif p.patient.goal_type == 'ganhar_massa' %}
+                <span class="badge-goal goal-ganhar">💪 Ganhar massa</span>
+                {% elif p.patient.goal_type == 'manter' %}
+                <span class="badge-goal goal-manter">⚖️ Manter</span>
+                {% endif %}
+              </div>
             </div>
             <div class="pt-last">
               {% if p.last_logged_at %}
@@ -514,7 +661,11 @@
               {% endif %}
             </div>
             <div class="pt-kcal">
-              {% if p.avg_kcal %}{{ p.avg_kcal | int }} kcal{% else %}—{% endif %}
+              {% if p.avg_kcal %}<div>{{ p.avg_kcal | int }} kcal</div>{% else %}<div style="color:var(--text-3)">—</div>{% endif %}
+              <div style="font-size:11px;color:var(--text-3);margin-top:2px;">
+                30d: <span style="color:{% if p.adh_30d >= 70 %}#10B981{% elif p.adh_30d >= 40 %}#F59E0B{% else %}#EF4444{% endif %};">{{ p.adh_30d }}%</span>
+                {% if p.streak > 0 %} · 🔥{{ p.streak }}d{% endif %}
+              </div>
             </div>
             <div>
               {% if p.is_inactive %}
@@ -523,10 +674,13 @@
                 <span class="badge-active">✓ Ativo</span>
               {% endif %}
             </div>
-            <div onclick="event.stopPropagation()">
+            <div onclick="event.stopPropagation()" style="display:flex;gap:6px;flex-wrap:wrap;">
               <a class="btn-sm btn-sm-ghost"
                 href="/api/nutricionista/paciente/{{ p.patient.id }}/pdf"
-                title="Baixar PDF clínico">📄 PDF</a>
+                title="Baixar PDF clínico (30 dias)">📄 PDF</a>
+              <button class="btn-sm btn-sm-ghost"
+                onclick="abrirNotaRapida('{{ p.patient.id }}','{{ (p.patient.first_name or 'Paciente') | replace("'","\\'") }}')"
+                title="Adicionar nota clínica rápida">📝</button>
             </div>
           </div>
           {% endfor %}
@@ -644,8 +798,8 @@
             </div>
             <span class="badge-expired">⏰ Expirado</span>
             <div class="convite-actions">
-              <button class="btn-sm btn-sm-ghost" onclick="abrirModalConviteComNome('{{ lk.patient_name | replace("'", "\\'") }}', '{{ lk.patient_phone or "" }}')">
-                🔁 Reenviar
+              <button class="btn-sm btn-sm-ghost" onclick="renovarConvite('{{ lk.id }}')" title="Gerar novo token e reativar convite por 7 dias">
+                🔄 Renovar
               </button>
               <button class="btn-sm btn-sm-danger" onclick="excluirConvite('{{ lk.id }}')" title="Excluir convite expirado">
                 🗑 Excluir
@@ -698,6 +852,21 @@
     </div><!-- /nutri-inner -->
   </main>
 </div><!-- /nutri-shell -->
+
+<!-- ── RF-PAINEL-10: Modal Nota Rápida ───────────────────────────────────── -->
+<div class="nota-modal-overlay" id="modal-nota-rapida">
+  <div class="nota-modal">
+    <h3>📝 Nova nota — <span id="nota-rapida-nome"></span></h3>
+    <textarea class="nota-textarea" id="nota-rapida-texto"
+      placeholder="Digite a anotação clínica…" maxlength="1000"
+      oninput="document.getElementById('nota-char').textContent = this.value.length + '/1000'"></textarea>
+    <div class="nota-char-count"><span id="nota-char">0</span>/1000</div>
+    <div class="nota-modal-actions">
+      <button class="btn-cancel" onclick="fecharNotaRapida()">Cancelar</button>
+      <button class="btn-primary" onclick="salvarNotaRapida()">💾 Salvar nota</button>
+    </div>
+  </div>
+</div>
 
 <!-- ── Modal: Convidar Paciente ───────────────────────────────────── -->
 <div class="modal-overlay" id="modal-invite">
@@ -778,6 +947,9 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('modal-invite').addEventListener('click', e => {
     if (e.target === e.currentTarget) fecharModalConvite();
   });
+
+  // Inicializa contador de filtro de pacientes
+  filtrarPacientes();
 });
 
 // ── Modal helpers ────────────────────────────────────────────────────────────
@@ -874,6 +1046,140 @@ function showToast(msg) {
 
 function copiarLink(url) {
   navigator.clipboard.writeText(url).then(() => showToast('✓ Link copiado!'));
+}
+
+// ── RF-PAINEL-06: Gráfico de engajamento coletivo ────────────────────────────
+(function drawEngChart() {
+  const canvas = document.getElementById('engChart');
+  if (!canvas) return;
+  const data   = {{ daily_engagement | tojson }};
+  const total  = data[0]?.total || 0;
+  if (!total) { canvas.style.display = 'none'; return; }
+
+  const dpr  = window.devicePixelRatio || 1;
+  const W    = canvas.parentElement.clientWidth || 500;
+  const H    = 130;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
+
+  const ctx  = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const isDark = document.documentElement.dataset.theme === 'dark'
+    || (!document.documentElement.dataset.theme && window.matchMedia('(prefers-color-scheme:dark)').matches);
+  const gridColor = isDark ? 'rgba(255,255,255,.07)' : 'rgba(0,0,0,.06)';
+  const textColor = isDark ? '#64748B' : '#94A3B8';
+
+  const PAD = { t: 8, b: 20, l: 28, r: 8 };
+  const bW  = (W - PAD.l - PAD.r) / data.length;
+  const cH  = H - PAD.t - PAD.b;
+  const barW = Math.max(bW * 0.55, 8);
+
+  // Grid lines
+  [0, 25, 50, 75, 100].forEach(v => {
+    const y = PAD.t + cH * (1 - v / 100);
+    ctx.strokeStyle = gridColor; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(PAD.l, y); ctx.lineTo(W - PAD.r, y); ctx.stroke();
+    if (v > 0) {
+      ctx.fillStyle = textColor; ctx.font = '9px system-ui'; ctx.textAlign = 'right';
+      ctx.fillText(v + '%', PAD.l - 4, y + 3);
+    }
+  });
+
+  data.forEach((d, i) => {
+    const x   = PAD.l + i * bW + (bW - barW) / 2;
+    const pct = total ? (d.count / total) : 0;
+    const bH  = Math.max(cH * pct, pct > 0 ? 3 : 0);
+    const y   = PAD.t + cH - bH;
+    const col = pct >= 0.7 ? '#10B981' : pct >= 0.4 ? '#F59E0B' : (pct > 0 ? '#EF4444' : gridColor);
+    ctx.fillStyle = col;
+    ctx.beginPath();
+    ctx.roundRect(x, y, barW, bH, [4, 4, 0, 0]);
+    ctx.fill();
+    // X label
+    ctx.fillStyle = textColor; ctx.font = '10px system-ui'; ctx.textAlign = 'center';
+    ctx.fillText(d.label, x + barW / 2, H - 4);
+  });
+})();
+
+// ── RF-PAINEL-10: Nota clínica rápida inline ─────────────────────────────────
+let _notaPatientId = null;
+function abrirNotaRapida(patientId, nome) {
+  _notaPatientId = patientId;
+  document.getElementById('nota-rapida-nome').textContent = nome;
+  document.getElementById('nota-rapida-texto').value = '';
+  document.getElementById('nota-char').textContent = '0';
+  document.getElementById('modal-nota-rapida').classList.add('open');
+  setTimeout(() => document.getElementById('nota-rapida-texto').focus(), 80);
+}
+function fecharNotaRapida() {
+  document.getElementById('modal-nota-rapida').classList.remove('open');
+  _notaPatientId = null;
+}
+async function salvarNotaRapida() {
+  if (!_notaPatientId) return;
+  const text = document.getElementById('nota-rapida-texto').value.trim();
+  if (!text) { showToast('Digite a anotação antes de salvar.'); return; }
+  const today = new Date().toISOString().split('T')[0];
+  const form = new FormData();
+  form.append('consultation_date', today);
+  form.append('note_text', text);
+  try {
+    const resp = await fetch('/api/nutricionista/paciente/' + _notaPatientId + '/nota', {
+      method: 'POST', body: form,
+    });
+    if (resp.ok) {
+      fecharNotaRapida();
+      showToast('✅ Nota salva com sucesso!');
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      showToast('Erro: ' + (err.detail || 'Falha ao salvar.'));
+    }
+  } catch (e) {
+    showToast('Erro de conexão. Tente novamente.');
+  }
+}
+// Fecha modal de nota ao clicar fora
+document.addEventListener('DOMContentLoaded', () => {
+  const ov = document.getElementById('modal-nota-rapida');
+  if (ov) ov.addEventListener('click', e => { if (e.target === ov) fecharNotaRapida(); });
+});
+
+// ── RF-PAINEL-07: Renovar convite expirado ────────────────────────────────────
+async function renovarConvite(id) {
+  if (!confirm('Renovar este convite por mais 7 dias? O link anterior deixará de funcionar.')) return;
+  try {
+    const resp = await fetch('/api/nutricionista/convite/' + id + '/renovar', { method: 'PATCH' });
+    const data = await resp.json().catch(() => ({}));
+    if (resp.ok) {
+      navigator.clipboard.writeText(data.invite_url || '').catch(() => {});
+      showToast('✓ Convite renovado — novo link copiado!');
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      showToast('Erro: ' + (data.detail || 'Não foi possível renovar.'));
+    }
+  } catch (e) {
+    showToast('Erro de conexão. Tente novamente.');
+  }
+}
+
+// ── RF-PAINEL-02: Filtrar e buscar pacientes ─────────────────────────────────
+function filtrarPacientes() {
+  const q   = (document.getElementById('pt-search')?.value || '').toLowerCase().trim();
+  const st  = (document.getElementById('pt-filter-status')?.value || '');
+  const rows = Array.from(document.querySelectorAll('#tab-pacientes .pt-row[data-name]'));
+  let vis = 0;
+  rows.forEach(row => {
+    const nameOk   = !q  || (row.dataset.name || '').includes(q);
+    const statusOk = !st || (row.dataset.status || '') === st;
+    const show = nameOk && statusOk;
+    row.hidden = !show;
+    if (show) vis++;
+  });
+  const el = document.getElementById('pt-count');
+  if (el && rows.length) el.textContent = vis + ' de ' + rows.length + ' paciente' + (rows.length !== 1 ? 's' : '');
 }
 
 // ── Excluir convite expirado ─────────────────────────────────────────────────

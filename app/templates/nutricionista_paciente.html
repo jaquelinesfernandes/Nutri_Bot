@@ -88,6 +88,37 @@
   }
   .btn-pdf:hover { opacity: .88; }
 
+  /* RF-PAINEL-08: Modal seleção de período do PDF */
+  .pdf-modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.5); z-index: 200;
+    align-items: center; justify-content: center; padding: 20px;
+  }
+  .pdf-modal-overlay.open { display: flex; }
+  .pdf-modal {
+    background: var(--card); border-radius: 18px; padding: 26px;
+    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+  }
+  .pdf-modal h3 { font-size: 1.05rem; font-weight: 600; margin-bottom: 16px; color: var(--text-1); }
+  .pdf-period-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 16px; }
+  .pdf-period-btn {
+    padding: 9px 10px; border-radius: 9px; border: 1.5px solid var(--card-b);
+    background: none; color: var(--text-2); font-family: inherit; font-size: 13px;
+    cursor: pointer; text-align: center; transition: all .15s;
+  }
+  .pdf-period-btn.selected,
+  .pdf-period-btn:hover { border-color: var(--primary); background: rgba(99,102,241,.1); color: var(--primary); }
+  .pdf-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
+  .pdf-cancel {
+    padding: 9px 16px; border-radius: 9px; border: 1.5px solid var(--card-b);
+    background: none; color: var(--text-2); font-family: inherit; font-size: 13px; cursor: pointer;
+  }
+  .pdf-confirm {
+    padding: 9px 18px; border-radius: 9px; border: none;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+
   /* ── Cards de resumo ───────────────────────────────────────────── */
   .summary-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
   .summary-card {
@@ -280,10 +311,9 @@
             </span>
           </div>
         </div>
-        <a href="/api/nutricionista/paciente/{{ patient.id }}/pdf"
-           class="btn-pdf" title="Baixar relatório PDF dos últimos 30 dias">
+        <button class="btn-pdf" onclick="abrirModalPDF()" title="Baixar PDF — selecionar período">
           📄 Baixar PDF
-        </a>
+        </button>
       </div>
 
       <!-- Cards de resumo -->
@@ -551,5 +581,52 @@ async function salvarNota() {
     showToast('Erro de rede. Tente novamente.', true);
   }
 }
+
+// ── RF-PAINEL-08: Modal de seleção de período do PDF ────────────────────────
+const _PDF_PATIENT_ID = '{{ patient.id }}';
+let _pdfDays = 30;
+
+function abrirModalPDF() {
+  _pdfDays = 30;
+  document.querySelectorAll('.pdf-period-btn').forEach(b => {
+    b.classList.toggle('selected', b.dataset.days === '30');
+  });
+  document.getElementById('modal-pdf-period').classList.add('open');
+}
+function fecharModalPDF() {
+  document.getElementById('modal-pdf-period').classList.remove('open');
+}
+function selecionarPeriodoPDF(days, btn) {
+  _pdfDays = days;
+  document.querySelectorAll('.pdf-period-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+}
+function confirmarPDF() {
+  fecharModalPDF();
+  window.location.href = '/api/nutricionista/paciente/' + _PDF_PATIENT_ID + '/pdf?days=' + _pdfDays;
+}
+document.addEventListener('DOMContentLoaded', () => {
+  const ov = document.getElementById('modal-pdf-period');
+  if (ov) ov.addEventListener('click', e => { if (e.target === ov) fecharModalPDF(); });
+});
 </script>
+
+<!-- RF-PAINEL-08: Modal seleção de período -->
+<div class="pdf-modal-overlay" id="modal-pdf-period">
+  <div class="pdf-modal">
+    <h3>📄 Período do relatório PDF</h3>
+    <div class="pdf-period-btns">
+      <button class="pdf-period-btn" data-days="7"  onclick="selecionarPeriodoPDF(7, this)">Últimos 7 dias</button>
+      <button class="pdf-period-btn" data-days="15" onclick="selecionarPeriodoPDF(15, this)">Últimos 15 dias</button>
+      <button class="pdf-period-btn selected" data-days="30" onclick="selecionarPeriodoPDF(30, this)">Últimos 30 dias</button>
+      <button class="pdf-period-btn" data-days="60" onclick="selecionarPeriodoPDF(60, this)">Últimos 60 dias</button>
+      <button class="pdf-period-btn" data-days="90" onclick="selecionarPeriodoPDF(90, this)">Últimos 90 dias</button>
+    </div>
+    <div class="pdf-modal-actions">
+      <button class="pdf-cancel" onclick="fecharModalPDF()">Cancelar</button>
+      <button class="pdf-confirm" onclick="confirmarPDF()">📄 Baixar PDF</button>
+    </div>
+  </div>
+</div>
+
 {% endblock %}

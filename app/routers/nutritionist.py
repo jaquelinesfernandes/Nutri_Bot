@@ -1,4 +1,4 @@
-"""Painel B2B Nutricionistas — Sprint B2B-1 + B2B-2.
+"""Painel B2B Nutricionistas — Sprint B2B-1 + B2B-2 + Fase 3 (RF-PAINEL-01 a 11).
 
 Rotas HTML (Jinja2):
   GET  /nutricionista/cadastro              — tela de cadastro
@@ -6,14 +6,17 @@ Rotas HTML (Jinja2):
   GET  /nutricionista/paciente/{id}         — perfil do paciente (B2B-2)
 
 Rotas API:
-  POST /api/nutricionista/register          — cria conta nutricionista (trial 30d)
-  POST /api/nutricionista/convite           — gera convite para paciente
-  PATCH /api/nutricionista/convite/{token}  — aceita/recusa convite (chamado pelo bot)
-  PATCH /api/nutricionista/revogar/{id}     — revogação LGPD (chamado pelo bot)
-  GET  /api/nutricionista/pacientes         — lista pacientes ativos (JSON)
-  POST   /api/nutricionista/paciente/{id}/nota  — adiciona nota clínica (B2B-2)
-  GET    /api/nutricionista/paciente/{id}/pdf   — download PDF do paciente (B2B-2)
-  DELETE /api/nutricionista/convite/{id}        — exclui convite expirado
+  POST   /api/nutricionista/register                    — cria conta nutricionista (trial 30d)
+  POST   /api/nutricionista/convite                     — gera convite para paciente
+  PATCH  /api/nutricionista/convite/{token}             — aceita/recusa convite (chamado pelo bot)
+  PATCH  /api/nutricionista/convite/{id}/renovar        — RF-PAINEL-07: renova convite expirado
+  PATCH  /api/nutricionista/revogar/{id}                — revogação LGPD (chamado pelo bot)
+  DELETE /api/nutricionista/convite/{id}                — exclui convite expirado
+  GET    /api/nutricionista/pacientes                   — lista pacientes ativos (JSON)
+  GET    /api/nutricionista/pacientes/csv               — RF-PAINEL-09: exporta CSV
+  POST   /api/nutricionista/paciente/{id}/nota          — adiciona nota clínica (B2B-2)
+  GET    /api/nutricionista/paciente/{id}/pdf?days=N    — RF-PAINEL-08: PDF com período customizável
+  PATCH  /api/nutricionista/paciente/{id}/alerta-config — RF-PAINEL-11: configura limiar de alerta
 
 Autenticação: cookie JWT reutilizado do sistema existente.
 O login em /auth/login-form já redireciona para /nutricionista/ quando plan='nutritionist'.
@@ -29,7 +32,7 @@ from pathlib import Path
 logger = logging.getLogger(__name__)
 from zoneinfo import ZoneInfo
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
+from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request, status
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
@@ -488,7 +491,7 @@ async def painel_nutricionista(
         last_meal = last_result.scalar_one_or_none()
         last_logged_at = last_meal.logged_at if last_meal else None
 
-        # Média kcal últimos 7 dias
+        # Média kcal + dias únicos últimos 7 dias (para dashboard engajamento)
         week_start = now - _td(days=7)
         week_result = await db.execute(
             select(MealLog).where(
@@ -499,9 +502,25 @@ async def painel_nutricionista(
         )
         week_meals = week_result.scalars().all()
         avg_kcal = round(sum(m.total_calories_kcal for m in week_meals) / 7, 0) if week_meals else None
+        week_dates = {m.logged_at.astimezone(tz).date() for m in week_meals}
+        days_with_data_7d = len(week_dates)
 
-        # Dias únicos com registro nos últimos 7 dias (para dashboard engajamento)
-        days_with_data_7d = len({m.logged_at.astimezone(tz).date() for m in week_meals})
+        # RF-PAINEL-05 — Aderência 30 dias + streak
+        month_start = now - _td(days=29)
+        month_result = await db.execute(
+            select(MealLog.logged_at).where(
+                MealLog.user_id == lk.patient_id,
+                MealLog.confirmed.is_(True),
+                MealLog.logged_at >= month_start,
+            )
+        )
+        month_dates = {row[0].astimezone(tz).date() for row in month_result.all()}
+        adh_30d = round(len(month_dates) / 30 * 100)
+        streak = 0
+        _chk = now.date()
+        while _chk in month_dates and streak <= 30:
+            streak += 1
+            _chk -= _td(days=1)
 
         # Inactive flag: sem registro há mais de 3 dias
         is_inactive = (
@@ -515,7 +534,25 @@ async def painel_nutricionista(
             "last_logged_at": last_logged_at,
             "avg_kcal": avg_kcal,
             "days_with_data_7d": days_with_data_7d,
+            "week_dates": week_dates,        # RF-PAINEL-06
+            "adh_30d": adh_30d,             # RF-PAINEL-05
+            "streak": streak,               # RF-PAINEL-05
             "is_inactive": is_inactive,
+        })
+
+    # RF-PAINEL-06 — Engajamento diário: quantos pacientes registraram cada dia (últimos 7)
+    _labels_pt = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"]
+    daily_engagement = []
+    total_patients = len(patients_data)
+    for _i in range(6, -1, -1):
+        _day = now.date() - _td(days=_i)
+        _count = sum(1 for p in patients_data if _day in p["week_dates"])
+        daily_engagement.append({
+            "label": _labels_pt[_day.weekday()],
+            "date": _day.strftime("%d/%m"),
+            "count": _count,
+            "total": total_patients,
+            "pct": round(_count / total_patients * 100) if total_patients else 0,
         })
 
     from app.config import settings as _settings
@@ -537,6 +574,7 @@ async def painel_nutricionista(
             "pending_count": len(pending_links),
             "max_patients": _MAX_PATIENTS,
             "base_url": _base,
+            "daily_engagement": daily_engagement,  # RF-PAINEL-06
             # now_utc (naive) usado no template para calcular "X dias atrás"
             "now_utc": datetime.utcnow(),
         },
@@ -937,15 +975,19 @@ async def adicionar_nota(
 @router.get("/api/nutricionista/paciente/{patient_id}/pdf")
 async def baixar_pdf_paciente(
     patient_id: str,
+    days: int = Query(30, ge=7, le=90, description="Período do relatório em dias (7–90, padrão 30)"),
     user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    """Gera PDF clínico completo dos últimos 30 dias do paciente.
+    """Gera PDF clínico do paciente para o período solicitado (RF-PAINEL-08).
+
+    Query param:
+      ?days=N  — período em dias (7–90, padrão 30)
 
     Usa template dedicado (data/report_nutri_template.html) com:
     - Resumo executivo (kcal, aderência, meta)
     - Macronutrientes (média proteína/carb/gordura)
-    - Calendário de aderência 30d
+    - Calendário de aderência N dias
     - Top alimentos consumidos
     - Notas clínicas da nutricionista
     - Histórico diário detalhado (kcal + macros por refeição)
@@ -988,8 +1030,8 @@ async def baixar_pdf_paciente(
     tz = ZoneInfo("America/Sao_Paulo")
     today = datetime.now(tz).date()
     end_date = today
-    start_date = today - _td(days=29)
-    total_days = 30
+    start_date = today - _td(days=days - 1)   # RF-PAINEL-08: respeita ?days=N
+    total_days = days
 
     # ── Busca todos os registros dos últimos 30 dias ──────────────────────────
     period_start = datetime(start_date.year, start_date.month, start_date.day, 0, 0, tzinfo=tz)
@@ -1200,6 +1242,53 @@ async def baixar_pdf_paciente(
     )
 
 
+# ── RF-PAINEL-07: PATCH renovar convite expirado ──────────────────────────────
+
+@router.patch("/api/nutricionista/convite/{link_id}/renovar")
+async def renovar_convite_expirado(
+    link_id: str,
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+) -> JSONResponse:
+    """Renova um convite expirado: gera novo token e estende a validade por 7 dias.
+
+    Status volta para 'pending'; todos os outros campos (nome, telefone) são preservados.
+    Apenas o nutricionista dono do convite pode renová-lo.
+    """
+    nutri = _require_nutritionist(user)
+
+    result = await db.execute(
+        select(NutritionistPatient).where(NutritionistPatient.id == link_id)
+    )
+    link = result.scalar_one_or_none()
+
+    if link is None:
+        raise HTTPException(status_code=404, detail="Convite não encontrado.")
+    if str(link.nutritionist_id) != str(nutri.id):
+        raise HTTPException(status_code=403, detail="Sem permissão para renovar este convite.")
+    if link.status != "expired":
+        raise HTTPException(
+            status_code=422,
+            detail=f"Apenas convites expirados podem ser renovados (status atual: '{link.status}').",
+        )
+
+    link.invite_token = secrets.token_urlsafe(32)
+    link.status = "pending"
+    link.invited_at = datetime.utcnow()
+    link.expires_at = datetime.utcnow() + timedelta(days=7)
+    await db.commit()
+
+    from app.config import settings as _settings
+    _base = (_settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+    invite_url = f"{_base}/convite/{link.invite_token}"
+
+    logger.info(
+        "[CONVITE] Nutricionista %s renovou convite %s (%s) → novo token",
+        nutri.id, link_id, link.patient_name,
+    )
+    return JSONResponse({"ok": True, "invite_url": invite_url, "message": "Convite renovado com sucesso."})
+
+
 # ── DELETE convite expirado ────────────────────────────────────────────────────
 
 @router.delete("/api/nutricionista/convite/{link_id}")
@@ -1237,3 +1326,150 @@ async def excluir_convite_expirado(
 
     logger.info("[CONVITE] Nutricionista %s excluiu convite expirado %s (%s)", nutri.id, link_id, link.patient_name)
     return JSONResponse({"ok": True, "message": "Convite excluído com sucesso."})
+
+
+# ── RF-PAINEL-09: GET exportar lista de pacientes (CSV) ───────────────────────
+
+@router.get("/api/nutricionista/pacientes/csv")
+async def exportar_pacientes_csv(
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Exporta lista de pacientes ativos com métricas de aderência em CSV (UTF-8 BOM).
+
+    Colunas: nome, telefone, objetivo, data_vinculo, aderencia_7d_pct,
+             aderencia_30d_pct, streak, ultima_refeicao, media_kcal_7d
+    """
+    import csv
+    import io
+    from datetime import date as _date
+    from fastapi.responses import StreamingResponse
+
+    from app.models.meal_log import MealLog
+
+    nutri = _require_nutritionist(user)
+    tz = ZoneInfo("America/Sao_Paulo")
+    now = datetime.now(tz)
+
+    result = await db.execute(
+        select(NutritionistPatient).where(
+            NutritionistPatient.nutritionist_id == nutri.id,
+            NutritionistPatient.status == "active",
+        )
+    )
+    active_links = result.scalars().all()
+
+    rows = []
+    for lk in active_links:
+        if not lk.patient_id:
+            continue
+        pat_result = await db.execute(select(User).where(User.id == lk.patient_id))
+        patient = pat_result.scalar_one_or_none()
+        if not patient or patient.deleted_at:
+            continue
+
+        # Último registro
+        last_res = await db.execute(
+            select(MealLog).where(MealLog.user_id == lk.patient_id, MealLog.confirmed.is_(True))
+            .order_by(MealLog.logged_at.desc()).limit(1)
+        )
+        last_meal = last_res.scalar_one_or_none()
+
+        # Kcal 7d
+        week_start = now - timedelta(days=7)
+        w_res = await db.execute(
+            select(MealLog).where(
+                MealLog.user_id == lk.patient_id, MealLog.confirmed.is_(True),
+                MealLog.logged_at >= week_start,
+            )
+        )
+        week_meals = w_res.scalars().all()
+        week_dates = {m.logged_at.astimezone(tz).date() for m in week_meals}
+        adh_7d = round(len(week_dates) / 7 * 100)
+        avg_kcal = round(sum(m.total_calories_kcal for m in week_meals) / 7, 0) if week_meals else 0
+
+        # Aderência 30d + streak
+        month_start = now - timedelta(days=29)
+        m_res = await db.execute(
+            select(MealLog.logged_at).where(
+                MealLog.user_id == lk.patient_id, MealLog.confirmed.is_(True),
+                MealLog.logged_at >= month_start,
+            )
+        )
+        month_dates = {row[0].astimezone(tz).date() for row in m_res.all()}
+        adh_30d = round(len(month_dates) / 30 * 100)
+        streak = 0
+        _c = now.date()
+        while _c in month_dates and streak <= 30:
+            streak += 1; _c -= timedelta(days=1)
+
+        _GOAL_MAP = {"perder_peso": "Perder peso", "ganhar_massa": "Ganhar massa muscular", "manter": "Manter o peso"}
+        rows.append({
+            "nome": patient.first_name or "",
+            "telefone": lk.patient_phone or "",
+            "objetivo": _GOAL_MAP.get(patient.goal_type or "", ""),
+            "data_vinculo": lk.consented_at.strftime("%d/%m/%Y") if lk.consented_at else "",
+            "aderencia_7d_pct": adh_7d,
+            "aderencia_30d_pct": adh_30d,
+            "streak_dias": streak,
+            "ultima_refeicao": last_meal.logged_at.astimezone(tz).strftime("%d/%m/%Y %H:%M") if last_meal else "",
+            "media_kcal_7d": int(avg_kcal),
+        })
+
+    buf = io.StringIO()
+    buf.write("﻿")  # UTF-8 BOM para Excel
+    writer = csv.DictWriter(buf, fieldnames=list(rows[0].keys()) if rows else [], extrasaction="ignore")
+    writer.writeheader()
+    writer.writerows(rows)
+
+    filename = f"pacientes_{now.strftime('%Y-%m-%d')}.csv"
+    return StreamingResponse(
+        iter([buf.getvalue()]),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+# ── RF-PAINEL-11: PATCH alertas configuráveis por paciente ────────────────────
+
+@router.patch("/api/nutricionista/paciente/{patient_id}/alerta-config")
+async def configurar_alerta_paciente(
+    patient_id: str,
+    inactivity_alert_days: int = Form(default=3, ge=1, le=30),
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+) -> JSONResponse:
+    """Configura o limiar de inatividade (dias) para alerta no dashboard do nutricionista.
+
+    Campo armazenado em NutritionistPatient.inactivity_alert_days (default 3).
+    Requer migration Alembic para adicionar a coluna quando ativado.
+    """
+    import uuid as _uuid
+    nutri = _require_nutritionist(user)
+    try:
+        pid = _uuid.UUID(patient_id)
+    except ValueError:
+        raise HTTPException(status_code=422, detail="ID inválido")
+
+    result = await db.execute(
+        select(NutritionistPatient).where(
+            NutritionistPatient.nutritionist_id == nutri.id,
+            NutritionistPatient.patient_id == pid,
+            NutritionistPatient.status == "active",
+        )
+    )
+    link = result.scalar_one_or_none()
+    if not link:
+        raise HTTPException(status_code=403, detail="Sem vínculo ativo com este paciente")
+
+    # Guarda como atributo dinâmico até que migration seja aplicada
+    if hasattr(link, "inactivity_alert_days"):
+        link.inactivity_alert_days = inactivity_alert_days
+        await db.commit()
+        return JSONResponse({"ok": True, "inactivity_alert_days": inactivity_alert_days})
+    else:
+        # Coluna ainda não existe — retorna 501 com mensagem clara
+        raise HTTPException(
+            status_code=501,
+            detail="Migration pendente: execute 'alembic upgrade head' para habilitar esta feature.",
+        )
