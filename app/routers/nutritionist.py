@@ -518,12 +518,6 @@ async def painel_nutricionista(
             "is_inactive": is_inactive,
         })
 
-    # Trial: dias restantes
-    trial_days_left: int | None = None
-    if user.trial_ends_at:
-        delta = user.trial_ends_at.replace(tzinfo=None) - datetime.utcnow()
-        trial_days_left = max(0, delta.days)
-
     from app.config import settings as _settings
     _base = (_settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
 
@@ -541,7 +535,6 @@ async def painel_nutricionista(
             "active_count": len(active_links),
             "inactive_count": sum(1 for p in patients_data if p["is_inactive"]),
             "pending_count": len(pending_links),
-            "trial_days_left": trial_days_left,
             "max_patients": _MAX_PATIENTS,
             "base_url": _base,
             # now_utc (naive) usado no template para calcular "X dias atrás"

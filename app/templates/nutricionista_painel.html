@@ -71,23 +71,6 @@
   .nutri-main { flex: 1; overflow-y: auto; min-width: 0; }
   .nutri-inner { max-width: 980px; margin: 0 auto; padding: 28px 24px 60px; }
 
-  /* Trial banner */
-  .trial-banner {
-    display: flex; align-items: center; justify-content: space-between; gap: 12px;
-    background: linear-gradient(135deg, var(--primary), var(--violet));
-    color: #fff; border-radius: 14px; padding: 14px 18px; margin-bottom: 22px;
-    flex-wrap: wrap;
-  }
-  .trial-banner p { font-size: 13.5px; margin: 0; }
-  .trial-banner strong { font-weight: 700; }
-  .trial-btn {
-    background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.4);
-    color: #fff; border-radius: 8px; padding: 7px 16px;
-    font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
-    font-family: inherit; text-decoration: none;
-  }
-  .trial-btn:hover { background: rgba(255,255,255,.3); }
-
   /* Tab sections */
   .tab-section { display: none; }
   .tab-section.tab-active { display: block; }
@@ -376,21 +359,6 @@
   <!-- ── Main content ──────────────────────────────────────────── -->
   <main class="nutri-main">
     <div class="nutri-inner">
-
-      {% if trial_days_left is not none %}
-      <div class="trial-banner">
-        <p>
-          🎁 <strong>Trial gratuito:</strong>
-          {% if trial_days_left > 0 %}
-            {{ trial_days_left }} dia{{ 's' if trial_days_left != 1 }} restante{{ 's' if trial_days_left != 1 }}
-          {% else %}
-            seu trial expirou hoje
-          {% endif %}
-          — ative o plano para continuar acompanhando.
-        </p>
-        <a href="#" class="trial-btn">Assinar R$79,90/mês</a>
-      </div>
-      {% endif %}
 
       <!-- ══════════════════════════════════════════════════════════
            TAB 1 — DASHBOARD GERAL
