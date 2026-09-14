@@ -441,6 +441,32 @@ async def register_nutritionist(
 
 # ── HTML — Painel ──────────────────────────────────────────────────────────────
 
+@router.get("/api/nutricionista/debug/columns")
+async def debug_columns(
+    db: AsyncSession = Depends(get_db),
+    user: User | None = Depends(get_current_user_optional),
+):
+    """Retorna colunas reais de nutritionist_patients no banco.
+    Rota temporária de diagnóstico — requer login de nutricionista."""
+    from sqlalchemy import text as _text
+    import traceback as _tb
+    if user is None:
+        return JSONResponse({"error": "não autenticado"}, status_code=401)
+    try:
+        r = await db.execute(_text(
+            "SELECT column_name, data_type, column_default "
+            "FROM information_schema.columns "
+            "WHERE table_name='nutritionist_patients' "
+            "ORDER BY ordinal_position"
+        ))
+        cols = [dict(row._mapping) for row in r.all()]
+        v = await db.execute(_text("SELECT version_num FROM alembic_version"))
+        ver = [row[0] for row in v.all()]
+        return JSONResponse({"columns": cols, "alembic_version": ver})
+    except Exception as exc:
+        return JSONResponse({"error": str(exc), "trace": _tb.format_exc()}, status_code=500)
+
+
 @router.get("/nutricionista/", response_class=HTMLResponse)
 async def painel_nutricionista(
     request: Request,
@@ -448,11 +474,36 @@ async def painel_nutricionista(
     db: AsyncSession = Depends(get_db),
 ):
     """Dashboard do nutricionista — lista de pacientes + métricas resumo."""
+    import traceback as _tb
     if user is None:
         return RedirectResponse(url="/login", status_code=302)
     if not user.is_nutritionist:
         return RedirectResponse(url="/dashboard", status_code=302)
 
+    try:
+        return await _painel_nutricionista_inner(request, user, db)
+    except Exception as exc:
+        logger.error("PAINEL /nutricionista/ ERRO: %s\n%s", exc, _tb.format_exc())
+        # Mostra erro detalhado para a nutricionista autenticada (não exposto publicamente)
+        return HTMLResponse(
+            f"<h2>Erro interno no painel</h2>"
+            f"<p>Por favor copie a mensagem abaixo e envie ao suporte:</p>"
+            f"<pre style='background:#f3f4f6;padding:16px;border-radius:8px;"
+            f"font-size:13px;overflow:auto;max-height:80vh'>"
+            f"TIPO: {type(exc).__name__}\n"
+            f"MENSAGEM: {exc}\n\n"
+            f"TRACEBACK:\n{_tb.format_exc()}"
+            f"</pre>",
+            status_code=500,
+        )
+
+
+async def _painel_nutricionista_inner(
+    request: Request,
+    user: User,
+    db: AsyncSession,
+) -> HTMLResponse:
+    """Lógica interna do painel — separada para captura de erros na rota pai."""
     # Busca todos os vínculos desta nutricionista
     result = await db.execute(
         select(NutritionistPatient)
