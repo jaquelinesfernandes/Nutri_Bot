@@ -1765,4 +1765,108 @@ Depois:
 
 ---
 
-*NutriBot PRD v2.1 — Documento Interno — atualizado em 2026-09-11*
+## 29. Feature — Rastreamento de Hidratação
+
+**Status:** Infraestrutura parcialmente existente — aguardando implementação completa  
+**Adicionado em:** 2026-09-14  
+**Prioridade:** Média (impacta saúde geral e diferenciação do produto)
+
+### 29.1 O que já existe
+
+| Componente | Status |
+|---|---|
+| Modelo `WaterLog` (`water_logs` table) | ✅ migrado em produção |
+| Comando `/agua [ml]` no bot | ✅ registra + barra de progresso (meta hardcoded 2000ml) |
+| Relationship `User.water_logs` | ✅ |
+| Alertas de lembrete de água | ❌ não implementado |
+| Meta de água personalizada por usuário | ❌ hardcoded 2000ml |
+| Água visível no dashboard web | ❌ |
+| Água nos relatórios PDF do paciente | ❌ |
+| Água no PDF clínico da nutricionista | ❌ |
+
+### 29.2 Requisitos Funcionais
+
+#### RF-AGUA-01 — Alertas automáticos 2× ao dia
+- **Horários:** 11h e 15h (horário de Brasília)
+- **Condição de envio:** total de água registrada no dia < 50% da meta → envia alerta; ≥ 50% → silencia (evita spam)
+- **Respeita** `alerts_paused_until` e `alerts_enabled = False`
+- **Mensagem:** inclui total atual, meta e instrução `/agua 250`
+- **Implementação:** dois novos jobs APScheduler em `app/services/scheduler.py` (`job_water_morning`, `job_water_afternoon`), seguindo o mesmo padrão de `_send_meal_alert`
+
+#### RF-AGUA-02 — Meta de água personalizada
+- Campo `daily_water_goal_ml: int` na tabela `users` (default: 2000)
+- Configurável via `/meta agua [ml]` no bot (ex.: `/meta agua 2500`)
+- Faixa válida: 1000–5000ml (rejeita fora do range com mensagem amigável)
+- Requer migration Alembic: `add_daily_water_goal_ml_to_users`
+
+#### RF-AGUA-03 — Card de hidratação no dashboard web
+- Card novo na linha de KPIs do `dashboard.html`
+- Exibe: total do dia (ml), meta, % e mini-barra de progresso
+- Ícone 💧, cor azul (`#0EA5E9`) quando ≥ 80%; laranja < 80%; vermelho < 40%
+- Fonte de dados: `SELECT SUM(volume_ml) FROM water_logs WHERE user_id = ? AND logged_at BETWEEN day_start AND day_end`
+
+#### RF-AGUA-04 — Água nos relatórios PDF do paciente
+- Novo KPI card "Hidratação média/dia" nos relatórios de todos os períodos (7d, 15d, 30d, histórico)
+- Calculado como: `SUM(volume_ml) / dias_com_registro` no período
+- Exibido com % da meta DRI (2000ml ou `daily_water_goal_ml`)
+- Adicionado em `app/services/report.py` (`generate_report`) + `data/report_template.html`
+
+#### RF-AGUA-05 — Água no PDF clínico da nutricionista
+- Linha adicional no "Resumo Executivo" do PDF: `avg_water_30d` (ml/dia)
+- Coluna "Água (ml)" na tabela de Evolução Semanal (4 semanas)
+- Barra de progresso simples vs meta DRI
+- Adicionado em `app/routers/nutritionist.py` (`baixar_pdf_paciente`) + `data/report_nutri_template.html`
+
+### 29.3 Requisitos Não-Funcionais
+
+| Requisito | Especificação |
+|---|---|
+| Latência do alerta | < 2 min do horário programado (mesma garantia dos alertas de refeição) |
+| Anti-spam | Máximo 2 alertas de água por dia por usuário; respeita `/silenciar` |
+| Sem breaking change | `daily_water_goal_ml` é nullable — sistema usa 2000ml como fallback |
+| LGPD | Volume de água não é dado sensível (sem implicação de saúde crítica), mas segue as mesmas políticas de retenção e exclusão dos demais dados |
+
+### 29.4 Plano de Implementação
+
+Ordem recomendada de menor para maior esforço:
+
+```
+Passo 1 — Alertas 2× ao dia (30 min)
+  Arquivos: app/services/scheduler.py
+  Entregável: job_water_morning (11h) + job_water_afternoon (15h)
+  Sem migration necessária — usa meta hardcoded 2000ml
+
+Passo 2 — Card de água no dashboard web (1h)
+  Arquivos: app/routers/dashboard.py + app/templates/dashboard.html
+  Entregável: card 💧 com total do dia + barra de progresso
+
+Passo 3 — Água nos relatórios do paciente (1h)
+  Arquivos: app/services/report.py + data/report_template.html
+  Entregável: KPI card "Hidratação média/dia" em todos os períodos
+
+Passo 4 — Água no PDF da nutricionista (30 min)
+  Arquivos: app/routers/nutritionist.py + data/report_nutri_template.html
+  Entregável: média diária + coluna na tabela semanal
+
+Passo 5 — Meta personalizada (1h + migration)
+  Arquivos: app/models/user.py + migration + app/services/conversation.py
+  Entregável: /meta agua [ml] + daily_water_goal_ml no User
+```
+
+**Estimativa total:** ~4,5h de desenvolvimento + testes  
+**Dependências:** nenhuma — todos os passos são independentes entre si
+
+### 29.5 Critérios de Aceite
+
+- [ ] Usuário que não registrou água até 11h recebe alerta com total atual e instrução `/agua`
+- [ ] Usuário que já registrou ≥ 1000ml até 11h **não** recebe alerta das 11h
+- [ ] Alerta das 15h reenvia se total ainda < 50% da meta (mesmo que alerta das 11h tenha sido enviado)
+- [ ] `/silenciar` suprime tanto alertas de refeição quanto de água
+- [ ] Dashboard exibe card 💧 com total do dia atualizado imediatamente após `/agua`
+- [ ] Relatório PDF inclui linha de hidratação com cor correta (verde ≥80%, laranja ≥40%, vermelho <40%)
+- [ ] Com `daily_water_goal_ml = NULL`, sistema usa 2000ml sem erro
+- [ ] `/meta agua 2500` persiste o valor e é usado nos alertas e relatórios seguintes
+
+---
+
+*NutriBot PRD v2.1 — Documento Interno — atualizado em 2026-09-14*
