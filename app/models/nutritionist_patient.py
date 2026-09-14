@@ -5,7 +5,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import CheckConstraint, DateTime, ForeignKey, String, Text
+from sqlalchemy import CheckConstraint, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
@@ -64,6 +64,11 @@ class NutritionistPatient(Base):
     )
     revoked_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
+    )
+    # RF-PAINEL-11: limiar de inatividade (dias sem registro) para alertas no dashboard
+    # Nutricionista pode configurar por paciente; default 3 dias
+    inactivity_alert_days: Mapped[int] = mapped_column(
+        Integer, nullable=False, default=3, server_default="3"
     )
 
     nutritionist: Mapped["User"] = relationship(

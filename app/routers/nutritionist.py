@@ -470,7 +470,7 @@ async def painel_nutricionista(
 
     tz = ZoneInfo("America/Sao_Paulo")
     now = datetime.now(tz)
-    cutoff_inactive = now - _td(days=3)
+    # cutoff_inactive é calculado por paciente usando lk.inactivity_alert_days (RF-PAINEL-11)
 
     patients_data: list[dict] = []
     for lk in active_links:
@@ -522,7 +522,9 @@ async def painel_nutricionista(
             streak += 1
             _chk -= _td(days=1)
 
-        # Inactive flag: sem registro há mais de 3 dias
+        # Inactive flag: usa limiar configurado por paciente (RF-PAINEL-11), padrão 3 dias
+        _alert_days = getattr(lk, "inactivity_alert_days", 3) or 3
+        cutoff_inactive = now - _td(days=_alert_days)
         is_inactive = (
             last_logged_at is None
             or last_logged_at.astimezone(tz) < cutoff_inactive
@@ -1462,14 +1464,11 @@ async def configurar_alerta_paciente(
     if not link:
         raise HTTPException(status_code=403, detail="Sem vínculo ativo com este paciente")
 
-    # Guarda como atributo dinâmico até que migration seja aplicada
-    if hasattr(link, "inactivity_alert_days"):
-        link.inactivity_alert_days = inactivity_alert_days
-        await db.commit()
-        return JSONResponse({"ok": True, "inactivity_alert_days": inactivity_alert_days})
-    else:
-        # Coluna ainda não existe — retorna 501 com mensagem clara
-        raise HTTPException(
-            status_code=501,
-            detail="Migration pendente: execute 'alembic upgrade head' para habilitar esta feature.",
-        )
+    link.inactivity_alert_days = inactivity_alert_days
+    await db.commit()
+
+    logger.info(
+        "[ALERTA-CONFIG] Nutricionista %s configurou limiar de inatividade: %s dias (paciente %s)",
+        nutri.id, inactivity_alert_days, patient_id,
+    )
+    return JSONResponse({"ok": True, "inactivity_alert_days": inactivity_alert_days})

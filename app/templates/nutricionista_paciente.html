@@ -147,6 +147,32 @@
   }
   .chart-wrap { position: relative; height: 200px; }
 
+  /* ── RF-PAINEL-11: Configuração de alerta ───────────────────────── */
+  .alert-config-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 16px; padding: 18px 22px;
+    box-shadow: var(--shadow-sm); margin-bottom: 26px;
+    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+  }
+  .alert-config-icon { font-size: 22px; flex-shrink: 0; }
+  .alert-config-info { flex: 1; min-width: 180px; }
+  .alert-config-info strong { font-size: 13.5px; color: var(--text-1); display: block; margin-bottom: 2px; }
+  .alert-config-info span  { font-size: 12px; color: var(--text-3); }
+  .alert-days-form { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .alert-days-input {
+    width: 64px; padding: 7px 10px; border: 1.5px solid var(--card-b);
+    border-radius: 8px; background: var(--surface); color: var(--text-1);
+    font-family: inherit; font-size: 13px; text-align: center; outline: none;
+  }
+  .alert-days-input:focus { border-color: var(--primary); }
+  .alert-save-btn {
+    padding: 7px 14px; border-radius: 8px; border: none;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; font-family: inherit; font-size: 13px; font-weight: 600;
+    cursor: pointer; transition: opacity .2s;
+  }
+  .alert-save-btn:hover { opacity: .88; }
+
   /* ── Seção notas clínicas ──────────────────────────────────────── */
   .section-card {
     background: var(--card); border: 1px solid var(--card-b);
@@ -347,6 +373,22 @@
         <h2>📈 Calorias — últimos 30 dias</h2>
         <div class="chart-wrap">
           <canvas id="kcalChart"></canvas>
+        </div>
+      </div>
+
+      <!-- RF-PAINEL-11: Configuração de alertas por paciente -->
+      <div class="alert-config-card">
+        <div class="alert-config-icon">🔔</div>
+        <div class="alert-config-info">
+          <strong>Configuração de alerta de inatividade</strong>
+          <span>Número de dias sem registro para este paciente aparecer no painel de atenção</span>
+        </div>
+        <div class="alert-days-form">
+          <input type="number" class="alert-days-input" id="alertDaysInput"
+            min="1" max="30" value="{{ link.inactivity_alert_days or 3 }}"
+            title="1–30 dias" />
+          <label style="font-size:12px;color:var(--text-2);">dias</label>
+          <button class="alert-save-btn" onclick="salvarAlertaDias()">💾 Salvar</button>
         </div>
       </div>
 
@@ -579,6 +621,30 @@ async function salvarNota() {
     showToast('✅ Nota salva com sucesso!');
   } catch (e) {
     showToast('Erro de rede. Tente novamente.', true);
+  }
+}
+
+// ── RF-PAINEL-11: Configuração de alerta de inatividade ─────────────────────
+async function salvarAlertaDias() {
+  const val = parseInt(document.getElementById('alertDaysInput')?.value, 10);
+  if (!val || val < 1 || val > 30) {
+    showToast('Informe um valor entre 1 e 30 dias.', true);
+    return;
+  }
+  const form = new FormData();
+  form.append('inactivity_alert_days', val);
+  try {
+    const resp = await fetch('/api/nutricionista/paciente/' + _PDF_PATIENT_ID + '/alerta-config', {
+      method: 'PATCH', body: form,
+    });
+    if (resp.ok) {
+      showToast('✅ Configuração de alerta salva (' + val + ' dias).');
+    } else {
+      const err = await resp.json().catch(() => ({}));
+      showToast('Erro: ' + (err.detail || 'Não foi possível salvar.'), true);
+    }
+  } catch (e) {
+    showToast('Erro de conexão. Tente novamente.', true);
   }
 }
 
