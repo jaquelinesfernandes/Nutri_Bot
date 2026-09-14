@@ -999,15 +999,40 @@ async def baixar_pdf_paciente(
     )
     notes = notes_result.scalars().all()
 
-    _MEAL_LABELS = {
-        "breakfast":       "☀️ Café",
-        "morning_snack":   "🍌 Lanche manhã",
-        "lunch":           "🍽️ Almoço",
-        "afternoon_snack": "🍊 Lanche tarde",
-        "dinner":          "🌙 Jantar",
-        "snack":           "🍎 Lanche",
-        "other":           "🍴 Outro",
-    }
+    # ── Resumo semanal — macros por semana (4 semanas × 7 dias) ──────────────
+    weekly_breakdown = []
+    for week_i in range(4):
+        wstart = start_date + _td(days=week_i * 7)
+        wend   = min(wstart + _td(days=7), end_date + _td(days=1))
+        week_logs = [
+            l for l in all_logs
+            if wstart <= l.logged_at.astimezone(tz).date() < wend
+        ]
+        week_days = len({l.logged_at.astimezone(tz).date() for l in week_logs})
+        if week_days:
+            w_kcal = round(sum(l.total_calories_kcal for l in week_logs) / week_days)
+            w_prot = round(sum(l.total_protein_g     for l in week_logs) / week_days, 1)
+            w_carb = round(sum(l.total_carb_g        for l in week_logs) / week_days, 1)
+            w_fat  = round(sum(l.total_fat_g         for l in week_logs) / week_days, 1)
+            macro_kcal = w_prot * 4 + w_carb * 4 + w_fat * 9
+            pct_prot = round(w_prot * 4 / macro_kcal * 100) if macro_kcal else 0
+            pct_carb = round(w_carb * 4 / macro_kcal * 100) if macro_kcal else 0
+            pct_fat  = round(w_fat  * 9 / macro_kcal * 100) if macro_kcal else 0
+        else:
+            w_kcal = w_prot = w_carb = w_fat = 0
+            pct_prot = pct_carb = pct_fat = 0
+        wend_display = min(wstart + _td(days=6), end_date)
+        weekly_breakdown.append({
+            "label":    f"Sem. {week_i + 1} ({wstart.strftime('%d/%m')}–{wend_display.strftime('%d/%m')})",
+            "days":     week_days,
+            "avg_kcal": w_kcal,
+            "avg_prot": w_prot,
+            "avg_carb": w_carb,
+            "avg_fat":  w_fat,
+            "pct_prot": pct_prot,
+            "pct_carb": pct_carb,
+            "pct_fat":  pct_fat,
+        })
 
     # ── Renderiza template HTML ───────────────────────────────────────────────
     template_dir = _Path(__file__).parent.parent.parent / "data"
@@ -1033,9 +1058,7 @@ async def baixar_pdf_paciente(
         chart_days=chart_days,
         top_foods=top_foods,
         notes=notes,
-        days_sorted=days_sorted,
-        days_map=dict(days_map),
-        meal_labels=_MEAL_LABELS,
+        weekly_breakdown=weekly_breakdown,
     )
 
     # ── Gera PDF com WeasyPrint ───────────────────────────────────────────────

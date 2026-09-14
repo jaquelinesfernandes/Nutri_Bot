@@ -784,46 +784,47 @@ body {
 </div>
 {% endif %}
 
-<!-- ── DESTAQUE DA SEMANA (apenas relatório semanal) ──────────────── -->
-{% if period_type == "weekly" and week_highlights %}
+<!-- ── DESTAQUES DO PERÍODO ─────────────────────────────────────────── -->
+{% if period_highlights %}
 <div class="section">
   <div class="section-title">
     <span class="section-bar"></span>
-    <span class="section-icon">🏅</span> Destaque da Semana
+    <span class="section-icon">🏅</span>
+    {% if period_type == "weekly" %}Destaque da Semana{% elif period_type == "biweekly" %}Destaques da Quinzena{% else %}Destaques do Período{% endif %}
   </div>
   <div class="highlights-grid">
     <!-- Dias registrados -->
     <div class="hl-box">
       <div class="hl-icon">📅</div>
-      <div class="hl-value">{{ week_highlights.days_logged }}<span style="font-size:10pt;font-weight:600;color:#9096C0;">/7</span></div>
+      <div class="hl-value">{{ period_highlights.days_logged }}<span style="font-size:10pt;font-weight:600;color:#9096C0;">/{{ total_days }}</span></div>
       <div class="hl-unit">dias registrados</div>
-      {% if week_highlights.days_logged == 7 %}
-      <div class="hl-label" style="color:#16A34A;font-weight:700;">✔ Semana completa!</div>
+      {% if period_highlights.days_logged == total_days %}
+      <div class="hl-label" style="color:#16A34A;font-weight:700;">✔ Período completo!</div>
       {% else %}
-      <div class="hl-label">{{ 7 - week_highlights.days_logged }} dia(s) sem dados</div>
+      <div class="hl-label">{{ total_days - period_highlights.days_logged }} dia(s) sem dados</div>
       {% endif %}
     </div>
     <!-- Dias perfeitos -->
     <div class="hl-box">
       <div class="hl-icon">🎯</div>
-      <div class="hl-value">{{ week_highlights.perfect_days }}</div>
+      <div class="hl-value">{{ period_highlights.perfect_days }}</div>
       <div class="hl-unit">dias na meta</div>
       <div class="hl-label">80–115% da meta calórica</div>
     </div>
     <!-- Sequência atual -->
     <div class="hl-box">
       <div class="hl-icon">🔥</div>
-      <div class="hl-value">{{ week_highlights.streak_days }}</div>
+      <div class="hl-value">{{ period_highlights.streak_days }}</div>
       <div class="hl-unit">dias seguidos</div>
       <div class="hl-label">sequência atual</div>
     </div>
     <!-- Melhor dia -->
     <div class="hl-box">
       <div class="hl-icon">⭐</div>
-      {% if week_highlights.best_day_label %}
-      <div class="hl-value" style="font-size:11pt;">{{ week_highlights.best_day_label }}</div>
+      {% if period_highlights.best_day_label %}
+      <div class="hl-value" style="font-size:11pt;">{{ period_highlights.best_day_label }}</div>
       <div class="hl-unit">melhor dia</div>
-      <div class="hl-label">{{ week_highlights.best_day_pct }}% da meta</div>
+      <div class="hl-label">{{ period_highlights.best_day_pct }}% da meta</div>
       {% else %}
       <div class="hl-value" style="font-size:11pt;">—</div>
       <div class="hl-unit">melhor dia</div>
@@ -836,11 +837,11 @@ body {
     <tr>
       <td style="background:#EEF2FF;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#3730A3;vertical-align:middle;">
         <span style="font-size:9.5pt;">💪</span>
-        <strong>Proteína média/dia:</strong> {{ week_highlights.avg_prot_daily }}g
+        <strong>Proteína média/dia:</strong> {{ period_highlights.avg_prot_daily }}g
       </td>
       <td style="background:#DCFCE7;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#14532D;vertical-align:middle;">
         <span style="font-size:9.5pt;">🌿</span>
-        <strong>Fibra média/dia:</strong> {{ week_highlights.avg_fiber_daily }}g
+        <strong>Fibra média/dia:</strong> {{ period_highlights.avg_fiber_daily }}g
       </td>
     </tr>
   </table>
@@ -861,7 +862,7 @@ body {
         <th>Período</th>
         <th>Refeições</th>
         <th>{% if is_multi_day %}Kcal/dia (média){% else %}Kcal{% endif %}</th>
-        {% if period_type == "weekly" %}<th>Proteína / Fibra</th>{% endif %}
+        <th>Proteína / Fibra</th>
         <th>Progresso</th>
         <th>Status</th>
       </tr>
@@ -879,7 +880,6 @@ body {
           </span>
           {% endif %}
         </td>
-        {% if period_type == "weekly" %}
         <td>
           {% if day.days_with_data > 0 %}
           <div class="macro-sub" style="color:#4338CA;">💪 {{ day.protein_g }}g prot</div>
@@ -888,7 +888,6 @@ body {
           <div class="macro-sub">—</div>
           {% endif %}
         </td>
-        {% endif %}
         <td>
           <div class="bar-wrap">
             <div class="bar-fill {{ day.bar_cls }}" style="width: {{ day.bar_pct }}%;"></div>

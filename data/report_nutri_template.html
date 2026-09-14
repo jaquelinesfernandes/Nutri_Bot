@@ -396,47 +396,150 @@ body {
 {% endif %}
 
 <!-- ════════════════════════════════════════════════════════════════ -->
-<!--  HISTÓRICO DE REFEIÇÕES (30 dias)                                 -->
+<!--  ANÁLISE DETALHADA DE MACROS                                      -->
 <!-- ════════════════════════════════════════════════════════════════ -->
-{% if days_sorted %}
-<div class="section-title">Histórico de Refeições — 30 dias</div>
-{% for day in days_sorted %}
-  {% set logs = days_map[day] %}
-  {% set day_kcal = logs | sum(attribute='total_calories_kcal') | round(0) | int %}
-  {% set day_pct = ((day_kcal / goal_kcal) * 100) | int if goal_kcal else 0 %}
-<div class="day-section">
-  <div class="day-header">
-    <span class="day-name">{{ day.strftime('%A, %d/%m/%Y') | title }}</span>
-    <span class="day-kcal">{{ day_kcal }} kcal</span>
-    {% if day_pct == 0 %}
-      <span class="day-badge badge-miss">Sem meta</span>
-    {% elif day_pct >= 85 and day_pct <= 115 %}
-      <span class="day-badge badge-ok">✓ Na meta</span>
-    {% elif day_pct < 70 %}
-      <span class="day-badge badge-low">↓ Abaixo</span>
-    {% else %}
-      <span class="day-badge badge-over">↑ Acima</span>
-    {% endif %}
+<div class="section-title">Análise de Macronutrientes — Distribuição %</div>
+<div class="chart-wrap">
+  {% set total_macro_kcal = (avg_prot_30d * 4) + (avg_carb_30d * 4) + (avg_fat_30d * 9) %}
+  {% if total_macro_kcal > 0 %}
+  {% set pct_prot_real = ((avg_prot_30d * 4 / total_macro_kcal) * 100) | round(1) %}
+  {% set pct_carb_real = ((avg_carb_30d * 4 / total_macro_kcal) * 100) | round(1) %}
+  {% set pct_fat_real  = ((avg_fat_30d  * 9 / total_macro_kcal) * 100) | round(1) %}
+
+  <!-- Proteína -->
+  <div style="margin-bottom:14pt;">
+    <div style="display:table;width:100%;table-layout:fixed;margin-bottom:4pt;">
+      <div style="display:table-cell;font-size:9pt;font-weight:700;color:#374151;vertical-align:middle;">🥩 Proteína</div>
+      <div style="display:table-cell;text-align:right;font-size:9pt;vertical-align:middle;">
+        <span style="font-weight:800;color:#6366F1;">{{ pct_prot_real }}%</span>
+        <span style="color:#9CA3AF;font-size:8pt;"> (ref. 25%) · {{ avg_prot_30d }}g/dia · {{ (avg_prot_30d * 4) | round(0) | int }} kcal</span>
+        {% set diff_prot = pct_prot_real - 25 %}
+        {% if diff_prot > 5 %}<span style="color:#DC2626;font-size:7.5pt;font-weight:700;margin-left:6pt;">▲ +{{ diff_prot | round(1) }}pp acima</span>
+        {% elif diff_prot < -5 %}<span style="color:#D97706;font-size:7.5pt;font-weight:700;margin-left:6pt;">▼ {{ diff_prot | round(1) }}pp abaixo</span>
+        {% else %}<span style="color:#059669;font-size:7.5pt;font-weight:700;margin-left:6pt;">✓ dentro do ideal</span>{% endif %}
+      </div>
+    </div>
+    <div style="position:relative;height:12pt;background:#E8E8F8;border-radius:9pt;overflow:visible;">
+      <div style="width:{{ [pct_prot_real, 100]|min }}%;height:12pt;background:#6366F1;border-radius:9pt;"></div>
+      <!-- Marca de referência 25% -->
+      <div style="position:absolute;left:25%;top:-3pt;width:1.5pt;height:18pt;background:#374151;border-radius:1pt;"></div>
+    </div>
+    <div style="font-size:6.5pt;color:#9CA3AF;margin-top:2pt;">Linha vertical = referência 25%</div>
   </div>
-  <table class="day-meals-table">
-    {% for log in logs | sort(attribute='logged_at') %}
-    <tr>
-      <td class="meal-type-cell">{{ meal_labels.get(log.meal_type, log.meal_type) }}</td>
-      <td>
-        {% if log.food_items %}
-          {% for fi in log.food_items %}
-            {{ fi.name }}{% if fi.quantity_g %} ({{ fi.quantity_g | int }}g){% endif %}{% if not loop.last %}, {% endif %}
-          {% endfor %}
-        {% else %}
-          <span style="color:#9CA3AF;">—</span>
-        {% endif %}
-      </td>
-      <td class="meal-kcal-cell">{{ log.total_calories_kcal | round(0) | int }} kcal · P {{ log.total_protein_g | round(1) }}g · C {{ log.total_carb_g | round(1) }}g · G {{ log.total_fat_g | round(1) }}g</td>
-    </tr>
-    {% endfor %}
+
+  <!-- Carboidratos -->
+  <div style="margin-bottom:14pt;">
+    <div style="display:table;width:100%;table-layout:fixed;margin-bottom:4pt;">
+      <div style="display:table-cell;font-size:9pt;font-weight:700;color:#374151;vertical-align:middle;">🍚 Carboidratos</div>
+      <div style="display:table-cell;text-align:right;font-size:9pt;vertical-align:middle;">
+        <span style="font-weight:800;color:#0EA5E9;">{{ pct_carb_real }}%</span>
+        <span style="color:#9CA3AF;font-size:8pt;"> (ref. 50%) · {{ avg_carb_30d }}g/dia · {{ (avg_carb_30d * 4) | round(0) | int }} kcal</span>
+        {% set diff_carb = pct_carb_real - 50 %}
+        {% if diff_carb > 8 %}<span style="color:#DC2626;font-size:7.5pt;font-weight:700;margin-left:6pt;">▲ +{{ diff_carb | round(1) }}pp acima</span>
+        {% elif diff_carb < -8 %}<span style="color:#D97706;font-size:7.5pt;font-weight:700;margin-left:6pt;">▼ {{ diff_carb | round(1) }}pp abaixo</span>
+        {% else %}<span style="color:#059669;font-size:7.5pt;font-weight:700;margin-left:6pt;">✓ dentro do ideal</span>{% endif %}
+      </div>
+    </div>
+    <div style="position:relative;height:12pt;background:#E8E8F8;border-radius:9pt;overflow:visible;">
+      <div style="width:{{ [pct_carb_real, 100]|min }}%;height:12pt;background:#0EA5E9;border-radius:9pt;"></div>
+      <div style="position:absolute;left:50%;top:-3pt;width:1.5pt;height:18pt;background:#374151;border-radius:1pt;"></div>
+    </div>
+    <div style="font-size:6.5pt;color:#9CA3AF;margin-top:2pt;">Linha vertical = referência 50%</div>
+  </div>
+
+  <!-- Gorduras -->
+  <div style="margin-bottom:6pt;">
+    <div style="display:table;width:100%;table-layout:fixed;margin-bottom:4pt;">
+      <div style="display:table-cell;font-size:9pt;font-weight:700;color:#374151;vertical-align:middle;">🥑 Gorduras</div>
+      <div style="display:table-cell;text-align:right;font-size:9pt;vertical-align:middle;">
+        <span style="font-weight:800;color:#F59E0B;">{{ pct_fat_real }}%</span>
+        <span style="color:#9CA3AF;font-size:8pt;"> (ref. 25%) · {{ avg_fat_30d }}g/dia · {{ (avg_fat_30d * 9) | round(0) | int }} kcal</span>
+        {% set diff_fat = pct_fat_real - 25 %}
+        {% if diff_fat > 5 %}<span style="color:#DC2626;font-size:7.5pt;font-weight:700;margin-left:6pt;">▲ +{{ diff_fat | round(1) }}pp acima</span>
+        {% elif diff_fat < -5 %}<span style="color:#D97706;font-size:7.5pt;font-weight:700;margin-left:6pt;">▼ {{ diff_fat | round(1) }}pp abaixo</span>
+        {% else %}<span style="color:#059669;font-size:7.5pt;font-weight:700;margin-left:6pt;">✓ dentro do ideal</span>{% endif %}
+      </div>
+    </div>
+    <div style="position:relative;height:12pt;background:#E8E8F8;border-radius:9pt;overflow:visible;">
+      <div style="width:{{ [pct_fat_real, 100]|min }}%;height:12pt;background:#F59E0B;border-radius:9pt;"></div>
+      <div style="position:absolute;left:25%;top:-3pt;width:1.5pt;height:18pt;background:#374151;border-radius:1pt;"></div>
+    </div>
+    <div style="font-size:6.5pt;color:#9CA3AF;margin-top:2pt;">Linha vertical = referência 25%</div>
+  </div>
+
+  <!-- Resumo visual de distribuição -->
+  <div style="margin-top:12pt;background:#F8F8FF;border-radius:8pt;padding:10pt 12pt;">
+    <div style="font-size:8pt;font-weight:700;color:#374151;margin-bottom:6pt;">Distribuição calórica real vs. referência (P 25% · C 50% · G 25%)</div>
+    <!-- Barra stacked P/C/G -->
+    <div style="height:16pt;border-radius:8pt;overflow:hidden;display:flex;">
+      <div style="width:{{ pct_prot_real }}%;background:#6366F1;" title="Proteína {{ pct_prot_real }}%"></div>
+      <div style="width:{{ pct_carb_real }}%;background:#0EA5E9;" title="Carb {{ pct_carb_real }}%"></div>
+      <div style="width:{{ pct_fat_real }}%;background:#F59E0B;"  title="Gord {{ pct_fat_real }}%"></div>
+    </div>
+    <div style="display:table;width:100%;table-layout:fixed;margin-top:5pt;font-size:7.5pt;">
+      <div style="display:table-cell;text-align:center;color:#6366F1;font-weight:700;">P {{ pct_prot_real }}%</div>
+      <div style="display:table-cell;text-align:center;color:#0EA5E9;font-weight:700;">C {{ pct_carb_real }}%</div>
+      <div style="display:table-cell;text-align:center;color:#F59E0B;font-weight:700;">G {{ pct_fat_real }}%</div>
+    </div>
+  </div>
+
+  {% else %}
+  <div style="text-align:center;padding:20pt;color:#9CA3AF;font-size:9pt;">Sem dados de macronutrientes no período.</div>
+  {% endif %}
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  RESUMO SEMANAL — 4 SEMANAS                                       -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+{% if weekly_breakdown %}
+<div class="section-title">Evolução Semanal — Macronutrientes</div>
+<div class="chart-wrap" style="padding-bottom:14pt;">
+  <table style="width:100%;border-collapse:collapse;font-size:8.5pt;">
+    <thead>
+      <tr style="background:#1E1B4B;color:rgba(255,255,255,.75);">
+        <th style="padding:7pt 8pt;text-align:left;font-size:7.5pt;text-transform:uppercase;letter-spacing:.4pt;">Semana</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Dias</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Kcal/dia</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#A5B4FC;">Prot. g</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#7DD3FC;">Carb. g</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#FCD34D;">Gord. g</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Dist. %</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for w in weekly_breakdown %}
+      <tr style="background:{% if loop.index is odd %}white{% else %}#F8F8FF{% endif %};">
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;color:#1E1B4B;font-weight:600;font-size:8pt;">{{ w.label }}</td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#6B7280;">{{ w.days }}/7</td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;font-weight:700;
+          color:{% if w.avg_kcal == 0 %}#9CA3AF{% elif w.avg_kcal >= goal_kcal * 0.85 and w.avg_kcal <= goal_kcal * 1.15 %}#059669{% elif w.avg_kcal < goal_kcal * 0.7 or w.avg_kcal > goal_kcal * 1.3 %}#DC2626{% else %}#D97706{% endif %};">
+          {% if w.avg_kcal == 0 %}—{% else %}{{ w.avg_kcal }}{% endif %}
+        </td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#6366F1;font-weight:600;">{% if w.avg_prot > 0 %}{{ w.avg_prot }}{% else %}—{% endif %}</td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#0EA5E9;font-weight:600;">{% if w.avg_carb > 0 %}{{ w.avg_carb }}{% else %}—{% endif %}</td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#D97706;font-weight:600;">{% if w.avg_fat > 0 %}{{ w.avg_fat }}{% else %}—{% endif %}</td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;font-size:7.5pt;">
+          {% if w.pct_prot > 0 or w.pct_carb > 0 or w.pct_fat > 0 %}
+          <span style="color:#6366F1;font-weight:700;">P{{ w.pct_prot }}%</span>·<span style="color:#0EA5E9;font-weight:700;">C{{ w.pct_carb }}%</span>·<span style="color:#D97706;font-weight:700;">G{{ w.pct_fat }}%</span>
+          {% else %}—{% endif %}
+        </td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;">
+          {% if w.days == 0 %}
+            <span style="font-size:7pt;background:#F1F5F9;color:#64748B;padding:1pt 5pt;border-radius:8pt;font-weight:700;">Sem dados</span>
+          {% elif w.avg_kcal >= goal_kcal * 0.85 and w.avg_kcal <= goal_kcal * 1.15 %}
+            <span style="font-size:7pt;background:rgba(5,150,105,.1);color:#059669;padding:1pt 5pt;border-radius:8pt;font-weight:700;">✓ Na meta</span>
+          {% elif w.avg_kcal < goal_kcal * 0.7 %}
+            <span style="font-size:7pt;background:rgba(217,119,6,.1);color:#D97706;padding:1pt 5pt;border-radius:8pt;font-weight:700;">↓ Abaixo</span>
+          {% else %}
+            <span style="font-size:7pt;background:rgba(220,38,38,.1);color:#DC2626;padding:1pt 5pt;border-radius:8pt;font-weight:700;">↑ Acima</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
   </table>
 </div>
-{% endfor %}
 {% endif %}
 
 <!-- ════════════════════════════════════════════════════════════════ -->

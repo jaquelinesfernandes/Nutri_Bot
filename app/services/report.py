@@ -399,34 +399,35 @@ class ReportService:
         # Score da semana (depende dos pct calculados acima)
         weekly_score, score_label, score_emoji = _weekly_score(pct_days, pct_kcal, pct_protein)
 
-        # Build table rows based on period granularity
-        week_highlights: dict | None = None
+        # ── Sempre calcula linhas diárias (para highlights e período curto) ──────
+        _daily_all = _group_logs_daily(list(logs), start_date, end_date, tz)
+        for i, row in enumerate(_daily_all):
+            day = start_date + timedelta(days=i)
+            day_logs = [l for l in logs if l.logged_at.astimezone(tz).date() == day]
+            pct_day = int(sum(l.total_calories_kcal for l in day_logs) / goal_kcal * 100) if day_logs and goal_kcal else 0
+            row["pct"]            = pct_day
+            row["bar_pct"]        = min(pct_day, 100)
+            row["bar_cls"]        = _bar_class(pct_day)
+            row["missing_days"]   = 0
+            row["chunk_days"]     = 1
+            row["days_with_data"] = 1 if day_logs else 0
+            row["protein_g"]      = round(sum(l.total_protein_g for l in day_logs), 1) if day_logs else 0.0
+            row["fiber_g"]        = round(sum(getattr(l, "total_fiber_g", 0.0) for l in day_logs), 1) if day_logs else 0.0
+            if not day_logs:
+                row["badge_cls"], row["badge_lbl"] = "badge-miss", "Sem registro"
+            elif 80 <= pct_day <= 115:
+                row["badge_cls"], row["badge_lbl"] = "badge-ok", "Na meta"
+            elif pct_day < 80:
+                row["badge_cls"], row["badge_lbl"] = "badge-low", "Abaixo"
+            else:
+                row["badge_cls"], row["badge_lbl"] = "badge-over", "Acima"
+
+        # Destaques do período — calculados a partir dos dados diários para todos os tipos
+        period_highlights = _compute_week_highlights(_daily_all)
+
+        # ── Tabela de exibição: granularidade depende do período ──────────────
         if period_type in ("weekly", "biweekly"):
-            days_data = _group_logs_daily(list(logs), start_date, end_date, tz)
-            # Patch goal_kcal and recompute badge/bar/macros for each row (single-day rows)
-            for row in days_data:
-                day = start_date + timedelta(days=days_data.index(row))
-                day_logs = [l for l in logs if l.logged_at.astimezone(tz).date() == day]
-                pct_day = int(sum(l.total_calories_kcal for l in day_logs) / goal_kcal * 100) if day_logs and goal_kcal else 0
-                row["pct"]           = pct_day
-                row["bar_pct"]       = min(pct_day, 100)
-                row["bar_cls"]       = _bar_class(pct_day)
-                row["missing_days"]  = 0   # single-day: sem conceito de dias faltantes
-                row["chunk_days"]    = 1
-                row["days_with_data"] = 1 if day_logs else 0
-                # Macros reais do dia (totais, não médias — é 1 dia)
-                row["protein_g"] = round(sum(l.total_protein_g for l in day_logs), 1) if day_logs else 0.0
-                row["fiber_g"]   = round(sum(getattr(l, "total_fiber_g", 0.0) for l in day_logs), 1) if day_logs else 0.0
-                if not day_logs:
-                    row["badge_cls"], row["badge_lbl"] = "badge-miss", "Sem registro"
-                elif 80 <= pct_day <= 115:
-                    row["badge_cls"], row["badge_lbl"] = "badge-ok", "Na meta"
-                elif pct_day < 80:
-                    row["badge_cls"], row["badge_lbl"] = "badge-low", "Abaixo"
-                else:
-                    row["badge_cls"], row["badge_lbl"] = "badge-over", "Acima"
-            # Destaques específicos da semana
-            week_highlights = _compute_week_highlights(days_data)
+            days_data = _daily_all          # já computado e remendado acima
         elif period_type in ("monthly", "custom"):
             days_data = _group_logs_weekly(list(logs), start_date, end_date, tz, goal_kcal)
         else:  # quarterly
@@ -509,8 +510,9 @@ class ReportService:
             weekly_score=weekly_score,
             score_label=score_label,
             score_emoji=score_emoji,
-            # Destaques da semana (só weekly)
-            week_highlights=week_highlights,
+            # Destaques do período (todos os tipos)
+            period_highlights=period_highlights,
+            total_days=total_days,
             # Análise por refeição e ranking de alimentos
             meal_type_dist=meal_type_dist,
             food_ranking=food_ranking,
