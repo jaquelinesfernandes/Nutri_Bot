@@ -296,21 +296,20 @@ body {
     <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta aprox. {{ goal_fat }}g</div>
   </div>
   <div class="macro-item">
-    <div class="macro-label">📊 Distribuição %</div>
-    {% set total_macro_kcal = (avg_prot_30d * 4) + (avg_carb_30d * 4) + (avg_fat_30d * 9) %}
-    {% if total_macro_kcal > 0 %}
-      {% set pct_prot = ((avg_prot_30d * 4 / total_macro_kcal) * 100) | round(0) | int %}
-      {% set pct_carb = ((avg_carb_30d * 4 / total_macro_kcal) * 100) | round(0) | int %}
-      {% set pct_fat  = ((avg_fat_30d  * 9 / total_macro_kcal) * 100) | round(0) | int %}
-      <div class="macro-val" style="font-size:9pt;line-height:1.8;">
-        <span style="color:#6366F1;">P {{ pct_prot }}%</span> &nbsp;
-        <span style="color:#0EA5E9;">C {{ pct_carb }}%</span> &nbsp;
-        <span style="color:#F59E0B;">G {{ pct_fat }}%</span>
+    <div class="macro-label">🌿 Fibras</div>
+    {% if avg_fiber_30d is defined %}
+      {% set fib_pct = ((avg_fiber_30d / (goal_fiber or 25)) * 100) | int %}
+      <div class="macro-val" style="color:{% if fib_pct >= 90 %}#16A34A{% elif fib_pct >= 60 %}#D97706{% else %}#DC2626{% endif %};">
+        {{ avg_fiber_30d }}<span class="macro-unit"> g</span>
       </div>
+      <div class="macro-bar-track">
+        <div class="macro-bar-fill" style="width:{{ [fib_pct, 100] | min }}%;background:#16A34A;"></div>
+      </div>
+      <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta DRI {{ goal_fiber or 25 }}g · {{ fib_pct }}%</div>
     {% else %}
       <div class="macro-val">—</div>
+      <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta DRI 25g</div>
     {% endif %}
-    <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Ref.: P 25% · C 50% · G 25%</div>
   </div>
 </div>
 
@@ -448,7 +447,7 @@ body {
   </div>
 
   <!-- Gorduras -->
-  <div style="margin-bottom:6pt;">
+  <div style="margin-bottom:14pt;">
     <div style="display:table;width:100%;table-layout:fixed;margin-bottom:4pt;">
       <div style="display:table-cell;font-size:9pt;font-weight:700;color:#374151;vertical-align:middle;">🥑 Gorduras</div>
       <div style="display:table-cell;text-align:right;font-size:9pt;vertical-align:middle;">
@@ -466,6 +465,28 @@ body {
     </div>
     <div style="font-size:6.5pt;color:#9CA3AF;margin-top:2pt;">Linha vertical = referência 25%</div>
   </div>
+
+  <!-- Fibras (não entra na % kcal — DRI independente) -->
+  {% if avg_fiber_30d is defined %}
+  <div style="margin-bottom:6pt;">
+    <div style="display:table;width:100%;table-layout:fixed;margin-bottom:4pt;">
+      <div style="display:table-cell;font-size:9pt;font-weight:700;color:#374151;vertical-align:middle;">🌿 Fibras</div>
+      <div style="display:table-cell;text-align:right;font-size:9pt;vertical-align:middle;">
+        <span style="font-weight:800;color:#16A34A;">{{ avg_fiber_30d }}g/dia</span>
+        <span style="color:#9CA3AF;font-size:8pt;"> (DRI: {{ goal_fiber or 25 }}g)
+        · {{ ((avg_fiber_30d / (goal_fiber or 25)) * 100) | round(0) | int }}% da meta</span>
+        {% set pct_fib = ((avg_fiber_30d / (goal_fiber or 25)) * 100) | round(0) | int %}
+        {% if pct_fib >= 90 %}<span style="color:#059669;font-size:7.5pt;font-weight:700;margin-left:6pt;">✓ adequada</span>
+        {% elif pct_fib >= 60 %}<span style="color:#D97706;font-size:7.5pt;font-weight:700;margin-left:6pt;">▼ abaixo do ideal</span>
+        {% else %}<span style="color:#DC2626;font-size:7.5pt;font-weight:700;margin-left:6pt;">▼▼ insuficiente</span>{% endif %}
+      </div>
+    </div>
+    <div style="height:12pt;background:#E8E8F8;border-radius:9pt;overflow:hidden;">
+      <div style="width:{{ [((avg_fiber_30d / (goal_fiber or 25)) * 100) | round(0) | int, 100] | min }}%;height:12pt;background:#16A34A;border-radius:9pt;"></div>
+    </div>
+    <div style="font-size:6.5pt;color:#9CA3AF;margin-top:2pt;">Não incluída no cálculo % kcal — meta independente (DRI: {{ goal_fiber or 25 }}g/dia)</div>
+  </div>
+  {% endif %}
 
   <!-- Resumo visual de distribuição -->
   <div style="margin-top:12pt;background:#F8F8FF;border-radius:8pt;padding:10pt 12pt;">
@@ -503,6 +524,7 @@ body {
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#A5B4FC;">Prot. g</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#7DD3FC;">Carb. g</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#FCD34D;">Gord. g</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#86EFAC;">Fibra g</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Dist. %</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Status</th>
       </tr>
@@ -519,6 +541,7 @@ body {
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#6366F1;font-weight:600;">{% if w.avg_prot > 0 %}{{ w.avg_prot }}{% else %}—{% endif %}</td>
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#0EA5E9;font-weight:600;">{% if w.avg_carb > 0 %}{{ w.avg_carb }}{% else %}—{% endif %}</td>
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#D97706;font-weight:600;">{% if w.avg_fat > 0 %}{{ w.avg_fat }}{% else %}—{% endif %}</td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#16A34A;font-weight:600;">{% if w.avg_fiber is defined and w.avg_fiber > 0 %}{{ w.avg_fiber }}{% else %}—{% endif %}</td>
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;font-size:7.5pt;">
           {% if w.pct_prot > 0 or w.pct_carb > 0 or w.pct_fat > 0 %}
           <span style="color:#6366F1;font-weight:700;">P{{ w.pct_prot }}%</span>·<span style="color:#0EA5E9;font-weight:700;">C{{ w.pct_carb }}%</span>·<span style="color:#D97706;font-weight:700;">G{{ w.pct_fat }}%</span>

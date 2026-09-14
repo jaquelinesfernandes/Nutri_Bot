@@ -945,15 +945,18 @@ async def baixar_pdf_paciente(
     days_with_data = sum(1 for item in chart_days if item["kcal"] > 0)
     goal_kcal = patient.daily_calorie_goal or 2000
 
-    all_kcal   = [m.total_calories_kcal for m in all_logs]
-    all_prot   = [m.total_protein_g     for m in all_logs]
-    all_carb   = [m.total_carb_g        for m in all_logs]
-    all_fat    = [m.total_fat_g         for m in all_logs]
+    all_kcal  = [m.total_calories_kcal              for m in all_logs]
+    all_prot  = [m.total_protein_g                 for m in all_logs]
+    all_carb  = [m.total_carb_g                    for m in all_logs]
+    all_fat   = [m.total_fat_g                     for m in all_logs]
+    all_fiber = [getattr(m, "total_fiber_g", 0.0)  for m in all_logs]
 
-    avg_kcal_30d = round(sum(all_kcal) / days_with_data) if days_with_data else 0
-    avg_prot_30d = round(sum(all_prot) / days_with_data, 1) if days_with_data else 0.0
-    avg_carb_30d = round(sum(all_carb) / days_with_data, 1) if days_with_data else 0.0
-    avg_fat_30d  = round(sum(all_fat)  / days_with_data, 1) if days_with_data else 0.0
+    avg_kcal_30d  = round(sum(all_kcal)  / days_with_data)    if days_with_data else 0
+    avg_prot_30d  = round(sum(all_prot)  / days_with_data, 1) if days_with_data else 0.0
+    avg_carb_30d  = round(sum(all_carb)  / days_with_data, 1) if days_with_data else 0.0
+    avg_fat_30d   = round(sum(all_fat)   / days_with_data, 1) if days_with_data else 0.0
+    avg_fiber_30d = round(sum(all_fiber) / days_with_data, 1) if days_with_data else 0.0
+    goal_fiber = 25  # DRI: 25 g/dia
 
     days_on_goal = sum(
         1 for item in chart_days
@@ -1010,28 +1013,30 @@ async def baixar_pdf_paciente(
         ]
         week_days = len({l.logged_at.astimezone(tz).date() for l in week_logs})
         if week_days:
-            w_kcal = round(sum(l.total_calories_kcal for l in week_logs) / week_days)
-            w_prot = round(sum(l.total_protein_g     for l in week_logs) / week_days, 1)
-            w_carb = round(sum(l.total_carb_g        for l in week_logs) / week_days, 1)
-            w_fat  = round(sum(l.total_fat_g         for l in week_logs) / week_days, 1)
+            w_kcal  = round(sum(l.total_calories_kcal              for l in week_logs) / week_days)
+            w_prot  = round(sum(l.total_protein_g                  for l in week_logs) / week_days, 1)
+            w_carb  = round(sum(l.total_carb_g                     for l in week_logs) / week_days, 1)
+            w_fat   = round(sum(l.total_fat_g                      for l in week_logs) / week_days, 1)
+            w_fiber = round(sum(getattr(l, "total_fiber_g", 0.0)   for l in week_logs) / week_days, 1)
             macro_kcal = w_prot * 4 + w_carb * 4 + w_fat * 9
             pct_prot = round(w_prot * 4 / macro_kcal * 100) if macro_kcal else 0
             pct_carb = round(w_carb * 4 / macro_kcal * 100) if macro_kcal else 0
             pct_fat  = round(w_fat  * 9 / macro_kcal * 100) if macro_kcal else 0
         else:
-            w_kcal = w_prot = w_carb = w_fat = 0
+            w_kcal = w_prot = w_carb = w_fat = w_fiber = 0
             pct_prot = pct_carb = pct_fat = 0
         wend_display = min(wstart + _td(days=6), end_date)
         weekly_breakdown.append({
-            "label":    f"Sem. {week_i + 1} ({wstart.strftime('%d/%m')}–{wend_display.strftime('%d/%m')})",
-            "days":     week_days,
-            "avg_kcal": w_kcal,
-            "avg_prot": w_prot,
-            "avg_carb": w_carb,
-            "avg_fat":  w_fat,
-            "pct_prot": pct_prot,
-            "pct_carb": pct_carb,
-            "pct_fat":  pct_fat,
+            "label":     f"Sem. {week_i + 1} ({wstart.strftime('%d/%m')}–{wend_display.strftime('%d/%m')})",
+            "days":      week_days,
+            "avg_kcal":  w_kcal,
+            "avg_prot":  w_prot,
+            "avg_carb":  w_carb,
+            "avg_fat":   w_fat,
+            "avg_fiber": w_fiber,
+            "pct_prot":  pct_prot,
+            "pct_carb":  pct_carb,
+            "pct_fat":   pct_fat,
         })
 
     # ── Renderiza template HTML ───────────────────────────────────────────────
@@ -1051,6 +1056,8 @@ async def baixar_pdf_paciente(
         avg_prot_30d=avg_prot_30d,
         avg_carb_30d=avg_carb_30d,
         avg_fat_30d=avg_fat_30d,
+        avg_fiber_30d=avg_fiber_30d,
+        goal_fiber=goal_fiber,
         goal_kcal=goal_kcal,
         goal_prot=goal_prot,
         goal_carb=goal_carb,
