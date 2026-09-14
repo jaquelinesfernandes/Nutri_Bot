@@ -48,6 +48,94 @@ _TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
+# ── Mapa objetivo → rótulo PT-BR ─────────────────────────────────────────────
+_GOAL_LABELS: dict[str, tuple[str, str]] = {
+    "perder_peso":   ("🎯", "Perder peso"),
+    "ganhar_massa":  ("💪", "Ganhar massa muscular"),
+    "manter":        ("⚖️", "Manter o peso"),
+}
+
+
+async def _gerar_analise_ia(
+    patient_name: str,
+    goal_type: str | None,
+    goal_label: str,
+    avg_kcal: int,
+    goal_kcal: int,
+    avg_prot: float,
+    avg_carb: float,
+    avg_fat: float,
+    avg_fiber: float,
+    days_with_data: int,
+    total_days: int,
+    days_on_goal: int,
+    notes_texts: list[str],
+) -> dict:
+    """Gera análise clínica via Claude: positivos, negativos e sugestões.
+
+    Retorna dict com chaves positivos / negativos / sugestoes (listas de str).
+    Em caso de falha (API indisponível, timeout) retorna dicionário vazio para não
+    bloquear a geração do PDF.
+    """
+    import json as _json
+
+    try:
+        import anthropic as _anthropic
+        from app.config import settings as _settings
+
+        adh_pct = int(days_with_data / total_days * 100) if total_days else 0
+        goal_pct = int(days_on_goal / days_with_data * 100) if days_with_data else 0
+
+        notas_txt = ""
+        if notes_texts:
+            notas_txt = "\n".join(f"- {n}" for n in notes_texts[:5])
+            notas_txt = f"\nANOTAÇÕES CLÍNICAS DA NUTRICIONISTA:\n{notas_txt}"
+
+        prompt = (
+            f"Analise os dados nutricionais de {patient_name} nos últimos 30 dias e gere "
+            f"uma avaliação clínica estruturada em português brasileiro.\n\n"
+            f"OBJETIVO DO PACIENTE: {goal_label or 'não informado'}\n"
+            f"DADOS DO PERÍODO:\n"
+            f"- Média calórica: {avg_kcal} kcal/dia (meta: {goal_kcal} kcal)\n"
+            f"- Proteínas: {avg_prot}g/dia\n"
+            f"- Carboidratos: {avg_carb}g/dia\n"
+            f"- Gorduras: {avg_fat}g/dia\n"
+            f"- Fibras: {avg_fiber}g/dia (DRI: 25g)\n"
+            f"- Dias com registro: {days_with_data}/{total_days} ({adh_pct}% aderência)\n"
+            f"- Dias dentro da meta calórica (±15%): {days_on_goal} ({goal_pct}%)"
+            f"{notas_txt}\n\n"
+            "Gere exatamente:\n"
+            "- 2 a 3 PONTOS POSITIVOS (campo 'positivos'): conquistas concretas, baseadas nos números.\n"
+            "- 2 a 3 PONTOS DE ATENÇÃO (campo 'negativos'): o que precisa melhorar, sem ser punitivo.\n"
+            "- 2 a 3 SUGESTÕES (campo 'sugestoes'): ações práticas e específicas alinhadas ao objetivo "
+            f"'{goal_label}'. Cite alimentos, hábitos ou ajustes concretos.\n\n"
+            "Se existirem anotações clínicas, considere-as nas sugestões.\n"
+            "Responda SOMENTE com JSON válido, sem markdown nem texto extra.\n"
+            'SCHEMA: {"positivos":["string"],"negativos":["string"],"sugestoes":["string"]}'
+        )
+
+        client = _anthropic.AsyncAnthropic(api_key=_settings.anthropic_api_key)
+        response = await client.messages.create(
+            model="claude-haiku-4-5-20251001",
+            max_tokens=900,
+            messages=[{"role": "user", "content": prompt}],
+        )
+        raw = response.content[0].text.strip()
+        # Remove markdown fences se presentes
+        if raw.startswith("```"):
+            raw = raw.split("```")[1]
+            if raw.startswith("json"):
+                raw = raw[4:]
+        data = _json.loads(raw)
+        return {
+            "positivos":  [str(s) for s in data.get("positivos", [])],
+            "negativos":  [str(s) for s in data.get("negativos", [])],
+            "sugestoes":  [str(s) for s in data.get("sugestoes", [])],
+        }
+    except Exception as exc:
+        logger.warning("[PDF-NUTRI] Análise IA falhou (%s) — PDF sem análise IA", exc)
+        return {}
+
 # Regex CRN — aceita formatos: CRN-3 12345/P, CRN3 12345, CRN-10 123456/N, etc.
 _CRN_RE = re.compile(r"^CRN-?\d{1,2}\s?\d{4,6}(/[PTN])?$", re.IGNORECASE)
 
@@ -1040,6 +1128,29 @@ async def baixar_pdf_paciente(
             "pct_fat":   pct_fat,
         })
 
+    # ── Objetivo do paciente ──────────────────────────────────────────────────
+    _goal_icon, _goal_label = _GOAL_LABELS.get(
+        patient.goal_type or "", ("📋", "Não informado")
+    )
+
+    # ── Análise de IA ─────────────────────────────────────────────────────────
+    notes_texts = [n.note_text for n in notes]
+    ai_analysis = await _gerar_analise_ia(
+        patient_name=patient.first_name or link.patient_name or "Paciente",
+        goal_type=patient.goal_type,
+        goal_label=_goal_label,
+        avg_kcal=avg_kcal_30d,
+        goal_kcal=goal_kcal,
+        avg_prot=avg_prot_30d,
+        avg_carb=avg_carb_30d,
+        avg_fat=avg_fat_30d,
+        avg_fiber=avg_fiber_30d,
+        days_with_data=days_with_data,
+        total_days=total_days,
+        days_on_goal=days_on_goal,
+        notes_texts=notes_texts,
+    )
+
     # ── Renderiza template HTML ───────────────────────────────────────────────
     template_dir = _Path(__file__).parent.parent.parent / "data"
     env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=False)
@@ -1063,6 +1174,10 @@ async def baixar_pdf_paciente(
         goal_prot=goal_prot,
         goal_carb=goal_carb,
         goal_fat=goal_fat,
+        goal_type=patient.goal_type or "",
+        goal_label=_goal_label,
+        goal_icon=_goal_icon,
+        ai_analysis=ai_analysis,
         chart_days=chart_days,
         top_foods=top_foods,
         notes=notes,
