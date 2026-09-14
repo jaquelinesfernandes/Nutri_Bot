@@ -481,7 +481,7 @@
           <div class="activity-row">
             <div>
               <div class="act-name">{{ lk.patient_name or 'Convidado' }}</div>
-              <div class="act-sub">{{ lk.patient_phone or lk.patient_telegram or '—' }} · enviado em {{ lk.invited_at.strftime('%d/%m/%Y') }}</div>
+              <div class="act-sub">{{ lk.patient_phone or '—' }} · enviado em {{ lk.invited_at.strftime('%d/%m/%Y') }}</div>
             </div>
             <div><span class="badge-pending">⏳ Pendente</span></div>
             <div>
@@ -562,7 +562,7 @@
           <div class="pt-row" style="opacity:.65;cursor:default;">
             <div>
               <div class="pt-name">{{ lk.patient_name or 'Convidado' }}</div>
-              <div class="pt-plan">{{ lk.patient_phone or lk.patient_telegram or '—' }}</div>
+              <div class="pt-plan">{{ lk.patient_phone or '—' }}</div>
             </div>
             <div class="pt-last">convite enviado</div>
             <div class="pt-kcal">—</div>
@@ -607,7 +607,7 @@
             <div class="convite-info">
               <div class="convite-name">{{ lk.patient_name or 'Convidado' }}</div>
               <div class="convite-meta">
-                {{ lk.patient_phone or lk.patient_telegram or '—' }}
+                {{ lk.patient_phone or '—' }}
                 · Enviado {{ lk.invited_at.strftime('%d/%m/%Y') }}
                 · Expira {{ lk.expires_at.strftime('%d/%m/%Y') if lk.expires_at else '—' }}
               </div>
@@ -667,7 +667,7 @@
             <div class="convite-info">
               <div class="convite-name" style="color:var(--text-2);">{{ lk.patient_name or 'Convidado' }}</div>
               <div class="convite-meta">
-                {{ lk.patient_phone or lk.patient_telegram or '—' }}
+                {{ lk.patient_phone or '—' }}
                 · Expirou {{ lk.expires_at.strftime('%d/%m/%Y') if lk.expires_at else '—' }}
               </div>
             </div>
@@ -693,7 +693,7 @@
             <div class="convite-avatar" style="background:rgba(239,68,68,.15);color:#EF4444;">{{ (lk.patient_name or 'C')[0].upper() }}</div>
             <div class="convite-info">
               <div class="convite-name" style="color:var(--text-2);">{{ lk.patient_name or 'Convidado' }}</div>
-              <div class="convite-meta">{{ lk.patient_phone or lk.patient_telegram or '—' }} · Recusou {{ lk.invited_at.strftime('%d/%m/%Y') }}</div>
+              <div class="convite-meta">{{ lk.patient_phone or '—' }} · Recusou {{ lk.invited_at.strftime('%d/%m/%Y') }}</div>
             </div>
             <span class="badge-declined">✗ Recusado</span>
           </div>
@@ -903,3 +903,4 @@ function copiarLink(url) {
 }
 </script>
 {% endblock %}
+

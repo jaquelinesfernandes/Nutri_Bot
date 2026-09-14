@@ -971,7 +971,7 @@ async def baixar_pdf_paciente(
     food_kcal_sum: dict[str, float] = defaultdict(float)
     for log in all_logs:
         for fi in log.food_items:
-            name = (fi.food_name or "").strip().lower()
+            name = (fi.name or "").strip().lower()
             if name:
                 food_counter[name] += 1
                 food_kcal_sum[name] += fi.calories_kcal or 0.0

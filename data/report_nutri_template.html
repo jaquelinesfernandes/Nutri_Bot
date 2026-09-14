@@ -425,7 +425,7 @@ body {
       <td>
         {% if log.food_items %}
           {% for fi in log.food_items %}
-            {{ fi.food_name }}{% if fi.quantity_g %} ({{ fi.quantity_g | int }}g){% endif %}{% if not loop.last %}, {% endif %}
+            {{ fi.name }}{% if fi.quantity_g %} ({{ fi.quantity_g | int }}g){% endif %}{% if not loop.last %}, {% endif %}
           {% endfor %}
         {% else %}
           <span style="color:#9CA3AF;">—</span>
