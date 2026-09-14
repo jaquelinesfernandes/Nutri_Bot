@@ -97,6 +97,34 @@ class SlidingSessionMiddleware(BaseHTTPMiddleware):
         return response
 
 
+async def _apply_pending_ddl() -> None:
+    """Aplica DDL pendente diretamente no banco — bypass do Alembic.
+
+    Garante que colunas adicionadas após o deploy inicial existam no banco,
+    mesmo que 'alembic upgrade head' não tenha rodado (ex: falha no Procfile).
+    Cada op usa IF NOT EXISTS → totalmente idempotente.
+    """
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from sqlalchemy import text
+
+    engine = create_async_engine(settings.database_url, echo=False)
+    ddl_ops = [
+        # RF-PAINEL-11: limiar de inatividade por paciente (migration f4a8b2c1d9e0)
+        "ALTER TABLE nutritionist_patients "
+        "ADD COLUMN IF NOT EXISTS inactivity_alert_days INTEGER NOT NULL DEFAULT 3",
+    ]
+    try:
+        async with engine.begin() as conn:
+            for sql in ddl_ops:
+                await conn.execute(text(sql))
+                logger.info("[DDL] aplicado: %s", sql[:80])
+        logger.info("[DDL] todas as colunas pendentes verificadas/aplicadas")
+    except Exception as exc:
+        logger.error("[DDL] falha ao aplicar DDL pendente: %s", exc)
+    finally:
+        await engine.dispose()
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────
@@ -106,6 +134,9 @@ async def lifespan(app: FastAPI):
             logger.info("Sentry inicializado")
         except Exception as e:
             logger.warning(f"Sentry DSN inválido, monitoramento desabilitado: {e}")
+
+    # Aplica DDL pendente antes de iniciar o serviço
+    await _apply_pending_ddl()
 
     from app.services.nutrition import nutrition_service
     nutrition_service.load_data()
