@@ -735,6 +735,13 @@ body {
       <div class="macro-val">{{ avg_fiber_g }}g</div>
       <div class="macro-lbl">Fibra · Meta {{ goal_fiber_g }}g</div>
     </div>
+    <!-- RF-AGUA-04: Hidratação -->
+    {% if avg_water_ml is defined %}
+    <div class="macro-box" style="background:linear-gradient(135deg,rgba(14,165,233,.08),rgba(56,189,248,.04));border-top:3px solid {% if pct_water >= 80 %}#0EA5E9{% elif pct_water >= 40 %}#F59E0B{% else %}#EF4444{% endif %};">
+      <div class="macro-val" style="color:{% if pct_water >= 80 %}#0369A1{% elif pct_water >= 40 %}#D97706{% else %}#DC2626{% endif %};">💧 {{ avg_water_ml }}ml</div>
+      <div class="macro-lbl">Água · Meta {{ goal_water_ml }}ml · {{ pct_water }}%</div>
+    </div>
+    {% endif %}
   </div>
 </div>
 

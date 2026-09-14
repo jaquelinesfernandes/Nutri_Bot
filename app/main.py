@@ -118,6 +118,8 @@ async def _apply_pending_ddl() -> None:
         "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_fat_g     INTEGER",
         "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_fiber_g   INTEGER",
         "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_water_ml  INTEGER",
+        # RF-AGUA-02: meta de água personalizada por usuário (nullable, default 2000 no código)
+        "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_water_goal_ml INTEGER",
     ]
     try:
         async with engine.begin() as conn:

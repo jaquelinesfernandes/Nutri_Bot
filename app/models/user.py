@@ -30,6 +30,7 @@ class User(Base):
     password_hash: Mapped[str | None] = mapped_column(Text, nullable=True)
     timezone: Mapped[str] = mapped_column(String(50), default="America/Sao_Paulo")
     daily_calorie_goal: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    daily_water_goal_ml: Mapped[int | None] = mapped_column(Integer, nullable=True)
     goal_type: Mapped[str | None] = mapped_column(String(30), nullable=True)
     plan: Mapped[str] = mapped_column(String(20), default="free")
     plan_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

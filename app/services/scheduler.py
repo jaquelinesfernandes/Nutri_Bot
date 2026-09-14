@@ -179,7 +179,12 @@ async def _send_periodic_report(period_type: str) -> None:
         ]
         free_users = [u for u in users if not u.is_premium and u.alerts_enabled]
 
-        # ── Premium: PDF/HTML completo ────────────────────────────────────────
+        from app.config import settings as _settings
+        from app.utils.jwt import create_magic_token
+
+        _base = (_settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+
+        # ── Premium: PDF/HTML completo + link do painel ───────────────────────
         sent = skipped = errors = 0
         for i, user in enumerate(premium_users):
             existing = await db.execute(
@@ -199,9 +204,12 @@ async def _send_periodic_report(period_type: str) -> None:
                 )
                 name = user.first_name or "você"
                 filename = f"nutribot_relatorio_{period_type}_{start_date.strftime('%Y-%m-%d')}.{ext}"
+                _token = create_magic_token(user.id, minutes=60 * 24)  # 24 h
+                _link = f"{_base}/auth/magic?t={_token}"
                 caption = (
                     f"📊 *Seu relatório {period_label_short} chegou, {name}!*\n"
-                    "Confira seu progresso 👆"
+                    "Confira seu progresso 👆\n\n"
+                    f"🌐 [Ver no painel]({_link})"
                 )
                 await notification_service.send_document(user, file_bytes, filename, caption)
                 sent += 1
@@ -218,21 +226,18 @@ async def _send_periodic_report(period_type: str) -> None:
             f"[REPORT] {period_type} Premium: {sent} enviados, {skipped} já tinham, {errors} erros"
         )
 
-        # ── Free: preview com CTA de upgrade (apenas no semanal) ─────────────
+        # ── Free: link do painel (apenas no semanal) ──────────────────────────
         if period_type == "weekly":
             preview_sent = 0
             for i, user in enumerate(free_users):
                 name = user.first_name or "você"
+                _token = create_magic_token(user.id, minutes=60 * 24)  # 24 h
+                _link = f"{_base}/auth/magic?t={_token}"
                 ok = await notification_service.send_text(
                     user,
                     f"📊 *{name}, seu resumo semanal está pronto!*\n\n"
-                    "Você usou o NutriBot esta semana 🎉\n\n"
-                    "🔒 *Desbloqueie o relatório completo com Premium:*\n"
-                    "• Gráfico diário de calorias\n"
-                    "• Análise de macros da semana\n"
-                    "• Sugestões personalizadas de IA\n"
-                    "• PDF para compartilhar\n\n"
-                    "👉 /premium — R$ 19,90/mês",
+                    "Você usou o NutriBot esta semana — continue registrando! 🥗\n\n"
+                    f"👉 [Ver no painel]({_link})",
                 )
                 if ok:
                     preview_sent += 1
@@ -256,6 +261,94 @@ async def job_monthly_report() -> None:
 async def job_quarterly_report() -> None:
     """1º dia do trimestre 20h: relatório trimestral para usuários com frequência 'quarterly'."""
     await _send_periodic_report("quarterly")
+
+
+async def _send_water_alert(period: str) -> None:
+    """Envia alerta de hidratação se o usuário consumiu < 50% da meta de água.
+
+    period: 'morning' (11h) ou 'afternoon' (15h)
+    """
+    from sqlalchemy import func as sa_func
+
+    from app.db.session import AsyncSessionLocal
+    from app.models.user import User
+    from app.models.water_log import WaterLog
+    from app.services.notification import notification_service
+
+    tz = ZoneInfo("America/Sao_Paulo")
+    now = datetime.now(tz)
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end   = day_start + timedelta(days=1)
+
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(User).where(
+                User.onboarding_complete.is_(True),
+                User.alerts_enabled.is_(True),
+                User.deleted_at.is_(None),
+            )
+        )
+        users = result.scalars().all()
+
+        alerted = 0
+        for user in users:
+            # Respeita pausa de alertas
+            if user.alerts_paused_until:
+                paused_until = user.alerts_paused_until
+                if paused_until.tzinfo is None:
+                    paused_until = paused_until.replace(tzinfo=ZoneInfo("UTC"))
+                if now.astimezone(ZoneInfo("UTC")) < paused_until:
+                    continue
+
+            goal_ml = user.daily_water_goal_ml or 2000  # DRI padrão
+
+            # Total de água registrado hoje
+            water_result = await db.execute(
+                select(sa_func.coalesce(sa_func.sum(WaterLog.volume_ml), 0.0)).where(
+                    WaterLog.user_id == user.id,
+                    WaterLog.logged_at >= day_start,
+                    WaterLog.logged_at < day_end,
+                )
+            )
+            total_ml = float(water_result.scalar_one() or 0)
+
+            # Só envia se < 50% da meta
+            if total_ml >= goal_ml * 0.5:
+                continue
+
+            name = user.first_name or "você"
+            pct  = int(total_ml / goal_ml * 100) if goal_ml else 0
+            remaining = int(goal_ml - total_ml)
+
+            if period == "morning":
+                msg = (
+                    f"💧 Oi, {name}! Lembra de se hidratar!\n"
+                    f"Você registrou {int(total_ml)} ml de água hoje ({pct}% da meta).\n"
+                    f"Faltam {remaining} ml para atingir {goal_ml} ml. 🥤\n"
+                    "Use /agua 250 para registrar cada copo!"
+                )
+            else:
+                msg = (
+                    f"💧 Boa tarde, {name}! Já bebeu água suficiente?\n"
+                    f"Total de hoje: {int(total_ml)} ml ({pct}% de {goal_ml} ml).\n"
+                    f"Ainda faltam {remaining} ml — beba bastante até o fim do dia! 🌊"
+                )
+
+            sent = await notification_service.send_text(user, msg)
+            if sent:
+                alerted += 1
+
+        logger.info(f"[AGUA] {period}: {alerted}/{len(users)} alertas enviados")
+
+
+async def job_water_morning() -> None:
+    """11h: lembrete de hidratação (se < 50% da meta registrada)."""
+    await _send_water_alert("morning")
+
+
+async def job_water_afternoon() -> None:
+    """15h: lembrete de hidratação da tarde (se < 50% da meta registrada)."""
+    await _send_water_alert("afternoon")
 
 
 async def job_expire_invites() -> None:
@@ -374,6 +467,16 @@ async def start_scheduler() -> AsyncIOScheduler:
         id="reengagement", replace_existing=True,
     )
 
+    # RF-AGUA-01: alertas de hidratação 2× ao dia
+    scheduler.add_job(
+        job_water_morning, CronTrigger(hour=11, minute=0, timezone=SP_TZ),
+        id="water_morning", replace_existing=True,
+    )
+    scheduler.add_job(
+        job_water_afternoon, CronTrigger(hour=15, minute=0, timezone=SP_TZ),
+        id="water_afternoon", replace_existing=True,
+    )
+
     # B2B — expiração de convites de nutricionistas (meia-noite todo dia)
     scheduler.add_job(
         job_expire_invites, CronTrigger(hour=0, minute=5, timezone=SP_TZ),
@@ -383,6 +486,7 @@ async def start_scheduler() -> AsyncIOScheduler:
     scheduler.start()
     logger.info(
         "Scheduler iniciado (America/Sao_Paulo): alertas 09:30/10:30/12:30/16:00/19:30 | "
+        "água 11:00/15:00 | "
         "relatório dom 20h (semanal) | 1º/mês 20h (mensal) | 1º trimestre 20h (trimestral) | "
         "misfire_grace_time=3600s coalesce=True"
     )

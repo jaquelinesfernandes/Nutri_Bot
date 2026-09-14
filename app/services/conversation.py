@@ -1567,9 +1567,31 @@ class ConversationService:
 
     async def _cmd_meta(self, user: User, args, db: AsyncSession) -> str:
         if args:
+            stripped = args.strip().lower()
+
+            # /meta agua [ml] — configura meta de ingestão de água
+            if stripped.startswith("agua"):
+                rest = stripped[4:].strip()
+                if not rest:
+                    cur = user.daily_water_goal_ml or 2000
+                    return (
+                        f"💧 Meta de água atual: *{cur}ml/dia*.\n"
+                        "Para alterar: /meta agua 2500"
+                    )
+                digits = "".join(c for c in rest if c.isdigit())
+                if not digits:
+                    return "Por favor, informe um valor em ml. Ex: /meta agua 2500"
+                ml = int(digits)
+                if ml < 1000 or ml > 5000:
+                    return "❌ A meta de água deve estar entre 1.000 e 5.000 ml."
+                user.daily_water_goal_ml = ml
+                await db.commit()
+                return f"✅ Meta de água atualizada para *{ml}ml/dia*! 💧"
+
+            # /meta [kcal] — configura meta calórica diária
             digits = "".join(c for c in args if c.isdigit())
             if not digits:
-                return "Por favor, informe um valor em kcal. Ex: /meta 1800"
+                return "Por favor, informe um valor em kcal. Ex: /meta 1800\nPara água: /meta agua 2500"
             kcal = int(digits)
             if kcal < 500 or kcal > 10000:
                 return "Meta deve estar entre 500 e 10.000 kcal."
@@ -1577,9 +1599,17 @@ class ConversationService:
             await db.commit()
             analytics.goal_set(user.channel_id, kcal, user.goal_type or "manter")
             return f"✅ Meta atualizada para *{kcal} kcal/dia*!"
+
+        # Sem args — exibe metas atuais
+        lines = []
         if user.daily_calorie_goal:
-            return f"Sua meta atual é *{user.daily_calorie_goal} kcal/dia*.\nPara alterar: /meta 1800"
-        return "Você não tem meta definida.\nPara definir: /meta 1800"
+            lines.append(f"🔥 Meta calórica: *{user.daily_calorie_goal} kcal/dia*")
+        else:
+            lines.append("🔥 Meta calórica: não definida")
+        water = user.daily_water_goal_ml or 2000
+        lines.append(f"💧 Meta de água: *{water}ml/dia*")
+        lines.append("\nPara alterar: /meta 1800 ou /meta agua 2500")
+        return "\n".join(lines)
 
     async def _cmd_alertas(self, user: User, args: str | None, db: AsyncSession) -> str:
         arg = (args or "").strip().lower()

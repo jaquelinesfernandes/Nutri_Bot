@@ -385,6 +385,21 @@ class ReportService:
         goal_fiber_g = 25    # DRI: 25g/dia
         pct_fiber = _pct(avg_fiber_g, goal_fiber_g)
 
+        # RF-AGUA-04: Hidratação no período
+        from app.models.water_log import WaterLog as _WL
+        from sqlalchemy import func as _func
+        water_res = await db.execute(
+            select(_func.coalesce(_func.sum(_WL.volume_ml), 0.0)).where(
+                _WL.user_id == user.id,
+                _WL.logged_at >= start_dt,
+                _WL.logged_at < end_dt,
+            )
+        )
+        total_water_ml = float(water_res.scalar_one() or 0)
+        avg_water_ml  = round(total_water_ml / n, 0) if n and total_water_ml else 0
+        goal_water_ml = user.daily_water_goal_ml or 2000
+        pct_water     = _pct(avg_water_ml, goal_water_ml)
+
         # Macro goals (25% prot / 50% carb / 25% fat split)
         goal_protein_g = int(goal_kcal * 0.25 / 4)
         goal_carb_g = int(goal_kcal * 0.50 / 4)
@@ -522,6 +537,10 @@ class ReportService:
             elogios=elogios,
             weekly_insight=weekly_insight,
             generated_at=datetime.now(tz).strftime("%d/%m/%Y às %H:%M"),
+            # RF-AGUA-04: hidratação
+            avg_water_ml=int(avg_water_ml),
+            goal_water_ml=goal_water_ml,
+            pct_water=pct_water,
         )
 
         try:

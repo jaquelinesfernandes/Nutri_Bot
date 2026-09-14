@@ -259,12 +259,27 @@ async def dashboard(
     )
     meals = list(result.scalars().all())
 
+    from sqlalchemy import func as _sa_func
+    from app.models.water_log import WaterLog
+
     total_kcal  = sum(m.total_calories_kcal for m in meals)
     total_prot  = sum(m.total_protein_g for m in meals)
     total_carb  = sum(m.total_carb_g for m in meals)
     total_fat   = sum(m.total_fat_g for m in meals)
     total_fiber = sum(m.total_fiber_g for m in meals)
     goal_kcal   = user.daily_calorie_goal
+
+    # ── Hidratação de hoje ────────────────────────────────────────────────────
+    water_result = await db.execute(
+        select(_sa_func.coalesce(_sa_func.sum(WaterLog.volume_ml), 0.0)).where(
+            WaterLog.user_id == user.id,
+            WaterLog.logged_at >= day_start,
+            WaterLog.logged_at <= day_end,
+        )
+    )
+    water_today_ml  = int(water_result.scalar_one() or 0)
+    goal_water_ml   = user.daily_water_goal_ml or 2000
+    pct_water       = min(round(water_today_ml / goal_water_ml * 100), 100) if goal_water_ml else 0
     goal_fiber  = 25   # DRI: 25 g/dia
     # Metas de macros (mesma fórmula usada no template via {% set %})
     goal_prot_g = round(goal_kcal * 0.25 / 4) if goal_kcal else 0
@@ -397,6 +412,10 @@ async def dashboard(
             "goal_icon":  _goal_icon,
             "goal_label": _goal_label,
             "now_hour": now.hour, "today_label": today_label,
+            # Hidratação
+            "water_today_ml": water_today_ml,
+            "goal_water_ml":  goal_water_ml,
+            "pct_water":      pct_water,
         }
     )
 

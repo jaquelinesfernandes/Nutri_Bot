@@ -356,6 +356,23 @@ body {
       <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta DRI 25g</div>
     {% endif %}
   </div>
+  <!-- RF-AGUA-05: Hidratação média diária -->
+  <div class="macro-item">
+    <div class="macro-label">💧 Água</div>
+    {% if avg_water_30d is defined and avg_water_30d > 0 %}
+      {% set water_pct = ((avg_water_30d / (goal_water_ml or 2000)) * 100) | int %}
+      <div class="macro-val" style="color:{% if water_pct >= 80 %}#0369A1{% elif water_pct >= 50 %}#D97706{% else %}#DC2626{% endif %};">
+        {{ avg_water_30d }}<span class="macro-unit"> ml</span>
+      </div>
+      <div class="macro-bar-track">
+        <div class="macro-bar-fill" style="width:{{ [water_pct, 100] | min }}%;background:#0EA5E9;"></div>
+      </div>
+      <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta {{ goal_water_ml or 2000 }}ml/dia · {{ water_pct }}%</div>
+    {% else %}
+      <div class="macro-val">—</div>
+      <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta {{ goal_water_ml or 2000 }}ml/dia</div>
+    {% endif %}
+  </div>
 </div>
 
 <!-- ════════════════════════════════════════════════════════════════ -->
@@ -607,6 +624,7 @@ body {
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#7DD3FC;">Carb. g</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#FCD34D;">Gord. g</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#86EFAC;">Fibra g</th>
+        <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;color:#7DD3FC;">Água ml</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Dist. %</th>
         <th style="padding:7pt 8pt;text-align:center;font-size:7.5pt;text-transform:uppercase;">Status</th>
       </tr>
@@ -624,6 +642,7 @@ body {
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#0EA5E9;font-weight:600;">{% if w.avg_carb > 0 %}{{ w.avg_carb }}{% else %}—{% endif %}</td>
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#D97706;font-weight:600;">{% if w.avg_fat > 0 %}{{ w.avg_fat }}{% else %}—{% endif %}</td>
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#16A34A;font-weight:600;">{% if w.avg_fiber is defined and w.avg_fiber > 0 %}{{ w.avg_fiber }}{% else %}—{% endif %}</td>
+        <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;color:#0EA5E9;font-weight:600;">{% if w.avg_water is defined and w.avg_water > 0 %}{{ w.avg_water | int }}{% else %}—{% endif %}</td>
         <td style="padding:6pt 8pt;border-bottom:0.5pt solid #EEF2FF;text-align:center;font-size:7.5pt;">
           {% if w.pct_prot > 0 or w.pct_carb > 0 or w.pct_fat > 0 %}
           <span style="color:#6366F1;font-weight:700;">P{{ w.pct_prot }}%</span>·<span style="color:#0EA5E9;font-weight:700;">C{{ w.pct_carb }}%</span>·<span style="color:#D97706;font-weight:700;">G{{ w.pct_fat }}%</span>

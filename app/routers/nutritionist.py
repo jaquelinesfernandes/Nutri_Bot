@@ -1213,6 +1213,7 @@ async def baixar_pdf_paciente(
     from sqlalchemy.orm import selectinload
 
     from app.models.meal_log import MealLog
+    from app.models.water_log import WaterLog as _WaterLog
 
     nutri = _require_nutritionist(user)
 
@@ -1304,6 +1305,19 @@ async def baixar_pdf_paciente(
     goal_fat   = _eff["goal_fat"]
     goal_fiber = _eff["goal_fiber"]
 
+    # ── Hidratação — média diária no período ─────────────────────────────────
+    from sqlalchemy import func as _sa_func
+    water_result = await db.execute(
+        select(_sa_func.coalesce(_sa_func.sum(_WaterLog.volume_ml), 0.0)).where(
+            _WaterLog.user_id == pid,
+            _WaterLog.logged_at >= period_start,
+            _WaterLog.logged_at <= period_end,
+        )
+    )
+    total_water_ml = float(water_result.scalar_one() or 0)
+    avg_water_30d  = round(total_water_ml / days_with_data) if days_with_data else 0
+    goal_water_ml  = patient.daily_water_goal_ml or 2000
+
     # ── Top alimentos ─────────────────────────────────────────────────────────
     food_counter: Counter = Counter()
     food_kcal_sum: dict[str, float] = defaultdict(float)
@@ -1342,23 +1356,37 @@ async def baixar_pdf_paciente(
     for week_i in range(4):
         wstart = start_date + _td(days=week_i * 7)
         wend   = min(wstart + _td(days=7), end_date + _td(days=1))
+        wstart_dt = datetime(wstart.year, wstart.month, wstart.day, 0, 0, tzinfo=tz)
+        wend_dt   = datetime(wend.year,  wend.month,  wend.day,  0, 0, tzinfo=tz)
         week_logs = [
             l for l in all_logs
             if wstart <= l.logged_at.astimezone(tz).date() < wend
         ]
         week_days = len({l.logged_at.astimezone(tz).date() for l in week_logs})
+
+        # Água da semana
+        water_week_result = await db.execute(
+            select(_sa_func.coalesce(_sa_func.sum(_WaterLog.volume_ml), 0.0)).where(
+                _WaterLog.user_id == pid,
+                _WaterLog.logged_at >= wstart_dt,
+                _WaterLog.logged_at < wend_dt,
+            )
+        )
+        water_week_ml = float(water_week_result.scalar_one() or 0)
+
         if week_days:
             w_kcal  = round(sum(l.total_calories_kcal              for l in week_logs) / week_days)
             w_prot  = round(sum(l.total_protein_g                  for l in week_logs) / week_days, 1)
             w_carb  = round(sum(l.total_carb_g                     for l in week_logs) / week_days, 1)
             w_fat   = round(sum(l.total_fat_g                      for l in week_logs) / week_days, 1)
             w_fiber = round(sum(getattr(l, "total_fiber_g", 0.0)   for l in week_logs) / week_days, 1)
+            w_water = round(water_week_ml / week_days)
             macro_kcal = w_prot * 4 + w_carb * 4 + w_fat * 9
             pct_prot = round(w_prot * 4 / macro_kcal * 100) if macro_kcal else 0
             pct_carb = round(w_carb * 4 / macro_kcal * 100) if macro_kcal else 0
             pct_fat  = round(w_fat  * 9 / macro_kcal * 100) if macro_kcal else 0
         else:
-            w_kcal = w_prot = w_carb = w_fat = w_fiber = 0
+            w_kcal = w_prot = w_carb = w_fat = w_fiber = w_water = 0
             pct_prot = pct_carb = pct_fat = 0
         wend_display = min(wstart + _td(days=6), end_date)
         weekly_breakdown.append({
@@ -1369,6 +1397,7 @@ async def baixar_pdf_paciente(
             "avg_carb":  w_carb,
             "avg_fat":   w_fat,
             "avg_fiber": w_fiber,
+            "avg_water": w_water,
             "pct_prot":  pct_prot,
             "pct_carb":  pct_carb,
             "pct_fat":   pct_fat,
@@ -1428,6 +1457,9 @@ async def baixar_pdf_paciente(
         top_foods=top_foods,
         notes=notes,
         weekly_breakdown=weekly_breakdown,
+        # RF-AGUA-05: hidratação
+        avg_water_30d=avg_water_30d,
+        goal_water_ml=goal_water_ml,
     )
 
     # ── Gera PDF com WeasyPrint ───────────────────────────────────────────────

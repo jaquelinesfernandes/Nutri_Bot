@@ -245,6 +245,23 @@
       <svg class="macro-spark" id="spFiber"></svg>
     </div>
 
+    <!-- RF-AGUA-03: Card de hidratação -->
+    {% set pct_water_clamp = [pct_water, 100] | min %}
+    {% set water_color = '#0EA5E9' if pct_water >= 80 else ('#F59E0B' if pct_water >= 40 else '#EF4444') %}
+    <div class="card macro-card" style="border-top:3px solid {{ water_color }};">
+      <div class="macro-icon" style="color:{{ water_color }};">💧</div>
+      <div class="macro-body">
+        <div class="macro-lbl">Água</div>
+        <div class="macro-num" style="color:{{ water_color }};">{{ water_today_ml }}<small>ml</small></div>
+        <div class="macro-sub">
+          Meta {{ goal_water_ml }}ml · {{ pct_water }}% atingido
+        </div>
+        <div class="macro-mini-track">
+          <div class="macro-mini-fill" style="width:{{ pct_water_clamp }}%;background:linear-gradient(90deg,#0369A1,#38BDF8);"></div>
+        </div>
+      </div>
+    </div>
+
   </div>
 </div>
 
