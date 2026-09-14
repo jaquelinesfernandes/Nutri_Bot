@@ -1437,18 +1437,49 @@ class ConversationService:
         )
 
     async def _cmd_hoje(self, user: User, args, db: AsyncSession) -> str:
+        from app.models.water_log import WaterLog
+        from sqlalchemy import func as _f
+
         logs = await self._get_today_logs(user, db)
 
+        tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+        now = datetime.now(tz)
+        day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        day_end   = day_start + timedelta(days=1)
+
+        # Hidratação de hoje
+        w_res = await db.execute(
+            select(_f.coalesce(_f.sum(WaterLog.volume_ml), 0.0)).where(
+                WaterLog.user_id == user.id,
+                WaterLog.logged_at >= day_start,
+                WaterLog.logged_at < day_end,
+            )
+        )
+        water_ml  = int(w_res.scalar_one() or 0)
+        goal_water = user.daily_water_goal_ml or 2000
+        pct_water  = min(100, round(water_ml / goal_water * 100))
+        w_filled   = pct_water // 20          # 0-5 gotas
+        water_bar  = "💧" * w_filled + "○" * (5 - w_filled)
+
         if not logs:
+            water_line = (
+                f"\n\n💧 *Hidratação:* {water_ml}ml / {goal_water}ml\n"
+                f"{water_bar} {pct_water}%\n"
+                "_Use /agua para registrar_"
+            ) if water_ml > 0 else (
+                "\n\n💧 *Hidratação:* nenhum registro hoje\n"
+                "_Use /agua 250 ou 'bebi um copo de água'_"
+            )
             return (
                 "Nenhuma refeição registrada hoje ainda! 🍽️\n"
                 "Me conta o que você comeu."
+                + water_line
             )
 
-        total_kcal = sum(l.total_calories_kcal for l in logs)
+        total_kcal    = sum(l.total_calories_kcal for l in logs)
         total_protein = sum(l.total_protein_g for l in logs)
-        total_carb = sum(l.total_carb_g for l in logs)
-        total_fat = sum(l.total_fat_g for l in logs)
+        total_carb    = sum(l.total_carb_g for l in logs)
+        total_fat     = sum(l.total_fat_g for l in logs)
 
         meal_names = {
             "breakfast": "Café", "morning_snack": "Lanche manhã",
@@ -1470,13 +1501,22 @@ class ConversationService:
         pct_goal = 0
         if user.daily_calorie_goal:
             remaining = user.daily_calorie_goal - total_kcal
-            pct_goal = min(100, int(total_kcal / user.daily_calorie_goal * 100))
+            pct_goal  = min(100, int(total_kcal / user.daily_calorie_goal * 100))
             bar = "█" * (pct_goal // 10) + "░" * (10 - pct_goal // 10)
             msg += (
-                f"\n\n🎯 Meta: {user.daily_calorie_goal} kcal\n"
+                f"\n\n🎯 *Meta calórica:* {user.daily_calorie_goal} kcal\n"
                 f"`{bar}` {pct_goal}%\n"
                 f"{'⚠️ Meta atingida!' if remaining <= 0 else f'Faltam {remaining:.0f} kcal'}"
             )
+
+        # Seção de hidratação
+        water_status = "🎉 Meta atingida!" if pct_water >= 100 else f"Faltam {goal_water - water_ml}ml"
+        msg += (
+            f"\n\n💧 *Hidratação:* {water_ml}ml / {goal_water}ml\n"
+            f"{water_bar} {pct_water}%  {water_status}"
+        )
+        if water_ml == 0:
+            msg += "\n_Use /agua ou diga 'bebi 1 copo de água'_"
 
         analytics.daily_summary_viewed(user.channel_id, total_kcal, pct_goal)
         return msg
