@@ -26,6 +26,12 @@ from app.utils.jwt import (
 
 router = APIRouter(tags=["dashboard"])
 
+_GOAL_INFO: dict[str, tuple[str, str]] = {
+    "perder_peso":  ("🎯", "Perder peso"),
+    "ganhar_massa": ("💪", "Ganhar massa muscular"),
+    "manter":       ("⚖️", "Manter o peso"),
+}
+
 # Caminho absoluto — funciona em qualquer working directory (local e Docker)
 _TEMPLATES_DIR = Path(__file__).parent.parent / "templates"
 templates = Jinja2Templates(directory=str(_TEMPLATES_DIR))
@@ -313,6 +319,48 @@ async def dashboard(
     week_fat_avg_pct,   week_fat_avg   = _week_avg_pct(week_fat,   goal_fat_g)
     week_fiber_avg_pct, week_fiber_avg = _week_avg_pct(week_fiber, goal_fiber)
 
+    # ── 30-day query: streak + aderência mensal ───────────────────────────────
+    month_start_d  = today - timedelta(days=29)
+    month_start_dt = datetime(month_start_d.year, month_start_d.month,
+                              month_start_d.day, 0, 0, tzinfo=tz)
+    month_result = await db.execute(
+        select(MealLog.logged_at).where(
+            MealLog.user_id == user.id,
+            MealLog.confirmed == True,   # noqa: E712
+            MealLog.logged_at >= month_start_dt,
+            MealLog.logged_at <= day_end,
+        )
+    )
+    month_dates_set = {row[0].astimezone(tz).date() for row in month_result.all()}
+    days_logged_30 = len(month_dates_set)
+    adh_pct_30     = round(days_logged_30 / 30 * 100)
+
+    streak_days, _chk = 0, today
+    while _chk in month_dates_set and streak_days <= 30:
+        streak_days += 1
+        _chk -= timedelta(days=1)
+
+    # ── Mini-calendário 7 dias (bolinhas coloridas) ───────────────────────────
+    week_cal = []
+    for i, wd in enumerate(week_data):
+        v = wd["kcal"]
+        d = today - timedelta(days=6 - i)
+        if v == 0:
+            cls = "miss"
+        elif goal_kcal and v >= goal_kcal * 0.85 and v <= goal_kcal * 1.15:
+            cls = "ok"
+        elif goal_kcal and v > goal_kcal * 1.15:
+            cls = "over"
+        else:
+            cls = "low"
+        week_cal.append({
+            "label": br_weekdays.get(d.strftime("%a"), d.strftime("%a")),
+            "kcal":  int(v), "cls": cls,
+        })
+
+    # ── Objetivo do usuário ───────────────────────────────────────────────────
+    _goal_icon, _goal_label = _GOAL_INFO.get(user.goal_type or "", ("", ""))
+
     return templates.TemplateResponse(
         request=request, name="dashboard.html",
         context={
@@ -323,15 +371,31 @@ async def dashboard(
             "total_fiber": total_fiber,
             "goal_kcal": goal_kcal, "goal_fiber": goal_fiber,
             "pct_kcal": pct_kcal, "pct_fiber": pct_fiber,
+            # 7-day arrays (para gráficos)
             "week_labels": week_labels,
             "week_kcal":  [w["kcal"] for w in week_data],
+            "week_prot":  week_prot,
+            "week_carb":  week_carb,
+            "week_fat":   week_fat,
             "week_fiber": week_fiber,
             # Médias dos últimos 7 dias por macro (exclui dias sem dados)
             "week_prot_avg_pct":  week_prot_avg_pct,
             "week_carb_avg_pct":  week_carb_avg_pct,
             "week_fat_avg_pct":   week_fat_avg_pct,
+            "week_prot_avg":      week_prot_avg,
+            "week_carb_avg":      week_carb_avg,
+            "week_fat_avg":       week_fat_avg,
             "week_fiber_avg":     week_fiber_avg,
             "week_fiber_avg_pct": week_fiber_avg_pct,
+            # Streak + 30d
+            "streak_days":    streak_days,
+            "days_logged_30": days_logged_30,
+            "adh_pct_30":     adh_pct_30,
+            "week_cal":       week_cal,
+            # Objetivo
+            "goal_type":  user.goal_type or "",
+            "goal_icon":  _goal_icon,
+            "goal_label": _goal_label,
             "now_hour": now.hour, "today_label": today_label,
         }
     )

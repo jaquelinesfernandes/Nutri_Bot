@@ -9,27 +9,34 @@
 {% set pct_prot2   = (total_prot / goal_prot_g * 100) | int if goal_prot_g else 0 %}
 {% set pct_carb    = (total_carb / goal_carb_g * 100) | int if goal_carb_g else 0 %}
 {% set pct_fat     = (total_fat  / goal_fat_g  * 100) | int if goal_fat_g  else 0 %}
-{# Fibra — meta fixa 25g/dia (DRI); valores vêm do router #}
+{# Fibra — meta fixa 25g/dia (DRI) #}
 {% set pct_fiber_clamp = [pct_fiber, 100] | min %}
 {% set ring_pct    = [pct_kcal, 100] | min %}
 {% set dashoffset  = (414.69 * (1 - ring_pct / 100)) | round(2) %}
 {% set ring_cls    = 'r-fill-over' if pct_kcal > 110 else ('r-fill-warn' if pct_kcal > 100 else 'r-fill-ok') %}
 {% set remain_kcal = (goal_kcal - total_kcal) | int if goal_kcal and goal_kcal > total_kcal else 0 %}
 
+{# Distribuição de macros hoje (P/C/G em kcal) #}
+{% set today_macro_kcal = (total_prot * 4) + (total_carb * 4) + (total_fat * 9) %}
+{% set dist_prot = ((total_prot * 4 / today_macro_kcal * 100) | round(1)) if today_macro_kcal > 0 else 0 %}
+{% set dist_carb = ((total_carb * 4 / today_macro_kcal * 100) | round(1)) if today_macro_kcal > 0 else 0 %}
+{% set dist_fat  = ((total_fat  * 9 / today_macro_kcal * 100) | round(1)) if today_macro_kcal > 0 else 0 %}
+
 {# 7-day adherence stats #}
-{% set ns = namespace(days_ok=0, days_over=0, sum_pct=0.0) %}
+{% set ns = namespace(days_ok=0, days_over=0, days_miss=0, sum_pct=0.0) %}
 {% for v in week_kcal %}
   {% if goal_kcal and goal_kcal > 0 %}
     {% set pct_d = v / goal_kcal * 100 %}
     {% set ns.sum_pct = ns.sum_pct + pct_d %}
-    {% if pct_d > 100 %}{% set ns.days_over = ns.days_over + 1 %}
-    {% elif v > 0 %}{% set ns.days_ok = ns.days_ok + 1 %}{% endif %}
+    {% if v == 0 %}{% set ns.days_miss = ns.days_miss + 1 %}
+    {% elif pct_d > 115 %}{% set ns.days_over = ns.days_over + 1 %}
+    {% elif pct_d >= 85 %}{% set ns.days_ok = ns.days_ok + 1 %}{% endif %}
   {% endif %}
 {% endfor %}
 {% set avg_pct_7   = (ns.sum_pct / 7) | round | int if goal_kcal else 0 %}
 {% set max_kcal_7  = week_kcal | max | int %}
 
-{# Meal bar colors (ciclic 3 cores) #}
+{# Meal bar colors #}
 {% set bar_colors = [
   'linear-gradient(to bottom,#6366F1,#818CF8)',
   'linear-gradient(to bottom,#0EA5E9,#38BDF8)',
@@ -43,11 +50,18 @@
       {% if now_hour < 12 %}☀️ Bom dia{% elif now_hour < 18 %}🌤️ Boa tarde{% else %}🌙 Boa noite{% endif %},
       <em>{{ user.first_name or 'usuário' }}</em>!
     </div>
-    <div class="today-date">{{ today_label }}</div>
+    <div class="today-date">
+      {{ today_label }}
+      {% if goal_icon and goal_label %}
+      <span class="goal-chip">{{ goal_icon }} {{ goal_label }}</span>
+      {% endif %}
+    </div>
   </div>
-  <div class="status-pill">
-    <div class="dot-live"></div>
-    {% if user.channel_type == 'telegram' %}Telegram conectado{% else %}Painel web{% endif %}
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="status-pill">
+      <div class="dot-live"></div>
+      {% if user.channel_type == 'telegram' %}Telegram conectado{% else %}Painel web{% endif %}
+    </div>
   </div>
 </div>
 
@@ -234,7 +248,7 @@
   </div>
 </div>
 
-<!-- ── S2: 7-day % kcal vs goal ───────────────────────── -->
+<!-- ── S2: 7-day kcal vs goal ──────────────────────────── -->
 <div class="sect-label">Últimos 7 dias — % da meta calórica atingida</div>
 <div class="card card-pad">
   <div class="card-title">
@@ -244,6 +258,21 @@
     {% endif %}
   </div>
   <canvas id="weekPctChart" class="week-pct-canvas"></canvas>
+</div>
+
+<!-- ── S2.5: Evolução de macros — 7 dias ─────────────── -->
+<div class="sect-label">Evolução de macros — 7 dias</div>
+<div class="card card-pad">
+  <div class="card-title" style="justify-content:space-between;">
+    <span>Tendência diária por macronutriente</span>
+    <div style="display:flex;gap:10px;font-size:11px;font-weight:600;color:var(--text-3);flex-wrap:wrap;">
+      <span><span style="display:inline-block;width:10px;height:3px;background:#6366F1;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Proteína</span>
+      <span><span style="display:inline-block;width:10px;height:3px;background:#0EA5E9;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Carb</span>
+      <span><span style="display:inline-block;width:10px;height:3px;background:#A855F7;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Gordura</span>
+      <span><span style="display:inline-block;width:10px;height:3px;background:#16A34A;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Fibra</span>
+    </div>
+  </div>
+  <canvas id="macroTrendChart" class="week-pct-canvas"></canvas>
 </div>
 
 <!-- ── S3: Análise geral ──────────────────────────────── -->
@@ -282,8 +311,31 @@
         <div class="stat-lbl">Maior dia (kcal)</div>
       </div>
     </div>
+
+    <!-- Mini calendário 7 dias -->
+    <div style="margin-top:14px;">
+      <div style="font-size:11px;font-weight:600;color:var(--text-3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em;">Cada dia da semana</div>
+      <div style="display:flex;gap:6px;justify-content:space-between;">
+        {% for d in week_cal %}
+        <div style="flex:1;text-align:center;">
+          <div style="font-size:9px;color:var(--text-3);margin-bottom:4px;font-weight:600;">{{ d.label }}</div>
+          <div class="week-dot {{ d.cls }}" title="{{ d.kcal }} kcal"></div>
+          <div style="font-size:8px;color:var(--text-3);margin-top:3px;">
+            {% if d.kcal > 0 %}{{ d.kcal }}{% else %}—{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      <div style="display:flex;gap:10px;margin-top:8px;font-size:10px;color:var(--text-3);flex-wrap:wrap;">
+        <span><span class="week-dot ok" style="display:inline-block;width:8px;height:8px;"></span> Na meta</span>
+        <span><span class="week-dot low" style="display:inline-block;width:8px;height:8px;"></span> Abaixo</span>
+        <span><span class="week-dot over" style="display:inline-block;width:8px;height:8px;"></span> Acima</span>
+        <span><span class="week-dot miss" style="display:inline-block;width:8px;height:8px;"></span> Sem registro</span>
+      </div>
+    </div>
+
     <div class="hist-chart-wrap">
-      <div class="mini-hist-label">Tendência semanal</div>
+      <div class="mini-hist-label">Tendência calórica semanal</div>
       <canvas class="mini-hist" id="histChart"></canvas>
     </div>
   </div>
@@ -406,6 +458,137 @@
 
 </div>
 
+<!-- ── S3.5: Streaks + Distribuição hoje ──────────────── -->
+<div class="insights-grid">
+
+  <!-- Streak + 30-day adherence -->
+  <div class="card card-pad">
+    <div class="card-title">
+      Consistência
+      <span class="chip chip-amber">30 dias</span>
+    </div>
+    <div style="display:flex;gap:12px;margin-bottom:16px;">
+      <!-- Streak -->
+      <div style="flex:1;background:var(--bg);border-radius:12px;padding:14px 16px;text-align:center;border:1px solid var(--card-b);">
+        <div style="font-size:2rem;font-weight:800;
+          background:linear-gradient(135deg,#F59E0B,#EF4444);
+          -webkit-background-clip:text;-webkit-text-fill-color:transparent;
+          background-clip:text;line-height:1.1;">
+          {{ streak_days }}
+        </div>
+        <div style="font-size:11px;color:var(--text-3);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.05em;">
+          {% if streak_days == 1 %}dia seguido{% else %}dias seguidos{% endif %}
+        </div>
+        <div style="font-size:20px;margin-top:4px;">
+          {% if streak_days >= 7 %}🔥{% elif streak_days >= 3 %}⚡{% elif streak_days >= 1 %}✨{% else %}💤{% endif %}
+        </div>
+      </div>
+      <!-- 30-day adherence -->
+      <div style="flex:1;background:var(--bg);border-radius:12px;padding:14px 16px;text-align:center;border:1px solid var(--card-b);">
+        <div style="font-size:2rem;font-weight:800;
+          color:{% if adh_pct_30 >= 70 %}#059669{% elif adh_pct_30 >= 40 %}#D97706{% else %}#DC2626{% endif %};
+          line-height:1.1;">
+          {{ adh_pct_30 }}%
+        </div>
+        <div style="font-size:11px;color:var(--text-3);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.05em;">aderência 30 dias</div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:4px;">{{ days_logged_30 }}/30 dias</div>
+      </div>
+    </div>
+    <!-- Mini-barra de aderência 30d -->
+    <div style="margin-bottom:8px;">
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);margin-bottom:4px;">
+        <span>Dias registrados nos últimos 30 dias</span>
+        <span style="font-weight:700;color:{% if adh_pct_30 >= 70 %}#059669{% elif adh_pct_30 >= 40 %}#D97706{% else %}#DC2626{% endif %}">{{ days_logged_30 }} dias</span>
+      </div>
+      <div style="height:8px;background:var(--card-b);border-radius:9px;overflow:hidden;">
+        <div style="height:8px;border-radius:9px;width:{{ adh_pct_30 }}%;
+          background:linear-gradient(90deg,{% if adh_pct_30 >= 70 %}#059669,#4ADE80{% elif adh_pct_30 >= 40 %}#D97706,#FBBF24{% else %}#DC2626,#F87171{% endif %});
+          transition:width .4s;">
+        </div>
+      </div>
+    </div>
+    {% if streak_days == 0 %}
+    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">💡 Registre sua primeira refeição hoje para começar sua sequência!</p>
+    {% elif streak_days >= 7 %}
+    <p style="font-size:12px;color:#D97706;font-weight:600;margin-top:8px;">🔥 Incrível! Você está em uma sequência de {{ streak_days }} dias. Continue assim!</p>
+    {% elif streak_days >= 3 %}
+    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">⚡ Ótima sequência! Mais {{ 7 - streak_days }} dia{{ 's' if (7 - streak_days) != 1 }} para 7 dias seguidos.</p>
+    {% else %}
+    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">✨ Bom começo! Consiste em registrar para construir uma sequência.</p>
+    {% endif %}
+  </div>
+
+  <!-- Distribuição calórica hoje -->
+  <div class="card card-pad">
+    <div class="card-title">
+      Distribuição calórica hoje
+      <span class="chip chip-sage">P · C · G</span>
+    </div>
+    {% if today_macro_kcal > 0 %}
+    <div style="display:flex;align-items:center;gap:16px;">
+      <!-- Donut canvas -->
+      <div style="position:relative;flex-shrink:0;width:110px;height:110px;">
+        <canvas id="donutChart" width="110" height="110"></canvas>
+        <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;pointer-events:none;">
+          <div style="font-size:13px;font-weight:800;color:var(--text-1);">{{ today_macro_kcal | int }}</div>
+          <div style="font-size:9px;color:var(--text-3);font-weight:600;">kcal</div>
+        </div>
+      </div>
+      <!-- Legend + %s -->
+      <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
+        <div class="dist-row">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-2);">
+            <span style="width:10px;height:10px;border-radius:50%;background:#6366F1;flex-shrink:0;"></span>
+            Proteína
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:14px;font-weight:800;color:#6366F1;">{{ dist_prot }}%</span>
+            <div style="font-size:10px;color:var(--text-3);">{{ total_prot | int }}g · {{ (total_prot * 4) | int }} kcal</div>
+          </div>
+        </div>
+        <div class="dist-row">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-2);">
+            <span style="width:10px;height:10px;border-radius:50%;background:#0EA5E9;flex-shrink:0;"></span>
+            Carboidratos
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:14px;font-weight:800;color:#0EA5E9;">{{ dist_carb }}%</span>
+            <div style="font-size:10px;color:var(--text-3);">{{ total_carb | int }}g · {{ (total_carb * 4) | int }} kcal</div>
+          </div>
+        </div>
+        <div class="dist-row">
+          <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-2);">
+            <span style="width:10px;height:10px;border-radius:50%;background:#A855F7;flex-shrink:0;"></span>
+            Gordura
+          </div>
+          <div style="text-align:right;">
+            <span style="font-size:14px;font-weight:800;color:#A855F7;">{{ dist_fat }}%</span>
+            <div style="font-size:10px;color:var(--text-3);">{{ total_fat | int }}g · {{ (total_fat * 9) | int }} kcal</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Barra stacked -->
+    <div style="margin-top:12px;">
+      <div style="height:10px;border-radius:9px;overflow:hidden;display:flex;gap:1px;">
+        <div style="width:{{ dist_prot }}%;background:#6366F1;border-radius:9px 0 0 9px;transition:width .4s;"></div>
+        <div style="width:{{ dist_carb }}%;background:#0EA5E9;transition:width .4s;"></div>
+        <div style="width:{{ dist_fat  }}%;background:#A855F7;border-radius:0 9px 9px 0;transition:width .4s;"></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);margin-top:4px;">
+        <span>Referência ideal: P 25% · C 50% · G 25%</span>
+      </div>
+    </div>
+    {% else %}
+    <div style="text-align:center;padding:28px 0;color:var(--text-3);">
+      <div style="font-size:2rem;margin-bottom:8px;">🍽️</div>
+      <p style="font-size:13px;">Nenhuma refeição registrada hoje.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
 <!-- ── S4: Refeições de hoje ──────────────────────────── -->
 <div class="sect-label">Refeições de hoje</div>
 <div class="card card-pad">
@@ -435,6 +618,33 @@
   {% endif %}
 </div>
 
+<style>
+.goal-chip {
+  display:inline-block; margin-left:10px;
+  font-size:11px; font-weight:700;
+  background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(14,165,233,.12));
+  color:var(--primary);
+  border:1px solid rgba(99,102,241,.2);
+  border-radius:20px; padding:2px 10px;
+  vertical-align:middle; white-space:nowrap;
+}
+.week-dot {
+  width:28px; height:28px; border-radius:50%;
+  display:block; margin:0 auto;
+  transition:transform .15s;
+}
+.week-dot:hover { transform:scale(1.15); }
+.week-dot.ok   { background:linear-gradient(135deg,#059669,#34D399); box-shadow:0 2px 6px rgba(5,150,105,.3); }
+.week-dot.low  { background:linear-gradient(135deg,#D97706,#FBBF24); box-shadow:0 2px 6px rgba(217,119,6,.25); }
+.week-dot.over { background:linear-gradient(135deg,#DC2626,#F87171); box-shadow:0 2px 6px rgba(220,38,38,.25); }
+.week-dot.miss { background:var(--card-b); }
+.dist-row {
+  display:flex; align-items:center; justify-content:space-between;
+  padding:6px 10px; border-radius:8px; background:var(--bg);
+  border:1px solid var(--card-b);
+}
+</style>
+
 <script>
 /* ── helpers ─────────────────────────────────────────── */
 function isDark() {
@@ -443,14 +653,22 @@ function isDark() {
 }
 
 /* ── Dados do servidor ───────────────────────────────── */
-const weekKcal   = {{ week_kcal | tojson }};
+const weekKcal   = {{ week_kcal  | tojson }};
+const weekProt   = {{ week_prot  | tojson }};
+const weekCarb   = {{ week_carb  | tojson }};
+const weekFat    = {{ week_fat   | tojson }};
+const weekFiber  = {{ week_fiber | tojson }};
 const weekGoal   = {{ goal_kcal or 0 }};
 const weekLabels = {{ week_labels | tojson }};
+const goalProt   = {{ goal_prot_g or 0 }};
+const goalCarb   = {{ goal_carb_g or 0 }};
+const goalFat    = {{ goal_fat_g or 0 }};
+const goalFiber  = {{ goal_fiber or 25 }};
 const weekPct    = weekGoal > 0
   ? weekKcal.map(v => Math.round(v / weekGoal * 100))
   : weekKcal.map(() => 0);
 
-/* ── Sparklines (SVG) ───────────────────────────────── */
+/* ── Sparklines (SVG) — corrigido: cada macro usa seus próprios dados ── */
 function sparkline(id, data, color) {
   const el = document.getElementById(id);
   if (!el || !data.length) return;
@@ -467,10 +685,9 @@ function sparkline(id, data, color) {
       stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
     <circle cx="${lx}" cy="${ly}" r="2.8" fill="${color}"/>`;
 }
-const weekFiber = {{ week_fiber | tojson }};
-sparkline('spProt',  weekKcal,  '#6366F1');
-sparkline('spCarb',  weekKcal,  '#0EA5E9');
-sparkline('spFat',   weekKcal,  '#A855F7');
+sparkline('spProt',  weekProt,  '#6366F1');
+sparkline('spCarb',  weekCarb,  '#0EA5E9');
+sparkline('spFat',   weekFat,   '#A855F7');
 sparkline('spFiber', weekFiber, '#16A34A');
 
 /* ── Canvas helper ──────────────────────────────────── */
@@ -548,6 +765,82 @@ function drawWeekPct() {
   });
 }
 
+/* ── Macro trend multi-line chart ────────────────────── */
+function drawMacroTrend() {
+  const r = setupCanvas('macroTrendChart');
+  if (!r) return;
+  const { ctx, W, H } = r;
+  const dk = isDark();
+  const gridC = dk ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
+  const textC = dk ? '#4A487A' : '#9096C0';
+
+  const pL=44, pR=16, pT=14, pB=44;
+  const cW=W-pL-pR, cH=H-pT-pB;
+
+  const series = [
+    { data: weekProt,  color: '#6366F1', label: 'Prot' },
+    { data: weekCarb,  color: '#0EA5E9', label: 'Carb' },
+    { data: weekFat,   color: '#A855F7', label: 'Gord' },
+    { data: weekFiber, color: '#16A34A', label: 'Fibra' },
+  ];
+  const allVals = series.flatMap(s => s.data);
+  const maxV = Math.max(...allVals, 1);
+  const sy = v => pT + cH - (v / maxV) * cH;
+  const n = weekLabels.length;
+  const step = cW / (n - 1 || 1);
+
+  ctx.clearRect(0, 0, W, H);
+
+  // Grid lines
+  const gridCount = 4;
+  for (let g = 0; g <= gridCount; g++) {
+    const gv = maxV * g / gridCount;
+    const yy = sy(gv);
+    ctx.beginPath(); ctx.moveTo(pL, yy); ctx.lineTo(W-pR, yy);
+    ctx.strokeStyle = gridC; ctx.setLineDash([3,3]); ctx.lineWidth = 1;
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = textC; ctx.font = '9px DM Sans,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillText(Math.round(gv)+'g', pL-5, yy+3);
+  }
+
+  // Draw each series
+  series.forEach(s => {
+    ctx.beginPath();
+    s.data.forEach((v, i) => {
+      const x = pL + i * step, y = sy(v);
+      if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = s.color; ctx.lineWidth = 2.5;
+    ctx.setLineDash([]); ctx.globalAlpha = .85;
+    ctx.stroke(); ctx.globalAlpha = 1;
+
+    // Dots + value labels
+    s.data.forEach((v, i) => {
+      const x = pL + i * step, y = sy(v);
+      ctx.beginPath(); ctx.arc(x, y, 3.5, 0, Math.PI*2);
+      ctx.fillStyle = s.color; ctx.globalAlpha = v > 0 ? .9 : .25;
+      ctx.fill(); ctx.globalAlpha = 1;
+      if (v > 0 && n <= 7) {
+        ctx.fillStyle = s.color; ctx.font = 'bold 8px DM Sans,sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(v+'g', x, y - 7);
+      }
+    });
+  });
+
+  // X-axis labels
+  weekLabels.forEach((lbl, i) => {
+    const x = pL + i * step;
+    const isToday = i === n - 1;
+    const parts = lbl.split(' ');
+    ctx.fillStyle = isToday ? (dk ? '#E0DEFF' : '#1E1B4B') : textC;
+    ctx.font = (isToday ? '600 ' : '') + '10px DM Sans,sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(parts[0] || '', x, H-pB+13);
+    ctx.fillText(parts[1] || '', x, H-pB+25);
+  });
+}
+
 /* ── Mini history bar chart ─────────────────────────── */
 function drawHistChart() {
   const r = setupCanvas('histChart');
@@ -587,8 +880,60 @@ function drawHistChart() {
   });
 }
 
+/* ── Donut chart (distribuição calórica hoje) ────────── */
+function drawDonut() {
+  const canvas = document.getElementById('donutChart');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = 110 * dpr;
+  canvas.height = 110 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  const protKcal = {{ (total_prot * 4) | round(1) }};
+  const carbKcal = {{ (total_carb * 4) | round(1) }};
+  const fatKcal  = {{ (total_fat  * 9) | round(1) }};
+  const total = protKcal + carbKcal + fatKcal;
+  if (total <= 0) return;
+
+  const cx = 55, cy = 55, r = 44, iR = 30;
+  const slices = [
+    { val: protKcal, color: '#6366F1' },
+    { val: carbKcal, color: '#0EA5E9' },
+    { val: fatKcal,  color: '#A855F7' },
+  ];
+  let start = -Math.PI / 2;
+  slices.forEach(s => {
+    const sweep = (s.val / total) * Math.PI * 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, start, start + sweep);
+    ctx.closePath();
+    ctx.fillStyle = s.color;
+    ctx.globalAlpha = .88;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    start += sweep;
+  });
+  // Inner hole
+  const dk = isDark();
+  ctx.beginPath();
+  ctx.arc(cx, cy, iR, 0, Math.PI * 2);
+  ctx.fillStyle = dk ? '#1a1a2e' : '#ffffff';
+  ctx.fill();
+}
+
 /* Aguarda o layout estabilizar antes de desenhar */
-requestAnimationFrame(() => { drawWeekPct(); drawHistChart(); });
-window.addEventListener('resize', () => { drawWeekPct(); drawHistChart(); });
+requestAnimationFrame(() => {
+  drawWeekPct();
+  drawMacroTrend();
+  drawHistChart();
+  drawDonut();
+});
+window.addEventListener('resize', () => {
+  drawWeekPct();
+  drawMacroTrend();
+  drawHistChart();
+});
 </script>
 {% endblock %}
