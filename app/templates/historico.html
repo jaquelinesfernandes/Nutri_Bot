@@ -364,6 +364,39 @@
     </form>
   </div>
   <div id="histWaterMsg" style="margin-top:8px;font-size:0.82rem;color:#16A34A;display:none;"></div>
+
+  <!-- Lista de registros individuais de água -->
+  {% if water_entries %}
+  <div id="waterEntriesList" style="margin-top:14px;border-top:1px solid var(--card-b);padding-top:12px;">
+    <p style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Registros do dia</p>
+    {% for w in water_entries %}
+    <div class="water-entry-row" data-id="{{ w.id }}" data-ml="{{ w.volume_ml }}"
+         style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--card-b);">
+      <span style="font-size:13px;color:var(--text-3);min-width:38px;">{{ w.time }}</span>
+      <span class="we-ml-display" style="font-weight:600;color:#0EA5E9;flex:1;">{{ w.volume_ml }}ml</span>
+      <!-- Formulário de edição inline (oculto) -->
+      <form class="we-edit-form" hidden style="flex:1;display:flex;gap:6px;align-items:center;">
+        <input type="number" class="we-edit-input" value="{{ w.volume_ml }}" min="50" max="5000" step="50"
+               style="width:80px;padding:3px 7px;border:1px solid #0EA5E9;border-radius:8px;background:var(--bg);color:var(--text-1);font-size:0.85rem;">
+        <button type="submit" style="padding:3px 10px;border-radius:8px;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:0.8rem;font-weight:600;">✓</button>
+        <button type="button" class="we-edit-cancel" style="padding:3px 8px;border-radius:8px;border:1px solid var(--card-b);background:var(--card);color:var(--text-2);cursor:pointer;font-size:0.8rem;">✕</button>
+      </form>
+      <!-- Botões de ação -->
+      <div class="we-actions" style="display:flex;gap:6px;">
+        <button class="we-edit-btn" title="Editar"
+                style="padding:4px 8px;border-radius:8px;border:1px solid var(--card-b);background:var(--card);color:var(--text-2);cursor:pointer;font-size:0.78rem;">✏️</button>
+        <button class="we-delete-btn" title="Excluir"
+                style="padding:4px 8px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#dc2626;cursor:pointer;font-size:0.78rem;">🗑️</button>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div id="waterEntriesList" style="margin-top:14px;border-top:1px solid var(--card-b);padding-top:12px;">
+    <p style="font-size:11px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;">Registros do dia</p>
+    <p id="waterEntriesEmpty" style="font-size:13px;color:var(--text-3);">Nenhum registro ainda.</p>
+  </div>
+  {% endif %}
 </div>
 
 <style>
@@ -1199,7 +1232,7 @@
     }
 
     document.querySelectorAll('.hist-water-btn[data-ml]').forEach(btn => {
-      btn.addEventListener('click', () => addWater(parseInt(btn.dataset.ml)));
+      btn.addEventListener('click', () => addWaterWithEntry(parseInt(btn.dataset.ml)));
     });
 
     document.querySelector('.hist-water-custom-toggle').addEventListener('click', () => {
@@ -1218,13 +1251,149 @@
       if (!val || val < 50 || val > 5000) {
         showToast('Use entre 50 e 5.000ml.', true); return;
       }
-      addWater(val);
+      addWaterWithEntry(val);
       document.getElementById('histWaterInput').value = '';
       document.getElementById('histWaterCustom').style.display = 'none';
     });
 
+    /* ── Cria linha de entrada de água no DOM ──────────────── */
+    function buildEntryRow(id, ml, time) {
+      const row = document.createElement('div');
+      row.className = 'water-entry-row';
+      row.dataset.id = id;
+      row.dataset.ml = ml;
+      row.style.cssText = 'display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--card-b);';
+      row.innerHTML = `
+        <span style="font-size:13px;color:var(--text-3);min-width:38px;">${time}</span>
+        <span class="we-ml-display" style="font-weight:600;color:#0EA5E9;flex:1;">${ml}ml</span>
+        <form class="we-edit-form" hidden style="flex:1;display:flex;gap:6px;align-items:center;">
+          <input type="number" class="we-edit-input" value="${ml}" min="50" max="5000" step="50"
+                 style="width:80px;padding:3px 7px;border:1px solid #0EA5E9;border-radius:8px;background:var(--bg);color:var(--text-1);font-size:0.85rem;">
+          <button type="submit" style="padding:3px 10px;border-radius:8px;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:0.8rem;font-weight:600;">✓</button>
+          <button type="button" class="we-edit-cancel" style="padding:3px 8px;border-radius:8px;border:1px solid var(--card-b);background:var(--card);color:var(--text-2);cursor:pointer;font-size:0.8rem;">✕</button>
+        </form>
+        <div class="we-actions" style="display:flex;gap:6px;">
+          <button class="we-edit-btn" title="Editar"
+                  style="padding:4px 8px;border-radius:8px;border:1px solid var(--card-b);background:var(--card);color:var(--text-2);cursor:pointer;font-size:0.78rem;">✏️</button>
+          <button class="we-delete-btn" title="Excluir"
+                  style="padding:4px 8px;border-radius:8px;border:1px solid rgba(239,68,68,.3);background:rgba(239,68,68,.06);color:#dc2626;cursor:pointer;font-size:0.78rem;">🗑️</button>
+        </div>`;
+      bindEntryEvents(row);
+      return row;
+    }
+
+    /* ── Injeta nova entrada após registro via botões rápidos/modal ── */
+    const _origAddWater = addWater;
+    async function addWaterWithEntry(ml) {
+      const fd = new FormData();
+      fd.append('volume_ml', ml);
+      fd.append('logged_date', selectedDate);
+      try {
+        const r = await fetch('/api/agua', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (data.error) { showToast('❌ ' + data.error, true); return null; }
+        updateWaterUI(data.total_ml);
+        // Adiciona linha na lista
+        const list   = document.getElementById('waterEntriesList');
+        const empty  = document.getElementById('waterEntriesEmpty');
+        if (empty) empty.remove();
+        const now    = new Date();
+        const time   = now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        // O id real vem do servidor; para exibição imediata usamos temp id que recarregar fixará
+        const row = buildEntryRow('pending-' + Date.now(), ml, time);
+        list.appendChild(row);
+        return data;
+      } catch { showToast('Erro ao registrar água. Tente novamente.', true); return null; }
+    }
+
+    /* ── Delegação de eventos: editar / excluir entradas ─── */
+    function bindEntryEvents(row) {
+      const id          = () => row.dataset.id;
+      const mlDisplay   = row.querySelector('.we-ml-display');
+      const editForm    = row.querySelector('.we-edit-form');
+      const editInput   = row.querySelector('.we-edit-input');
+      const editCancel  = row.querySelector('.we-edit-cancel');
+      const actions     = row.querySelector('.we-actions');
+      const editBtn     = row.querySelector('.we-edit-btn');
+      const deleteBtn   = row.querySelector('.we-delete-btn');
+
+      function openEdit() {
+        mlDisplay.hidden = true;
+        actions.hidden   = true;
+        editForm.hidden  = false;
+        editInput.focus();
+        editInput.select();
+      }
+      function closeEdit() {
+        editForm.hidden  = true;
+        mlDisplay.hidden = false;
+        actions.hidden   = false;
+      }
+
+      editBtn.addEventListener('click', openEdit);
+      editCancel.addEventListener('click', closeEdit);
+
+      editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const newMl = parseInt(editInput.value);
+        if (!newMl || newMl < 50 || newMl > 5000) {
+          showToast('Volume inválido (50–5000ml).', true); return;
+        }
+        const wid = id();
+        if (wid.startsWith('pending')) {
+          showToast('Recarregue a página para editar este registro.', false);
+          closeEdit(); return;
+        }
+        const fd = new FormData();
+        fd.append('volume_ml', newMl);
+        try {
+          const r = await fetch(`/api/agua/${wid}`, { method: 'PATCH', body: fd });
+          const data = await r.json();
+          if (data.error) { showToast('❌ ' + data.error, true); return; }
+          mlDisplay.textContent = newMl + 'ml';
+          row.dataset.ml = newMl;
+          updateWaterUI(data.total_ml);
+          closeEdit();
+          showToast('✏️ Registro atualizado!', false);
+        } catch { showToast('Erro ao editar. Tente novamente.', true); }
+      });
+
+      deleteBtn.addEventListener('click', async () => {
+        const wid = id();
+        if (wid.startsWith('pending')) {
+          showToast('Recarregue a página para excluir este registro.', false); return;
+        }
+        if (!confirm('Excluir este registro de água?')) return;
+        deleteBtn.disabled = true;
+        try {
+          const r = await fetch(`/api/agua/${wid}`, { method: 'DELETE' });
+          const data = await r.json();
+          if (data.error) { showToast('❌ ' + data.error, true); deleteBtn.disabled = false; return; }
+          updateWaterUI(data.total_ml);
+          // Animação saída
+          row.style.transition = 'opacity .25s';
+          row.style.opacity = '0';
+          setTimeout(() => {
+            row.remove();
+            const list = document.getElementById('waterEntriesList');
+            if (!list.querySelector('.water-entry-row')) {
+              const p = document.createElement('p');
+              p.id = 'waterEntriesEmpty';
+              p.style.cssText = 'font-size:13px;color:var(--text-3);';
+              p.textContent = 'Nenhum registro ainda.';
+              list.appendChild(p);
+            }
+          }, 280);
+          showToast('🗑️ Registro excluído.', false);
+        } catch { showToast('Erro ao excluir. Tente novamente.', true); deleteBtn.disabled = false; }
+      });
+    }
+
+    // Inicializa eventos nas linhas renderizadas pelo servidor
+    document.querySelectorAll('.water-entry-row').forEach(bindEntryEvents);
+
     // API pública para o modal usar
-    return { addWater, updateWaterUI, selectedDate };
+    return { addWater: addWaterWithEntry, updateWaterUI, selectedDate };
   })();
 
   /* ── Delete: delegação de eventos ──────────────────────── */

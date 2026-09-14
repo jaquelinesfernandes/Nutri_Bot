@@ -280,6 +280,106 @@ async def registrar_agua(
     return JSONResponse(content={"total_ml": total, "goal_ml": goal, "pct": pct, "added_ml": volume_ml})
 
 
+@router.delete("/api/agua/{water_log_id}")
+async def deletar_agua(
+    water_log_id: str,
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Exclui um registro de água e retorna totais atualizados do dia."""
+    import uuid as _uuid
+    if user is None:
+        return JSONResponse(status_code=401, content={"error": "Não autenticado"})
+    try:
+        wid = _uuid.UUID(water_log_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"error": "ID inválido"})
+
+    from app.models.water_log import WaterLog
+    from sqlalchemy import func as _f
+
+    res = await db.execute(
+        select(WaterLog).where(WaterLog.id == wid, WaterLog.user_id == user.id)
+    )
+    entry = res.scalar_one_or_none()
+    if not entry:
+        return JSONResponse(status_code=404, content={"error": "Registro não encontrado"})
+
+    deleted_ml  = int(entry.volume_ml)
+    logged_at   = entry.logged_at
+    tz          = ZoneInfo(user.timezone or "America/Sao_Paulo")
+    day_start   = logged_at.astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end     = logged_at.astimezone(tz).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    await db.delete(entry)
+    await db.flush()
+
+    w_res = await db.execute(
+        select(_f.coalesce(_f.sum(WaterLog.volume_ml), 0.0)).where(
+            WaterLog.user_id == user.id,
+            WaterLog.logged_at >= day_start,
+            WaterLog.logged_at <= day_end,
+        )
+    )
+    total = int(w_res.scalar_one() or 0)
+    await db.commit()
+
+    goal = user.daily_water_goal_ml or 2000
+    pct  = min(round(total / goal * 100), 100) if goal else 0
+    return JSONResponse(content={"total_ml": total, "goal_ml": goal, "pct": pct, "deleted_ml": deleted_ml})
+
+
+@router.patch("/api/agua/{water_log_id}")
+async def editar_agua(
+    water_log_id: str,
+    volume_ml: int = Form(...),
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Edita o volume de um registro de água e retorna totais atualizados do dia."""
+    import uuid as _uuid
+    if user is None:
+        return JSONResponse(status_code=401, content={"error": "Não autenticado"})
+    if volume_ml < 50 or volume_ml > 5000:
+        return JSONResponse(status_code=422, content={"error": "Volume inválido (50–5000ml)."})
+    try:
+        wid = _uuid.UUID(water_log_id)
+    except ValueError:
+        return JSONResponse(status_code=422, content={"error": "ID inválido"})
+
+    from app.models.water_log import WaterLog
+    from sqlalchemy import func as _f
+
+    res = await db.execute(
+        select(WaterLog).where(WaterLog.id == wid, WaterLog.user_id == user.id)
+    )
+    entry = res.scalar_one_or_none()
+    if not entry:
+        return JSONResponse(status_code=404, content={"error": "Registro não encontrado"})
+
+    logged_at = entry.logged_at
+    tz        = ZoneInfo(user.timezone or "America/Sao_Paulo")
+    day_start = logged_at.astimezone(tz).replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end   = logged_at.astimezone(tz).replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    entry.volume_ml = float(volume_ml)
+    await db.flush()
+
+    w_res = await db.execute(
+        select(_f.coalesce(_f.sum(WaterLog.volume_ml), 0.0)).where(
+            WaterLog.user_id == user.id,
+            WaterLog.logged_at >= day_start,
+            WaterLog.logged_at <= day_end,
+        )
+    )
+    total = int(w_res.scalar_one() or 0)
+    await db.commit()
+
+    goal = user.daily_water_goal_ml or 2000
+    pct  = min(round(total / goal * 100), 100) if goal else 0
+    return JSONResponse(content={"total_ml": total, "goal_ml": goal, "pct": pct, "volume_ml": volume_ml})
+
+
 # ── Páginas protegidas ─────────────────────────────────────────────────────────
 
 def _require_auth(request: Request, user: User | None) -> RedirectResponse | None:
@@ -521,6 +621,8 @@ async def historico(
     # ── Hidratação do dia selecionado ─────────────────────────────────────────
     from app.models.water_log import WaterLog as _WL
     from sqlalchemy import func as _sf
+
+    # Total do dia
     w_res = await db.execute(
         select(_sf.coalesce(_sf.sum(_WL.volume_ml), 0.0)).where(
             _WL.user_id == user.id,
@@ -532,15 +634,31 @@ async def historico(
     goal_water_ml = user.daily_water_goal_ml or 2000
     pct_water     = min(round(water_day_ml / goal_water_ml * 100), 100) if goal_water_ml else 0
 
+    # Entradas individuais de água do dia (para listar, editar, excluir)
+    we_res = await db.execute(
+        select(_WL)
+        .where(_WL.user_id == user.id, _WL.logged_at >= day_start, _WL.logged_at <= day_end)
+        .order_by(_WL.logged_at)
+    )
+    water_entries = [
+        {
+            "id":        str(w.id),
+            "volume_ml": int(w.volume_ml),
+            "time":      w.logged_at.astimezone(tz).strftime("%H:%M"),
+        }
+        for w in we_res.scalars().all()
+    ]
+
     return templates.TemplateResponse(
         request=request, name="historico.html",
         context={
             "user": user, "active": "historico",
             "selected_date": target.isoformat(),
             "balance": balance, "meal_labels": _MEAL_LABELS,
-            "water_day_ml":  water_day_ml,
-            "goal_water_ml": goal_water_ml,
-            "pct_water":     pct_water,
+            "water_day_ml":   water_day_ml,
+            "goal_water_ml":  goal_water_ml,
+            "pct_water":      pct_water,
+            "water_entries":  water_entries,
         }
     )
 
