@@ -247,9 +247,19 @@
 
   /* ── S1: Today overview ─────────────────────────────── */
   .today-grid {
-    display: grid; grid-template-columns: 250px 1fr;
+    display: flex; flex-direction: column;
+    gap: 14px;
+  }
+  .hero-row {
+    display: grid; grid-template-columns: 1fr 1fr;
     gap: 14px; align-items: stretch;
   }
+  .macro-row {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+  .macro-row .macro-card { padding: 12px 14px; }
+  .macro-row .macro-spark { display: none; }
 
   /* Dark cards — Calorias + Macros */
   .ring-card, .macro-card {
@@ -349,6 +359,41 @@
   }
   .macro-mini-fill { height: 100%; border-radius: 2px; }
   .macro-spark { width: 56px; height: 30px; flex-shrink: 0; overflow: visible; }
+
+  /* ── Water hero card ─────────────────────────────────── */
+  .water-hero-card {
+    display: flex; flex-direction: column; align-items: center;
+    padding: 24px 22px 22px; text-align: center;
+  }
+  .water-eyebrow-lbl {
+    font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
+    text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 14px;
+  }
+  .water-big-num {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 44px; line-height: 1; color: #E0DEFF;
+    font-variant-numeric: tabular-nums;
+  }
+  .water-big-num small {
+    font-family: 'DM Sans', sans-serif;
+    font-size: 17px; color: rgba(255,255,255,.38); font-style: normal; margin-left: 2px;
+  }
+  .water-goal-sub {
+    font-size: 12.5px; color: rgba(255,255,255,.42); margin-top: 6px;
+  }
+  .water-full-bar {
+    width: calc(100% - 44px); height: 10px; border-radius: 5px;
+    background: rgba(255,255,255,.1); margin: 16px 0 6px; overflow: hidden;
+  }
+  .water-full-fill {
+    height: 100%; border-radius: 5px;
+    background: linear-gradient(90deg, #0369A1, #38BDF8);
+    transition: width .4s ease;
+  }
+  .water-status-label {
+    font-size: 12px; color: rgba(255,255,255,.35);
+    font-style: italic; margin-bottom: 16px;
+  }
 
   /* ── S2: 7-day chart ────────────────────────────────── */
   .week-pct-canvas { width: 100%; height: 200px; display: block; }
@@ -466,13 +511,16 @@
     .stat-val { font-size: 21px; }
   }
   @media (max-width: 720px) {
-    .today-grid { grid-template-columns: 1fr; }
+    .hero-row { grid-template-columns: 1fr; }
+    .macro-row { grid-template-columns: repeat(2, 1fr); }
     .ring-card { flex-direction: row; gap: 20px; padding: 18px; align-items: center; }
     .ring-card::after { display: none; }
     .ring-eyebrow { display: none; }
     .ring-wrap { width: 120px; height: 120px; flex-shrink: 0; margin-bottom: 0; overflow: hidden; }
     .ring-big { font-size: 24px; }
     .ring-remain { flex-direction: column; align-items: flex-start; gap: 4px; }
+    .water-hero-card { padding: 20px 16px 18px; }
+    .water-big-num { font-size: 36px; }
   }
   @media (max-width: 420px) {
     .ring-card { gap: 14px; padding: 14px; }
@@ -482,6 +530,8 @@
     .ring-pct { font-size: 11px; }
     .ring-tip { font-size: 10.5px; }
     .remain-chip { font-size: 11px; padding: 2px 8px; }
+    .macro-row { grid-template-columns: repeat(2, 1fr); }
+    .water-big-num { font-size: 28px; }
   }
   @media (max-width: 640px) {
     .sidebar { display: none; }

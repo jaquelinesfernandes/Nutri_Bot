@@ -126,55 +126,104 @@
 <div class="sect-label">Resumo de hoje</div>
 <div class="today-grid">
 
-  <!-- Calorie ring -->
-  <div class="card ring-card">
-    <div class="ring-eyebrow">Calorias hoje</div>
-    <div class="ring-wrap">
-      <svg width="100%" height="100%" viewBox="0 0 156 156">
-        <defs>
-          <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%"   stop-color="#6366F1"/>
-            <stop offset="100%" stop-color="#0EA5E9"/>
-          </linearGradient>
-        </defs>
-        <circle class="r-track" cx="78" cy="78" r="66"/>
-        <circle class="r-fill {{ ring_cls }}" cx="78" cy="78" r="66"
-          stroke-dasharray="414.69" stroke-dashoffset="{{ dashoffset }}"/>
-      </svg>
-      <div class="ring-center">
-        <div class="ring-big">{{ total_kcal | int }}</div>
-        {% if goal_kcal %}
-        <div class="ring-of">de {{ goal_kcal }} kcal</div>
-        <div class="ring-pct">{{ pct_kcal | int }}%</div>
-        {% else %}
-        <div class="ring-of">kcal hoje</div>
-        {% endif %}
-      </div>
-    </div>
-    <div class="ring-info">
-      <div class="ring-remain">
-        {% if goal_kcal %}
-          {% if remain_kcal > 0 %}
-          Restam <span class="remain-chip">{{ remain_kcal }} kcal</span>
-          {% else %}
-          <span class="remain-chip">Meta atingida 🎯</span>
-          {% endif %}
-        {% else %}
-        <span class="remain-chip">Defina sua meta</span>
-        {% endif %}
-      </div>
-      <p class="ring-tip">
-        {% if pct_kcal < 40 %}Bom começo! Registre mais refeições 📝
-        {% elif pct_kcal < 80 %}Ótimo ritmo! Continue assim 💪
-        {% elif pct_kcal <= 100 %}Quase lá! Atenção nas próximas 🎯
-        {% else %}Meta atingida! Cuidado com o excesso 🚦
-        {% endif %}
-      </p>
-    </div>
-  </div>
+  <!-- ── Hero row: Calorias + Hidratação ─────────────── -->
+  <div class="hero-row">
 
-  <!-- Macro cards -->
-  <div class="macro-stack">
+    <!-- Calorie ring -->
+    <div class="card ring-card">
+      <div class="ring-eyebrow">Calorias hoje</div>
+      <div class="ring-wrap">
+        <svg width="100%" height="100%" viewBox="0 0 156 156">
+          <defs>
+            <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%"   stop-color="#6366F1"/>
+              <stop offset="100%" stop-color="#0EA5E9"/>
+            </linearGradient>
+          </defs>
+          <circle class="r-track" cx="78" cy="78" r="66"/>
+          <circle class="r-fill {{ ring_cls }}" cx="78" cy="78" r="66"
+            stroke-dasharray="414.69" stroke-dashoffset="{{ dashoffset }}"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-big">{{ total_kcal | int }}</div>
+          {% if goal_kcal %}
+          <div class="ring-of">de {{ goal_kcal }} kcal</div>
+          <div class="ring-pct">{{ pct_kcal | int }}%</div>
+          {% else %}
+          <div class="ring-of">kcal hoje</div>
+          {% endif %}
+        </div>
+      </div>
+      <div class="ring-info">
+        <div class="ring-remain">
+          {% if goal_kcal %}
+            {% if remain_kcal > 0 %}
+            Restam <span class="remain-chip">{{ remain_kcal }} kcal</span>
+            {% else %}
+            <span class="remain-chip">Meta atingida 🎯</span>
+            {% endif %}
+          {% else %}
+          <span class="remain-chip">Defina sua meta</span>
+          {% endif %}
+        </div>
+        <p class="ring-tip">
+          {% if pct_kcal < 40 %}Bom começo! Registre mais refeições 📝
+          {% elif pct_kcal < 80 %}Ótimo ritmo! Continue assim 💪
+          {% elif pct_kcal <= 100 %}Quase lá! Atenção nas próximas 🎯
+          {% else %}Meta atingida! Cuidado com o excesso 🚦
+          {% endif %}
+        </p>
+      </div>
+    </div>
+
+    <!-- RF-AGUA-03: Card de hidratação (hero) -->
+    {% set pct_water_clamp = [pct_water, 100] | min %}
+    {% set water_color = '#0EA5E9' if pct_water >= 80 else ('#F59E0B' if pct_water >= 40 else '#EF4444') %}
+    <div class="card ring-card water-hero-card water-card" style="border-top: 3px solid {{ water_color }};">
+      <div class="water-eyebrow-lbl">💧 Hidratação hoje</div>
+
+      <div class="water-big-num" id="waterTotalNum" style="color: {{ water_color }};">
+        {{ water_today_ml }}<small>ml</small>
+      </div>
+
+      <div class="water-goal-sub" id="waterSubtitle">
+        de {{ goal_water_ml }}ml · <span id="waterPct">{{ pct_water }}</span>% da meta
+      </div>
+
+      <div class="water-full-bar">
+        <div class="water-full-fill" id="waterBar" style="width: {{ pct_water_clamp }}%;"></div>
+      </div>
+
+      <div class="water-status-label">
+        {% if pct_water >= 100 %}Meta atingida! 🎯
+        {% elif pct_water >= 80 %}Quase lá! 💪
+        {% elif pct_water >= 40 %}Bom ritmo 👍
+        {% else %}Beba mais água 💧{% endif %}
+      </div>
+
+      <!-- Botões de adição rápida -->
+      <div class="water-btns" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
+        <button class="water-add-btn" data-ml="250" title="1 copo (250ml)">🥤 copo</button>
+        <button class="water-add-btn" data-ml="500">500ml</button>
+        <button class="water-add-btn" data-ml="1000">1L</button>
+        <button class="water-add-btn water-custom-toggle">✏️ outro</button>
+      </div>
+
+      <!-- Input customizado (oculto por padrão) -->
+      <div id="waterCustom" style="display:none;margin-top:12px;width:100%;">
+        <form id="waterCustomForm" style="display:flex;gap:6px;align-items:center;justify-content:center;">
+          <input id="waterCustomInput" type="number" min="50" max="5000" step="50"
+                 placeholder="ml" style="width:84px;padding:6px 10px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.08);color:#E0DEFF;font-size:.9rem;">
+          <button type="submit" style="padding:6px 14px;border-radius:8px;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:.9rem;font-weight:600;">+ Adicionar</button>
+        </form>
+      </div>
+      <div id="waterMsg" style="margin-top:8px;font-size:.82rem;color:#4ADE80;display:none;"></div>
+    </div>
+
+  </div><!-- /.hero-row -->
+
+  <!-- ── Macro row: Proteína · Carboidratos · Gordura · Fibra ── -->
+  <div class="macro-row">
 
     <div class="card macro-card prot">
       <div class="macro-icon prot">🫀</div>
@@ -245,53 +294,22 @@
       <svg class="macro-spark" id="spFiber"></svg>
     </div>
 
-    <!-- RF-AGUA-03: Card de hidratação -->
-    {% set pct_water_clamp = [pct_water, 100] | min %}
-    {% set water_color = '#0EA5E9' if pct_water >= 80 else ('#F59E0B' if pct_water >= 40 else '#EF4444') %}
-    <div class="card macro-card water-card" style="border-top:3px solid {{ water_color }};">
-      <div class="macro-icon" style="color:{{ water_color }};">💧</div>
-      <div class="macro-body">
-        <div class="macro-lbl">Água</div>
-        <div class="macro-num" id="waterTotalNum" style="color:{{ water_color }};">{{ water_today_ml }}<small>ml</small></div>
-        <div class="macro-sub" id="waterSubtitle">
-          Meta {{ goal_water_ml }}ml · <span id="waterPct">{{ pct_water }}</span>% atingido
-        </div>
-        <div class="macro-mini-track">
-          <div class="macro-mini-fill" id="waterBar" style="width:{{ pct_water_clamp }}%;background:linear-gradient(90deg,#0369A1,#38BDF8);"></div>
-        </div>
-        <!-- Botões de adição rápida -->
-        <div class="water-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
-          <button class="water-add-btn" data-ml="250" title="1 copo (250ml)">🥤 copo</button>
-          <button class="water-add-btn" data-ml="500" title="500ml">500ml</button>
-          <button class="water-add-btn" data-ml="1000" title="1 litro">1L</button>
-          <button class="water-add-btn water-custom-toggle" title="Quantidade personalizada">✏️</button>
-        </div>
-        <!-- Input customizado (oculto por padrão) -->
-        <div class="water-custom" id="waterCustom" style="display:none;margin-top:8px;">
-          <form id="waterCustomForm" style="display:flex;gap:6px;align-items:center;">
-            <input id="waterCustomInput" type="number" min="50" max="5000" step="50"
-                   placeholder="ml" style="width:80px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text);font-size:0.9rem;">
-            <button type="submit" style="padding:4px 12px;border-radius:6px;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:0.9rem;">+Adicionar</button>
-          </form>
-        </div>
-        <div id="waterMsg" style="margin-top:6px;font-size:0.8rem;color:#16A34A;display:none;"></div>
-      </div>
-    </div>
+  </div><!-- /.macro-row -->
 
-    <style>
-    .water-add-btn {
-      padding: 5px 10px;
-      border-radius: 20px;
-      border: 1.5px solid #0EA5E9;
-      background: transparent;
-      color: #0EA5E9;
-      cursor: pointer;
-      font-size: 0.78rem;
-      font-weight: 600;
-      transition: background .15s, color .15s;
-    }
-    .water-add-btn:hover { background: #0EA5E9; color: #fff; }
-    </style>
+  <style>
+  .water-add-btn {
+    padding: 6px 12px;
+    border-radius: 20px;
+    border: 1.5px solid #0EA5E9;
+    background: transparent;
+    color: #0EA5E9;
+    cursor: pointer;
+    font-size: 0.8rem;
+    font-weight: 600;
+    transition: background .15s, color .15s;
+  }
+  .water-add-btn:hover { background: #0EA5E9; color: #fff; }
+  </style>
 
     <script>
     (function () {
@@ -352,8 +370,7 @@
     })();
     </script>
 
-  </div>
-</div>
+</div><!-- /.today-grid -->
 
 <!-- ── S2: 7-day kcal vs goal ──────────────────────────── -->
 <div class="sect-label">Últimos 7 dias — % da meta calórica atingida</div>
