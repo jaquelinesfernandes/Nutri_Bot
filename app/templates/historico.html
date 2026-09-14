@@ -600,7 +600,7 @@
       <input type="hidden" id="fmDate" name="logged_date" value="{{ selected_date }}">
 
       <div class="nb-field">
-        <label class="nb-label" for="fmType">Tipo de refeição</label>
+        <label class="nb-label" for="fmType">Tipo</label>
         <select class="nb-select" id="fmType" name="meal_type">
           <option value="breakfast">☀️ Café da manhã</option>
           <option value="morning_snack">🍌 Lanche da manhã</option>
@@ -609,16 +609,38 @@
           <option value="dinner">🌙 Jantar</option>
           <option value="snack">🍎 Lanche (horário indefinido)</option>
           <option value="other">🍴 Outro</option>
+          <option value="agua" style="color:#0EA5E9;">💧 Água</option>
         </select>
       </div>
 
-      <div class="nb-field">
+      <!-- Campo refeição (padrão) -->
+      <div class="nb-field" id="fmMealField">
         <label class="nb-label" for="fmDesc">O que você comeu?</label>
         <textarea class="nb-textarea" id="fmDesc" name="description"
                   placeholder="Ex: arroz com feijão, frango grelhado 150g e salada de tomate"
-                  rows="3" maxlength="500" required></textarea>
+                  rows="3" maxlength="500"></textarea>
         <p style="font-size:11px;color:var(--text-3);margin-top:5px;">
           Descreva em linguagem natural — a IA identifica os alimentos e calcula os macros automaticamente.
+        </p>
+      </div>
+
+      <!-- Campo água (aparece ao selecionar 💧 Água) -->
+      <div class="nb-field" id="fmWaterField" hidden>
+        <label class="nb-label" for="fmWaterMl">Quantidade</label>
+        <!-- Botões rápidos -->
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+          <button type="button" class="modal-water-quick" data-ml="150">🥤 150ml</button>
+          <button type="button" class="modal-water-quick" data-ml="250">🥤 copo (250ml)</button>
+          <button type="button" class="modal-water-quick" data-ml="500">500ml</button>
+          <button type="button" class="modal-water-quick" data-ml="1000">1 litro</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <input type="number" class="nb-input" id="fmWaterMl" min="50" max="5000" step="50"
+                 placeholder="ml personalizado (ex: 350)" style="flex:1;">
+          <span style="font-size:13px;color:var(--text-3);white-space:nowrap;">50–5000ml</span>
+        </div>
+        <p style="font-size:11px;color:var(--text-3);margin-top:5px;">
+          Use os botões rápidos ou digite a quantidade em ml.
         </p>
       </div>
 
@@ -630,6 +652,22 @@
         </button>
       </div>
     </form>
+
+    <style>
+    .modal-water-quick {
+      padding: 6px 12px;
+      border-radius: 20px;
+      border: 1.5px solid #0EA5E9;
+      background: transparent;
+      color: #0EA5E9;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: background .15s, color .15s;
+    }
+    .modal-water-quick:hover,
+    .modal-water-quick.selected { background: #0EA5E9; color: #fff; }
+    </style>
   </div>
 </div>
 
@@ -854,13 +892,43 @@
   }
 
   function setSubmitLoading(on) {
-    const btn = document.getElementById('modalSubmit');
+    const btn  = document.getElementById('modalSubmit');
     const spin = document.getElementById('submitSpinner');
     const lbl  = document.getElementById('submitLabel');
     btn.disabled = on;
     spin.style.display = on ? 'block' : 'none';
-    lbl.textContent = on ? 'Processando…' : 'Registrar';
+    lbl.textContent = on ? 'Registrando…' : 'Registrar';
   }
+
+  /* ── Troca de modo: refeição ↔ água ───────────────────── */
+  const fmType       = document.getElementById('fmType');
+  const fmMealField  = document.getElementById('fmMealField');
+  const fmWaterField = document.getElementById('fmWaterField');
+  const modalTitle   = document.getElementById('modalTitle');
+
+  function applyModeForType(val) {
+    const isWater = val === 'agua';
+    fmMealField.hidden  =  isWater;
+    fmWaterField.hidden = !isWater;
+    modalTitle.textContent = isWater ? '💧 Registrar água' : '🥗 Adicionar refeição';
+    if (isWater) {
+      // Reseta seleção de botões rápidos
+      document.querySelectorAll('.modal-water-quick').forEach(b => b.classList.remove('selected'));
+      document.getElementById('fmWaterMl').value = '';
+      setTimeout(() => document.getElementById('fmWaterMl').focus(), 80);
+    }
+  }
+
+  fmType.addEventListener('change', () => applyModeForType(fmType.value));
+
+  // Botões rápidos dentro do modal
+  document.querySelectorAll('.modal-water-quick').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.modal-water-quick').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      document.getElementById('fmWaterMl').value = btn.dataset.ml;
+    });
+  });
 
   function showModalError(msg) {
     const el = document.getElementById('modalError');
@@ -987,6 +1055,9 @@
 
   function closeModal() {
     overlay.classList.remove('open');
+    // Reseta para modo refeição ao fechar
+    fmType.value = 'lunch';
+    applyModeForType('lunch');
     fab.focus();
   }
 
@@ -1000,6 +1071,38 @@
     e.preventDefault();
     hideModalError();
 
+    const tipo = document.getElementById('fmType').value;
+
+    // ── Modo água ──────────────────────────────────────────
+    if (tipo === 'agua') {
+      const ml = parseInt(document.getElementById('fmWaterMl').value);
+      if (!ml || ml < 50 || ml > 5000) {
+        showModalError('Informe a quantidade em ml (50–5.000ml) ou use um dos botões rápidos.');
+        return;
+      }
+      setSubmitLoading(true);
+      try {
+        const fd = new FormData();
+        fd.append('volume_ml', ml);
+        fd.append('logged_date', document.getElementById('fmDate').value);
+        const res  = await fetch('/api/agua', { method: 'POST', body: fd });
+        const data = await res.json();
+        if (data.error) { showModalError(data.error); return; }
+
+        // Atualiza tile + card de hidratação via API global exposta pelo bloco de água
+        if (window._histWater) window._histWater.updateWaterUI(data.total_ml);
+
+        closeModal();
+        showToast(`💧 ${ml}ml registrado! Total: ${data.total_ml}ml`, false);
+      } catch {
+        showModalError('Erro de conexão. Tente novamente.');
+      } finally {
+        setSubmitLoading(false);
+      }
+      return;
+    }
+
+    // ── Modo refeição ──────────────────────────────────────
     const desc = document.getElementById('fmDesc').value.trim();
     if (desc.length < 3) {
       showModalError('Descreva o que você comeu com pelo menos 3 caracteres.');
@@ -1008,7 +1111,7 @@
 
     const payload = {
       logged_date: document.getElementById('fmDate').value,
-      meal_type:   document.getElementById('fmType').value,
+      meal_type:   tipo,
       description: desc,
     };
 
@@ -1024,20 +1127,16 @@
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        const msg = data?.detail || `Erro ${res.status}. Tente novamente.`;
-        showModalError(msg);
+        showModalError(data?.detail || `Erro ${res.status}. Tente novamente.`);
         return;
       }
 
       const meal = await res.json();
 
-      // Injeta card na lista
       removeEmptyState();
       const list = document.getElementById('mealsList');
-      const card = buildMealCard(meal);
-      list.appendChild(card);
+      list.appendChild(buildMealCard(meal));
 
-      // Atualiza totais
       recalcTotals({
         kcal:  meal.total_calories_kcal,
         prot:  meal.total_protein_g,
@@ -1049,26 +1148,24 @@
       closeModal();
       showToast('✅ Refeição adicionada com sucesso!', false);
 
-    } catch (err) {
+    } catch {
       showModalError('Erro de conexão. Verifique sua internet e tente novamente.');
     } finally {
       setSubmitLoading(false);
     }
   });
 
-  /* ── Água: registro no histórico ───────────────────────── */
-  (function () {
+  /* ── Água: registro no histórico + exposição global ────── */
+  window._histWater = (function () {
     const selectedDate = document.getElementById('datePicker').value
                       || document.getElementById('fmDate').value;
     const goalWater = {{ goal_water_ml }};
-    let totalWater  = {{ water_day_ml }};
 
     function wColor(pct) {
       return pct >= 80 ? '#0EA5E9' : (pct >= 40 ? '#F59E0B' : '#94A3B8');
     }
 
     function updateWaterUI(newTotal) {
-      totalWater = newTotal;
       const pct = Math.min(Math.round(newTotal / goalWater * 100), 100);
       const c   = wColor(pct);
 
@@ -1125,6 +1222,9 @@
       document.getElementById('histWaterInput').value = '';
       document.getElementById('histWaterCustom').style.display = 'none';
     });
+
+    // API pública para o modal usar
+    return { addWater, updateWaterUI, selectedDate };
   })();
 
   /* ── Delete: delegação de eventos ──────────────────────── */
