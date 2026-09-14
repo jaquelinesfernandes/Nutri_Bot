@@ -2235,6 +2235,9 @@ class ConversationService:
 
     async def _handle_invite_pending(self, user: User, text: str, db: AsyncSession) -> str:
         """Processa a resposta SIM/NÃO ao convite da nutricionista."""
+        from app.models.nutritionist_patient import NutritionistPatient
+        from sqlalchemy import select as sa_select
+
         txt = text.strip().lower()
         data = user.state_data or {}
         token = data.get("invite_token", "")
@@ -2254,37 +2257,46 @@ class ConversationService:
         elif txt in DENY_WORDS:
             aceitar = False
         else:
-            # Resposta não reconhecida — mantém o estado e repergunata
+            # Resposta não reconhecida — mantém o estado e repergunta
             user.conversation_state = "INVITE_PENDING"
             user.state_data = data
             self._set_timed_state(user, "INVITE_PENDING")
             await db.commit()
             return "Não entendi. Responda *SIM* para aceitar ou *NÃO* para recusar."
 
-        await db.commit()
+        # ── Atualiza o vínculo diretamente no DB ─────────────────────────────
+        # Evita self-HTTP call (timeout no Render) — reutiliza a sessão corrente.
+        result = await db.execute(
+            sa_select(NutritionistPatient).where(NutritionistPatient.invite_token == token)
+        )
+        link = result.scalar_one_or_none()
 
-        # Chama o endpoint interno de aceite/recusa
-        import httpx
-        from app.config import settings
-        base = (settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
-        try:
-            async with httpx.AsyncClient(timeout=5.0) as client:
-                resp = await client.patch(
-                    f"{base}/api/nutricionista/convite/{token}",
-                    params={
-                        "aceitar": aceitar,
-                        "patient_user_id": str(user.id),
-                        "include_history": False,
-                    },
-                )
-            if resp.status_code not in (200, 409):
-                raise ValueError(f"HTTP {resp.status_code}")
-        except Exception as e:
-            logger.error(f"[INVITE] Erro ao processar resposta do convite: {e}")
-            return (
-                "Ocorreu um erro ao registrar sua resposta. "
-                "Por favor, tente clicar no link de convite novamente."
-            )
+        if not link:
+            logger.error(f"[INVITE] Token não encontrado ao processar resposta: {token!r}")
+            await db.commit()
+            return "Ocorreu um erro ao processar o convite. Por favor, tente o link novamente."
+
+        if link.status != "pending":
+            # Já processado (ex.: expirado pelo scheduler, aceito em outra sessão)
+            await db.commit()
+            return "Este convite já foi processado anteriormente."
+
+        if datetime.utcnow() > link.expires_at.replace(tzinfo=None):
+            link.status = "expired"
+            await db.commit()
+            return "⌛ Este convite expirou. Peça à sua nutricionista um novo link."
+
+        if aceitar:
+            link.patient_id = user.id
+            link.status = "active"
+            link.consented_at = datetime.now(ZoneInfo("UTC"))  # LGPD: timestamp de consentimento
+        else:
+            link.status = "declined"
+
+        await db.commit()
+        logger.info(
+            f"[INVITE] Token {token!r}: {'aceito' if aceitar else 'recusado'} por {user.channel_id}"
+        )
 
         if aceitar:
             return (

@@ -112,7 +112,9 @@ async def landing_convite(
     )
     link = result.scalar_one_or_none()
 
-    bot_username = settings.telegram_bot_username or "Minha_nutri_bot"
+    bot_username = settings.telegram_bot_username or "NutriBotOficialBot"
+    if not settings.telegram_bot_username:
+        logger.warning("[CONVITE] TELEGRAM_BOT_USERNAME não configurado — usando fallback")
     tg_url = f"https://t.me/{bot_username}?start=convite_{token}"
 
     if not link:
@@ -439,6 +441,8 @@ async def painel_nutricionista(
             "pending_count": len(pending_links),
             "trial_days_left": trial_days_left,
             "max_patients": _MAX_PATIENTS,
+            # now_utc (naive) usado no template para calcular "X dias atrás"
+            "now_utc": datetime.utcnow(),
         },
     )
 
