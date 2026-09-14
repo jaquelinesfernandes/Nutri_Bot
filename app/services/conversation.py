@@ -2193,27 +2193,40 @@ class ConversationService:
     def _parse_water_ml(cls, text: str) -> int | None:
         """
         Extrai quantidade em ml de uma string.
-        Aceita: '500ml', '500 ml', '2 copos', '1 litro', '250', 'copo'.
+        Aceita: '500ml', '500 ml', '2 copos', '1 litro', '1l', '250', 'copo'.
         Retorna None se não encontrar nada reconhecível.
+
+        Ordem de prioridade (importa para evitar falso-positivo do alias "l"
+        dentro de "ml"):
+          1. ml explícito   — "370ml", "370 ml"
+          2. aliases        — "litro", "copo", "l", etc.  (com âncoras de palavra)
+          3. número puro    — "300"
         """
         import re
         t = text.strip().lower()
 
-        # Tenta aliases compostos primeiro (ex: "meio litro")
+        # ── 1. ml explícito PRIMEIRO ──────────────────────────────────────────
+        # Deve ser verificado ANTES do loop de aliases para que "370ml" retorne
+        # 370 e não 1000 (o alias "l" sem âncora encaixaria no 'l' de "ml").
+        m = re.search(r"(\d+[\.,]?\d*)\s*ml\b", t)
+        if m:
+            return min(int(float(m.group(1).replace(",", "."))), 5000)
+
+        # ── 2. Aliases de volume (mais longos primeiro) ───────────────────────
+        # Usa (?<!\w) / (?!\w) como âncoras para impedir que "l" encaixe
+        # no meio de palavras como "ml", "al", "ele", etc.
         for alias, vol in sorted(cls._WATER_ALIASES.items(), key=lambda x: -len(x[0])):
-            pattern = rf"(\d+[\.,]?\d*)\s*{re.escape(alias)}|{re.escape(alias)}"
+            esc = re.escape(alias)
+            # Alt 1: número antes do alias — "2 copos", "1litro", "1.5l"
+            # Alt 2: alias sem número mas também sem letra antes/depois — "copo", "l"
+            pattern = rf"(\d+[\.,]?\d*)\s*{esc}(?!\w)|(?<!\w){esc}(?!\w)"
             m = re.search(pattern, t)
             if m:
                 qty_str = m.group(1) if m.lastindex and m.group(1) else "1"
                 qty = float(qty_str.replace(",", "."))
                 return min(int(qty * vol), 5000)
 
-        # ml explícito: "500ml" ou "500 ml"
-        m = re.search(r"(\d+[\.,]?\d*)\s*ml\b", t)
-        if m:
-            return min(int(float(m.group(1).replace(",", "."))), 5000)
-
-        # número puro (ex: /agua 300)
+        # ── 3. Número puro (ex: /agua 300) ───────────────────────────────────
         m = re.search(r"\b(\d{2,4})\b", t)
         if m:
             return min(int(m.group(1)), 5000)
