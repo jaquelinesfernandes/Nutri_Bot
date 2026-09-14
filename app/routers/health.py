@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -31,12 +32,22 @@ async def health(request: Request):
     scheduler = getattr(request.app.state, "scheduler", None)
     scheduler_status = "running" if (scheduler and scheduler.running) else "not_started"
 
+    # ── Deploy info (Render injeta automaticamente) ──────────────
+    deploy_info: dict = {}
+    git_commit = os.getenv("RENDER_GIT_COMMIT")
+    git_branch = os.getenv("RENDER_GIT_BRANCH")
+    if git_commit:
+        deploy_info["git_commit"] = git_commit[:12]
+    if git_branch:
+        deploy_info["git_branch"] = git_branch
+
     return {
         "status": "ok" if db_status == "connected" else "degraded",
         "version": "1.0.0",
         "db": db_status,
         "scheduler": scheduler_status,
         "maintenance_mode": settings.maintenance_mode,
+        **deploy_info,
     }
 
 
