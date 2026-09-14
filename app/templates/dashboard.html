@@ -248,19 +248,109 @@
     <!-- RF-AGUA-03: Card de hidratação -->
     {% set pct_water_clamp = [pct_water, 100] | min %}
     {% set water_color = '#0EA5E9' if pct_water >= 80 else ('#F59E0B' if pct_water >= 40 else '#EF4444') %}
-    <div class="card macro-card" style="border-top:3px solid {{ water_color }};">
+    <div class="card macro-card water-card" style="border-top:3px solid {{ water_color }};">
       <div class="macro-icon" style="color:{{ water_color }};">💧</div>
       <div class="macro-body">
         <div class="macro-lbl">Água</div>
-        <div class="macro-num" style="color:{{ water_color }};">{{ water_today_ml }}<small>ml</small></div>
-        <div class="macro-sub">
-          Meta {{ goal_water_ml }}ml · {{ pct_water }}% atingido
+        <div class="macro-num" id="waterTotalNum" style="color:{{ water_color }};">{{ water_today_ml }}<small>ml</small></div>
+        <div class="macro-sub" id="waterSubtitle">
+          Meta {{ goal_water_ml }}ml · <span id="waterPct">{{ pct_water }}</span>% atingido
         </div>
         <div class="macro-mini-track">
-          <div class="macro-mini-fill" style="width:{{ pct_water_clamp }}%;background:linear-gradient(90deg,#0369A1,#38BDF8);"></div>
+          <div class="macro-mini-fill" id="waterBar" style="width:{{ pct_water_clamp }}%;background:linear-gradient(90deg,#0369A1,#38BDF8);"></div>
         </div>
+        <!-- Botões de adição rápida -->
+        <div class="water-btns" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          <button class="water-add-btn" data-ml="250" title="1 copo (250ml)">🥤 copo</button>
+          <button class="water-add-btn" data-ml="500" title="500ml">500ml</button>
+          <button class="water-add-btn" data-ml="1000" title="1 litro">1L</button>
+          <button class="water-add-btn water-custom-toggle" title="Quantidade personalizada">✏️</button>
+        </div>
+        <!-- Input customizado (oculto por padrão) -->
+        <div class="water-custom" id="waterCustom" style="display:none;margin-top:8px;">
+          <form id="waterCustomForm" style="display:flex;gap:6px;align-items:center;">
+            <input id="waterCustomInput" type="number" min="50" max="5000" step="50"
+                   placeholder="ml" style="width:80px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card-bg);color:var(--text);font-size:0.9rem;">
+            <button type="submit" style="padding:4px 12px;border-radius:6px;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:0.9rem;">+Adicionar</button>
+          </form>
+        </div>
+        <div id="waterMsg" style="margin-top:6px;font-size:0.8rem;color:#16A34A;display:none;"></div>
       </div>
     </div>
+
+    <style>
+    .water-add-btn {
+      padding: 5px 10px;
+      border-radius: 20px;
+      border: 1.5px solid #0EA5E9;
+      background: transparent;
+      color: #0EA5E9;
+      cursor: pointer;
+      font-size: 0.78rem;
+      font-weight: 600;
+      transition: background .15s, color .15s;
+    }
+    .water-add-btn:hover { background: #0EA5E9; color: #fff; }
+    </style>
+
+    <script>
+    (function () {
+      const goal = {{ goal_water_ml }};
+      let totalMl = {{ water_today_ml }};
+
+      function color(pct) {
+        return pct >= 80 ? '#0EA5E9' : (pct >= 40 ? '#F59E0B' : '#EF4444');
+      }
+
+      function updateUI(total) {
+        totalMl = total;
+        const pct = Math.min(Math.round(total / goal * 100), 100);
+        const c = color(pct);
+        document.getElementById('waterTotalNum').innerHTML = total + '<small>ml</small>';
+        document.getElementById('waterTotalNum').style.color = c;
+        document.getElementById('waterPct').textContent = pct;
+        document.getElementById('waterBar').style.width = pct + '%';
+        document.querySelector('.water-card').style.borderTopColor = c;
+      }
+
+      async function addWater(ml) {
+        const fd = new FormData();
+        fd.append('volume_ml', ml);
+        try {
+          const r = await fetch('/api/agua', { method: 'POST', body: fd });
+          const data = await r.json();
+          if (data.error) { alert(data.error); return; }
+          updateUI(data.total_ml);
+          const msg = document.getElementById('waterMsg');
+          msg.textContent = '+' + ml + 'ml registrado! 💧';
+          msg.style.display = 'block';
+          setTimeout(() => msg.style.display = 'none', 2500);
+        } catch (e) { alert('Erro ao registrar água.'); }
+      }
+
+      // Botões rápidos
+      document.querySelectorAll('.water-add-btn[data-ml]').forEach(btn => {
+        btn.addEventListener('click', () => addWater(parseInt(btn.dataset.ml)));
+      });
+
+      // Toggle input customizado
+      document.querySelector('.water-custom-toggle').addEventListener('click', () => {
+        const el = document.getElementById('waterCustom');
+        el.style.display = el.style.display === 'none' ? 'block' : 'none';
+        if (el.style.display === 'block') document.getElementById('waterCustomInput').focus();
+      });
+
+      // Formulário customizado
+      document.getElementById('waterCustomForm').addEventListener('submit', function (e) {
+        e.preventDefault();
+        const val = parseInt(document.getElementById('waterCustomInput').value);
+        if (!val || val < 50 || val > 5000) { alert('Use entre 50 e 5.000ml.'); return; }
+        addWater(val);
+        document.getElementById('waterCustomInput').value = '';
+        document.getElementById('waterCustom').style.display = 'none';
+      });
+    })();
+    </script>
 
   </div>
 </div>

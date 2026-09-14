@@ -6,7 +6,7 @@ from pathlib import Path
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Form, Request
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from passlib.context import CryptContext
 from sqlalchemy import select
@@ -223,6 +223,44 @@ async def logout_web():
     resp = RedirectResponse(url="/login", status_code=302)
     resp.delete_cookie("access_token", path="/")
     return resp
+
+
+@router.post("/api/agua")
+async def registrar_agua(
+    volume_ml: int = Form(...),
+    user: User | None = Depends(get_current_user_optional),
+    db: AsyncSession = Depends(get_db),
+):
+    """Registra ingestão de água pelo painel web. Retorna totais atualizados."""
+    if user is None:
+        return JSONResponse(status_code=401, content={"error": "Não autenticado"})
+    if volume_ml < 50 or volume_ml > 5000:
+        return JSONResponse(status_code=422, content={"error": "Volume inválido (50–5000ml)."})
+
+    from app.models.water_log import WaterLog
+    from sqlalchemy import func as _f
+
+    tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
+    now = datetime.now(tz)
+    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    day_end   = now.replace(hour=23, minute=59, second=59, microsecond=999999)
+
+    db.add(WaterLog(user_id=user.id, volume_ml=float(volume_ml)))
+    await db.flush()
+
+    result = await db.execute(
+        select(_f.coalesce(_f.sum(WaterLog.volume_ml), 0.0)).where(
+            WaterLog.user_id == user.id,
+            WaterLog.logged_at >= day_start,
+            WaterLog.logged_at <= day_end,
+        )
+    )
+    total = int(result.scalar_one() or 0)
+    await db.commit()
+
+    goal  = user.daily_water_goal_ml or 2000
+    pct   = min(round(total / goal * 100), 100) if goal else 0
+    return JSONResponse(content={"total_ml": total, "goal_ml": goal, "pct": pct, "added_ml": volume_ml})
 
 
 # ── Páginas protegidas ─────────────────────────────────────────────────────────

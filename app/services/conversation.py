@@ -209,6 +209,10 @@ class ConversationService:
             if txt_idle.startswith("revogar"):
                 name_hint = str(content).strip()[len("revogar"):].strip()
                 return await self._iniciar_revogacao(user, name_hint or None, db)
+            # Detecção de água em texto livre — antes de ir ao extrator de refeições
+            if self._is_water_message(txt_idle):
+                ml = self._parse_water_ml(txt_idle) or 250
+                return await self._log_water_and_reply(user, ml, db)
             return await self._process_text_meal(user, str(content), db)
         if message_type == "photo":
             return await self._process_photo_meal(user, bytes(content), caption, db)
@@ -2133,15 +2137,77 @@ class ConversationService:
         logger.info(f"Feedback de {user.channel_id}: {args[:200]}")
         return "Obrigado pelo feedback! 💚 Isso nos ajuda a melhorar."
 
-    async def _cmd_agua(self, user: User, args: str | None, db: AsyncSession) -> str:
+    # ── Tabela de aliases de volume (usada também no detector de texto livre) ──
+    _WATER_ALIASES: dict[str, float] = {
+        "litro":        1000, "litros":       1000,
+        "l":            1000,
+        "meio litro":    500, "meia garrafa":  500,
+        "garrafa":       500, "garrafas":      500,
+        "copo":          250, "copos":         250,
+        "copão":         400, "copões":        400,
+        "xicara":        240, "xícara":        240, "xicaras": 240, "xícaras": 240,
+        "copo americano": 200,
+    }
+
+    @classmethod
+    def _parse_water_ml(cls, text: str) -> int | None:
+        """
+        Extrai quantidade em ml de uma string.
+        Aceita: '500ml', '500 ml', '2 copos', '1 litro', '250', 'copo'.
+        Retorna None se não encontrar nada reconhecível.
+        """
+        import re
+        t = text.strip().lower()
+
+        # Tenta aliases compostos primeiro (ex: "meio litro")
+        for alias, vol in sorted(cls._WATER_ALIASES.items(), key=lambda x: -len(x[0])):
+            pattern = rf"(\d+[\.,]?\d*)\s*{re.escape(alias)}|{re.escape(alias)}"
+            m = re.search(pattern, t)
+            if m:
+                qty_str = m.group(1) if m.lastindex and m.group(1) else "1"
+                qty = float(qty_str.replace(",", "."))
+                return min(int(qty * vol), 5000)
+
+        # ml explícito: "500ml" ou "500 ml"
+        m = re.search(r"(\d+[\.,]?\d*)\s*ml\b", t)
+        if m:
+            return min(int(float(m.group(1).replace(",", "."))), 5000)
+
+        # número puro (ex: /agua 300)
+        m = re.search(r"\b(\d{2,4})\b", t)
+        if m:
+            return min(int(m.group(1)), 5000)
+
+        return None
+
+    # Palavras-chave que indicam mensagem de água (usadas no detector IDLE)
+    _WATER_KEYWORDS = (
+        "água", "agua", "hidrat", "beber", "bebi", "tomar", "tomei",
+        "ingestão", "ingestao", "litro", "litros", "copo", "copos",
+        "garraf", "xicara", "xícara", "copão",
+    )
+
+    @classmethod
+    def _is_water_message(cls, text_lower: str) -> bool:
+        """Heurística: a mensagem fala de ingestão de água (não de uma refeição)."""
+        import re
+        # Deve conter pelo menos uma palavra-chave de água
+        has_kw = any(kw in text_lower for kw in cls._WATER_KEYWORDS)
+        if not has_kw:
+            return False
+        # Rejeita se tiver palavras típicas de refeição junto
+        food_words = ("comi", "almocei", "jantei", "ceia", "café", "lanche",
+                      "refeição", "prato", "arroz", "feijão", "carne", "fruta",
+                      "vitamina", "suco", "shake", "iogurte", "leite", "sopa")
+        if any(fw in text_lower for fw in food_words):
+            # Pode ser "vitamina com água" — aceita só se água for o tema central
+            return bool(re.search(r"\b(agua|água|hidrat|litro|copo|ml)\b", text_lower))
+        return True
+
+    async def _log_water_and_reply(self, user: User, ml: int, db: AsyncSession) -> str:
+        """Persiste WaterLog e retorna resposta formatada com progresso do dia."""
         from app.models.water_log import WaterLog
         from sqlalchemy import func
-
-        ml = 250
-        if args:
-            digits = "".join(c for c in args if c.isdigit())
-            if digits:
-                ml = min(int(digits), 5000)
 
         db.add(WaterLog(user_id=user.id, volume_ml=float(ml)))
         await db.flush()
@@ -2156,18 +2222,37 @@ class ConversationService:
                 WaterLog.logged_at >= day_start,
             )
         )
-        today_total = result.scalar_one_or_none() or float(ml)
+        today_total = float(result.scalar_one_or_none() or ml)
         await db.commit()
 
-        goal_ml = 2000
-        pct = min(100, int(today_total / goal_ml * 100))
-        filled = pct // 20
-        bar = "💧" * filled + "○" * (5 - filled)
+        goal_ml = user.daily_water_goal_ml or 2000
+        pct     = min(100, int(today_total / goal_ml * 100))
+        filled  = pct // 20
+        bar     = "💧" * filled + "○" * (5 - filled)
+        suffix  = " 🎉 Meta atingida!" if pct >= 100 else ""
         return (
-            f"💧 *{ml:.0f}ml registrado!*\n\n"
+            f"💧 *{ml}ml registrado!*\n\n"
             f"Hoje: {today_total:.0f}ml / {goal_ml}ml\n"
-            f"{bar} {pct}%"
+            f"{bar} {pct}%{suffix}\n\n"
+            "_Use /agua 250 ou 'bebi 1 copo' a qualquer hora_"
         )
+
+    async def _cmd_agua(self, user: User, args: str | None, db: AsyncSession) -> str:
+        if not args:
+            # Sem argumento → registra 1 copo padrão (250ml)
+            return await self._log_water_and_reply(user, 250, db)
+
+        ml = self._parse_water_ml(args)
+        if ml is None or ml < 50:
+            return (
+                "Não entendi a quantidade. Exemplos:\n"
+                "• /agua 250\n"
+                "• /agua 500ml\n"
+                "• /agua 1 litro\n"
+                "• /agua 2 copos\n\n"
+                "_Sem argumento registra 1 copo (250ml)_"
+            )
+        return await self._log_water_and_reply(user, ml, db)
 
     async def _cmd_silenciar(self, user: User, args: str | None, db: AsyncSession) -> str:
         hours = 8
