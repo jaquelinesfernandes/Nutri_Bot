@@ -338,11 +338,15 @@ class TestJobWeeklyReport:
             patch("app.db.session.AsyncSessionLocal", mock_session_cls),
             patch("app.services.report.report_service", mock_report),
             patch("app.services.notification.notification_service", mock_notif),
+            patch("app.utils.jwt.create_magic_token", return_value="tok123"),
         ):
             await job_weekly_report()
 
         mock_report.generate_report.assert_called_once()
         mock_notif.send_document.assert_called_once()
+        # Caption deve incluir link do painel
+        caption = mock_notif.send_document.call_args[0][3]
+        assert "painel" in caption.lower() or "auth/magic" in caption
 
     @pytest.mark.asyncio
     async def test_job_envia_preview_para_free(self):
@@ -371,11 +375,12 @@ class TestJobWeeklyReport:
             patch("app.db.session.AsyncSessionLocal", mock_session_cls),
             patch("app.services.report.report_service", mock_report),
             patch("app.services.notification.notification_service", mock_notif),
+            patch("app.utils.jwt.create_magic_token", return_value="tok456"),
         ):
             await job_weekly_report()
 
-        # Free users recebem texto (preview), não documento
+        # Free users recebem texto com link do painel, não documento
         mock_report.generate_weekly_pdf.assert_not_called()
         mock_notif.send_text.assert_called_once()
         preview_msg = mock_notif.send_text.call_args[0][1]
-        assert "premium" in preview_msg.lower() or "Premium" in preview_msg
+        assert "painel" in preview_msg.lower() or "auth/magic" in preview_msg

@@ -859,6 +859,7 @@ class TestSchedulerJobs:
             patch("app.db.session.AsyncSessionLocal", mock_session_cls),
             patch("app.services.report.report_service", mock_report),
             patch("app.services.notification.notification_service", mock_notif),
+            patch("app.utils.jwt.create_magic_token", return_value="tok_monthly"),
         ):
             await job_monthly_report()
 
