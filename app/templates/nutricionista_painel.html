@@ -2,15 +2,15 @@
 {% block title %}Painel Nutricionista — NutriBot{% endblock %}
 {% block body %}
 <style>
-  /* ── Layout específico nutricionista ─────────────────────────── */
+  /* ── Layout ─────────────────────────────────────────────────────────── */
   .nutri-shell { display: flex; height: 100vh; }
 
-  /* Sidebar adaptada */
+  /* Sidebar */
   .nutri-sidebar {
-    width: 220px; flex-shrink: 0;
+    width: 232px; flex-shrink: 0;
     background: var(--sidebar-bg);
     display: flex; flex-direction: column;
-    position: sticky; top: 0; height: 100vh; overflow: hidden;
+    position: sticky; top: 0; height: 100vh; overflow-y: auto; overflow-x: hidden;
   }
   .nsb-logo {
     display: flex; align-items: center; gap: 10px;
@@ -25,17 +25,30 @@
   }
   .nsb-brand { font-weight: 600; font-size: 14px; color: #DDD8FF; }
   .nsb-brand small { display: block; font-size: 11px; color: #7B78C8; font-weight: 400; }
-  .nsb-nav { flex: 1; padding: 14px 10px; }
+
+  .nsb-nav { flex: 1; padding: 12px 10px; }
+  .nsb-section-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .1em;
+    color: rgba(255,255,255,.22); text-transform: uppercase;
+    padding: 10px 10px 4px; margin-top: 4px;
+  }
   .nsb-link {
-    display: flex; align-items: center; gap: 10px;
+    display: flex; align-items: center; gap: 9px;
     padding: 9px 10px; border-radius: 8px;
-    font-size: 13.5px; font-weight: 500; color: rgba(255,255,255,.45);
+    font-size: 13px; font-weight: 500; color: rgba(255,255,255,.45);
     transition: background .15s, color .15s;
     border-left: 3px solid transparent; cursor: pointer;
     text-decoration: none; margin-bottom: 2px;
   }
   .nsb-link:hover { background: var(--sidebar-hov); color: rgba(255,255,255,.8); }
   .nsb-link.active { background: var(--sidebar-act); color: #A5B4FC; border-left-color: var(--primary); }
+  .nsb-badge {
+    margin-left: auto; background: rgba(99,102,241,.25); color: #A5B4FC;
+    font-size: 10.5px; font-weight: 700; border-radius: 20px;
+    padding: 1px 7px; min-width: 20px; text-align: center;
+  }
+  .nsb-badge.warn { background: rgba(245,158,11,.2); color: #F59E0B; }
+
   .nsb-foot { padding: 12px 10px; border-top: 1px solid rgba(255,255,255,.06); }
   .nsb-user { display: flex; align-items: center; gap: 9px; padding: 7px 10px; margin-bottom: 4px; }
   .nsb-avatar {
@@ -44,7 +57,7 @@
     display: grid; place-items: center;
     font-size: 12px; font-weight: 600; color: #fff;
   }
-  .nsb-username { font-size: 12px; color: rgba(255,255,255,.55); }
+  .nsb-username { font-size: 12px; color: rgba(255,255,255,.55); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .nsb-logout {
     display: flex; align-items: center; gap: 10px;
     width: 100%; padding: 8px 10px; border-radius: 8px;
@@ -56,7 +69,7 @@
 
   /* Main */
   .nutri-main { flex: 1; overflow-y: auto; min-width: 0; }
-  .nutri-inner { max-width: 960px; margin: 0 auto; padding: 28px 24px 60px; }
+  .nutri-inner { max-width: 980px; margin: 0 auto; padding: 28px 24px 60px; }
 
   /* Trial banner */
   .trial-banner {
@@ -75,8 +88,20 @@
   }
   .trial-btn:hover { background: rgba(255,255,255,.3); }
 
-  /* Stat cards */
-  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 26px; }
+  /* Tab sections */
+  .tab-section { display: none; }
+  .tab-section.tab-active { display: block; }
+
+  /* Section header row */
+  .section-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
+  }
+  .pg-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--text-1); }
+  .pg-subtitle { font-size: 13px; color: var(--text-3); margin-top: 3px; }
+
+  /* ── Stat cards (Dashboard + Pacientes) ────────────────────────────── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 26px; }
   .stat-card {
     background: var(--card); border: 1px solid var(--card-b);
     border-radius: 16px; padding: 18px 20px;
@@ -86,41 +111,52 @@
     font-family: 'DM Serif Display', serif;
     font-size: 2rem; color: var(--text-1); line-height: 1;
   }
+  .stat-card .num.ok   { color: #10B981; }
   .stat-card .num.warn { color: #F59E0B; }
+  .stat-card .num.err  { color: #EF4444; }
   .stat-card .lbl { font-size: 12px; color: var(--text-3); margin-top: 5px; }
 
-  /* Convidar btn */
-  .invite-bar {
-    display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 10px; margin-bottom: 18px;
+  /* Activity card */
+  .activity-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 18px; padding: 20px 22px;
+    box-shadow: var(--shadow-sm); margin-bottom: 26px;
   }
-  .pg-title { font-family: 'DM Serif Display', serif; font-size: 1.4rem; color: var(--text-1); }
-  .btn-invite {
-    display: flex; align-items: center; gap: 8px;
-    background: linear-gradient(135deg, var(--primary), var(--violet));
-    color: #fff; border: none; border-radius: 10px; padding: 10px 18px;
-    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
-    transition: opacity .2s;
+  .activity-card h2 { font-size: 14px; font-weight: 700; color: var(--text-1); margin-bottom: 16px; }
+  .activity-row {
+    display: grid; grid-template-columns: 1fr 120px 120px;
+    padding: 10px 0; border-bottom: 1px solid var(--card-b);
+    font-size: 13px; align-items: center; gap: 10px;
   }
-  .btn-invite:hover { opacity: .88; }
+  .activity-row:last-child { border-bottom: none; }
+  .act-name { font-weight: 600; color: var(--text-1); }
+  .act-sub  { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+  .act-kcal { font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--text-2); }
+  .act-dots { display: flex; gap: 3px; }
+  .dot {
+    width: 12px; height: 12px; border-radius: 3px;
+    background: rgba(99,102,241,.15);
+  }
+  .dot.on  { background: var(--primary); }
+  .dot.ok  { background: #10B981; }
+  .dot.out { background: #F59E0B; }
+  .dot.off { background: rgba(156,163,175,.2); }
+  .no-activity { text-align: center; padding: 32px 20px; color: var(--text-3); font-size: 13.5px; }
 
   /* Patient table */
   .patients-card {
     background: var(--card); border: 1px solid var(--card-b);
-    border-radius: 18px; overflow: hidden;
-    box-shadow: var(--shadow-sm);
+    border-radius: 18px; overflow: hidden; box-shadow: var(--shadow-sm);
   }
   .pt-header {
-    display: grid;
-    grid-template-columns: 1fr 130px 100px 90px;
+    display: grid; grid-template-columns: 1fr 140px 110px 96px;
     padding: 10px 18px;
     font-size: 10.5px; font-weight: 600; letter-spacing: .07em;
     text-transform: uppercase; color: var(--text-3);
     border-bottom: 1px solid var(--card-b);
   }
   .pt-row {
-    display: grid;
-    grid-template-columns: 1fr 130px 100px 90px;
+    display: grid; grid-template-columns: 1fr 140px 110px 96px;
     padding: 13px 18px; align-items: center;
     border-bottom: 1px solid var(--card-b);
     transition: background .15s;
@@ -132,6 +168,7 @@
   .pt-plan { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
   .pt-last { font-size: 12.5px; color: var(--text-2); }
   .pt-kcal { font-family: 'DM Mono', monospace; font-size: 12.5px; color: var(--text-2); }
+
   .badge-inactive {
     display: inline-flex; align-items: center; gap: 4px;
     background: rgba(245,158,11,.12); color: #D97706;
@@ -142,6 +179,22 @@
     background: rgba(99,102,241,.1); color: var(--primary);
     border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
   }
+  .badge-active {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(16,185,129,.12); color: #059669;
+    border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
+  .badge-expired {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(156,163,175,.12); color: var(--text-3);
+    border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
+  .badge-declined {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(239,68,68,.1); color: #EF4444;
+    border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
+  .badge-revoked { @extend .badge-expired; }
 
   /* Empty state */
   .empty-state { text-align: center; padding: 56px 24px; }
@@ -149,7 +202,62 @@
   .empty-state h3 { font-size: 1.1rem; color: var(--text-1); margin-bottom: 8px; }
   .empty-state p { font-size: 13.5px; color: var(--text-2); max-width: 340px; margin: 0 auto; }
 
-  /* Modal */
+  /* ── Convites tab ─────────────────────────────────────────────────── */
+  .convites-group { margin-bottom: 28px; }
+  .convites-group-header {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--text-3);
+    padding-bottom: 10px; margin-bottom: 2px;
+    border-bottom: 1px solid var(--card-b);
+  }
+  .convite-card {
+    background: var(--card); border: 1px solid var(--card-b);
+    border-radius: 14px; padding: 14px 18px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+    box-shadow: var(--shadow-sm);
+  }
+  .convite-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    display: grid; place-items: center; flex-shrink: 0;
+    font-size: 14px; font-weight: 700; color: #fff;
+  }
+  .convite-info { flex: 1; min-width: 140px; }
+  .convite-name { font-weight: 600; font-size: 13.5px; color: var(--text-1); }
+  .convite-meta { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
+  .convite-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn-sm {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 8px; border: none;
+    font-family: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer;
+    transition: opacity .2s; text-decoration: none;
+  }
+  .btn-sm-primary {
+    background: linear-gradient(135deg, var(--primary), var(--violet)); color: #fff;
+  }
+  .btn-sm-primary:hover { opacity: .88; }
+  .btn-sm-ghost {
+    background: rgba(99,102,241,.08); color: var(--primary);
+    border: 1px solid rgba(99,102,241,.2);
+  }
+  .btn-sm-ghost:hover { background: rgba(99,102,241,.15); }
+  .btn-sm-danger {
+    background: rgba(239,68,68,.08); color: #EF4444;
+    border: 1px solid rgba(239,68,68,.2);
+  }
+
+  /* ── Botão principal ──────────────────────────────────────────────── */
+  .btn-invite {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--violet));
+    color: #fff; border: none; border-radius: 10px; padding: 10px 18px;
+    font-family: inherit; font-size: 13.5px; font-weight: 600; cursor: pointer;
+    transition: opacity .2s;
+  }
+  .btn-invite:hover { opacity: .88; }
+
+  /* ── Modal ────────────────────────────────────────────────────────── */
   .modal-overlay {
     display: none; position: fixed; inset: 0;
     background: rgba(0,0,0,.45); z-index: 100;
@@ -204,20 +312,29 @@
   }
   .btn-copy:hover { background: var(--primary-d); }
 
-  @media (max-width: 640px) {
+  /* Progress bar (adherence) */
+  .progress-bar-wrap { width: 80px; height: 6px; background: rgba(156,163,175,.18); border-radius: 9px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 9px; background: var(--primary); }
+  .progress-bar-fill.ok { background: #10B981; }
+  .progress-bar-fill.warn { background: #F59E0B; }
+
+  /* Responsive */
+  @media (max-width: 800px) {
     .nutri-sidebar { display: none; }
     .stats-row { grid-template-columns: 1fr 1fr; }
     .pt-header { display: none; }
     .pt-row { grid-template-columns: 1fr auto; grid-template-rows: auto auto; gap: 4px; }
-    .pt-last, .pt-kcal { font-size: 11px; }
+    .activity-row { grid-template-columns: 1fr 90px; }
+    .act-dots { display: none; }
   }
-  @media (max-width: 400px) {
-    .stats-row { grid-template-columns: 1fr; }
+  @media (max-width: 480px) {
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .nutri-inner { padding: 18px 14px 50px; }
   }
 </style>
 
 <div class="nutri-shell">
-  <!-- Sidebar -->
+  <!-- ── Sidebar ──────────────────────────────────────────────────── -->
   <aside class="nutri-sidebar">
     <div class="nsb-logo">
       <div class="nsb-leaf">🥗</div>
@@ -227,10 +344,23 @@
       </div>
     </div>
     <nav class="nsb-nav">
-      <a href="/nutricionista/" class="nsb-link active">
-        👥 Pacientes
+      <div class="nsb-section-label">Visão geral</div>
+      <a class="nsb-link" data-tab="dashboard" href="#dashboard">
+        📊 Dashboard
       </a>
-      {# B2B-2: notas, histórico individual #}
+      <div class="nsb-section-label" style="margin-top:8px;">Pacientes</div>
+      <a class="nsb-link" data-tab="pacientes" href="#pacientes">
+        👥 Área de Pacientes
+        {% if inactive_count > 0 %}
+        <span class="nsb-badge warn">{{ inactive_count }}</span>
+        {% endif %}
+      </a>
+      <a class="nsb-link" data-tab="convites" href="#convites">
+        📩 Convites
+        {% if pending_count > 0 %}
+        <span class="nsb-badge">{{ pending_count }}</span>
+        {% endif %}
+      </a>
     </nav>
     <div class="nsb-foot">
       <div class="nsb-user">
@@ -243,7 +373,7 @@
     </div>
   </aside>
 
-  <!-- Main -->
+  <!-- ── Main content ──────────────────────────────────────────── -->
   <main class="nutri-main">
     <div class="nutri-inner">
 
@@ -256,104 +386,346 @@
           {% else %}
             seu trial expirou hoje
           {% endif %}
-          — ative o plano para continuar.
+          — ative o plano para continuar acompanhando.
         </p>
         <a href="#" class="trial-btn">Assinar R$79,90/mês</a>
       </div>
       {% endif %}
 
-      <!-- Stats -->
-      <div class="stats-row">
-        <div class="stat-card">
-          <div class="num">{{ active_count }}</div>
-          <div class="lbl">Pacientes ativos</div>
-        </div>
-        <div class="stat-card">
-          <div class="num {% if inactive_count > 0 %}warn{% endif %}">{{ inactive_count }}</div>
-          <div class="lbl">Sem registro há +3 dias</div>
-        </div>
-        <div class="stat-card">
-          <div class="num">{{ pending_count }}</div>
-          <div class="lbl">Convites pendentes</div>
-        </div>
-      </div>
-
-      <!-- Header + botão convidar -->
-      <div class="invite-bar">
-        <span class="pg-title">Pacientes</span>
-        {% if active_count < max_patients %}
-        <button class="btn-invite">
-          + Convidar paciente
-        </button>
-        {% else %}
-        <span style="font-size:12.5px;color:var(--text-3)">Limite de {{ max_patients }} pacientes atingido</span>
-        {% endif %}
-      </div>
-
-      <!-- Lista de pacientes -->
-      <div class="patients-card">
-        {% if patients_data %}
-        <div class="pt-header">
-          <span>Paciente</span>
-          <span>Último registro</span>
-          <span>Média kcal/7d</span>
-          <span>Status</span>
-        </div>
-        {% for p in patients_data %}
-        <a class="pt-row" href="/nutricionista/paciente/{{ p.patient.id }}">
+      <!-- ══════════════════════════════════════════════════════════
+           TAB 1 — DASHBOARD GERAL
+      ════════════════════════════════════════════════════════════ -->
+      <section class="tab-section" id="tab-dashboard">
+        <div class="section-bar" style="margin-bottom:20px;">
           <div>
-            <div class="pt-name">{{ p.patient.first_name or 'Paciente' }}</div>
-            <div class="pt-plan">{{ 'Premium' if p.patient.is_premium else 'Gratuito' }}</div>
+            <div class="pg-title">Dashboard Geral</div>
+            <div class="pg-subtitle">Visão consolidada dos seus pacientes</div>
           </div>
-          <div class="pt-last">
-            {% if p.last_logged_at %}
-              {% set diff = (now_utc - p.last_logged_at.replace(tzinfo=none)).days if p.last_logged_at else 999 %}
-              {% if p.is_inactive %}
-                <span class="badge-inactive">⚠️ {{ diff }}d atrás</span>
-              {% else %}
-                {{ p.last_logged_at.strftime('%d/%m %H:%M') }}
-              {% endif %}
-            {% else %}
-              <span style="color:var(--text-3)">sem registro</span>
-            {% endif %}
-          </div>
-          <div class="pt-kcal">
-            {% if p.avg_kcal %}{{ p.avg_kcal | int }} kcal{% else %}—{% endif %}
-          </div>
-          <div>
-            {% if p.is_inactive %}<span class="badge-inactive">Inativo</span>{% endif %}
-          </div>
-        </a>
-        {% endfor %}
+          <button class="btn-invite" onclick="abrirModalConvite()">+ Convidar paciente</button>
+        </div>
 
+        <!-- KPI cards (4) -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="num ok">{{ active_count }}</div>
+            <div class="lbl">Pacientes ativos</div>
+          </div>
+          <div class="stat-card">
+            <div class="num {% if inactive_count > 0 %}warn{% endif %}">{{ inactive_count }}</div>
+            <div class="lbl">Inativos (+3 dias)</div>
+          </div>
+          <div class="stat-card">
+            <div class="num">{{ pending_count }}</div>
+            <div class="lbl">Convites pendentes</div>
+          </div>
+          <div class="stat-card">
+            <div class="num" style="font-size:1.3rem;">{{ active_count }}<span style="font-size:1rem;color:var(--text-3)">/{{ max_patients }}</span></div>
+            <div class="lbl">Limite do plano</div>
+          </div>
+        </div>
+
+        <!-- Atividade recente -->
+        <div class="activity-card">
+          <h2>📅 Engajamento dos Pacientes — últimos 7 dias</h2>
+          {% if patients_data %}
+            <div class="activity-row" style="font-size:10.5px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.07em;padding-bottom:6px;border-bottom:1px solid var(--card-b);">
+              <span>Paciente</span>
+              <span>Média kcal/dia</span>
+              <span>Dias registrados</span>
+            </div>
+            {% for p in patients_data %}
+            <div class="activity-row">
+              <div>
+                <div class="act-name">
+                  <a href="/nutricionista/paciente/{{ p.patient.id }}" style="color:inherit;text-decoration:none;">
+                    {{ p.patient.first_name or 'Paciente' }}
+                  </a>
+                </div>
+                <div class="act-sub">
+                  {% if p.last_logged_at %}
+                    Último: {{ p.last_logged_at.strftime('%d/%m %H:%M') }}
+                  {% else %}
+                    Sem registros ainda
+                  {% endif %}
+                  {% if p.is_inactive %} · <span style="color:#D97706;">⚠️ inativo</span>{% endif %}
+                </div>
+              </div>
+              <div class="act-kcal">
+                {% if p.avg_kcal %}{{ p.avg_kcal | int }} kcal{% else %}—{% endif %}
+              </div>
+              <div>
+                <div style="font-size:12.5px;font-weight:700;color:var(--text-1);">
+                  {{ p.days_with_data_7d }}/7 dias
+                </div>
+                {% set pct7 = ((p.days_with_data_7d / 7) * 100) | int %}
+                <div class="progress-bar-wrap" style="margin-top:4px;">
+                  <div class="progress-bar-fill {% if pct7 >= 70 %}ok{% elif pct7 >= 40 %}{% else %}warn{% endif %}"
+                       style="width:{{ pct7 }}%;"></div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          {% else %}
+            <div class="no-activity">
+              👋 Nenhum paciente ativo ainda.<br>
+              <a href="#convites" onclick="switchTab('convites')" style="color:var(--primary);">Gere um convite</a> para começar.
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Convites pendentes snapshot -->
         {% if pending_links %}
-        {% for lk in pending_links %}
-        <div class="pt-row" style="opacity:.65;cursor:default;">
-          <div>
-            <div class="pt-name">{{ lk.patient_name or 'Convidado' }}</div>
-            <div class="pt-plan">{{ lk.patient_phone or '—' }}</div>
+        <div class="activity-card" style="margin-bottom:0;">
+          <h2>⏳ Convites aguardando resposta</h2>
+          {% for lk in pending_links[:5] %}
+          <div class="activity-row">
+            <div>
+              <div class="act-name">{{ lk.patient_name or 'Convidado' }}</div>
+              <div class="act-sub">{{ lk.patient_phone or lk.patient_telegram or '—' }} · enviado em {{ lk.invited_at.strftime('%d/%m/%Y') }}</div>
+            </div>
+            <div><span class="badge-pending">⏳ Pendente</span></div>
+            <div>
+              <button class="btn-sm btn-sm-ghost"
+                onclick="copiarLink('{{ base_url }}/convite/{{ lk.invite_token }}')">
+                📋 Copiar link
+              </button>
+            </div>
           </div>
-          <div class="pt-last">convite enviado</div>
-          <div class="pt-kcal">—</div>
-          <div><span class="badge-pending">⏳ Pendente</span></div>
+          {% endfor %}
+          {% if pending_links | length > 5 %}
+          <div style="text-align:center;padding:12px;font-size:12.5px;color:var(--text-3);">
+            +{{ pending_links | length - 5 }} outros ·
+            <a href="#convites" onclick="switchTab('convites')" style="color:var(--primary);">ver todos</a>
+          </div>
+          {% endif %}
         </div>
-        {% endfor %}
+        {% endif %}
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           TAB 2 — ÁREA DE PACIENTES
+      ════════════════════════════════════════════════════════════ -->
+      <section class="tab-section" id="tab-pacientes">
+        <div class="section-bar">
+          <div>
+            <div class="pg-title">Área de Pacientes</div>
+            <div class="pg-subtitle">{{ active_count }} ativo{{ 's' if active_count != 1 }} · limite {{ max_patients }}</div>
+          </div>
+          {% if active_count < max_patients %}
+          <button class="btn-invite" onclick="abrirModalConvite()">+ Convidar paciente</button>
+          {% else %}
+          <span style="font-size:12.5px;color:var(--text-3)">Limite de {{ max_patients }} atingido</span>
+          {% endif %}
+        </div>
+
+        <div class="patients-card">
+          {% if patients_data %}
+          <div class="pt-header">
+            <span>Paciente</span>
+            <span>Último registro</span>
+            <span>Média kcal/7d</span>
+            <span>Status</span>
+          </div>
+          {% for p in patients_data %}
+          <a class="pt-row" href="/nutricionista/paciente/{{ p.patient.id }}">
+            <div>
+              <div class="pt-name">{{ p.patient.first_name or 'Paciente' }}</div>
+              <div class="pt-plan">{{ 'Premium' if p.patient.is_premium else 'Gratuito' }}</div>
+            </div>
+            <div class="pt-last">
+              {% if p.last_logged_at %}
+                {% set diff = (now_utc - p.last_logged_at.replace(tzinfo=none)).days if p.last_logged_at else 999 %}
+                {% if p.is_inactive %}
+                  <span class="badge-inactive">⚠️ {{ diff }}d atrás</span>
+                {% else %}
+                  {{ p.last_logged_at.strftime('%d/%m %H:%M') }}
+                {% endif %}
+              {% else %}
+                <span style="color:var(--text-3)">sem registro</span>
+              {% endif %}
+            </div>
+            <div class="pt-kcal">
+              {% if p.avg_kcal %}{{ p.avg_kcal | int }} kcal{% else %}—{% endif %}
+            </div>
+            <div>
+              {% if p.is_inactive %}
+                <span class="badge-inactive">Inativo</span>
+              {% else %}
+                <span class="badge-active">✓ Ativo</span>
+              {% endif %}
+            </div>
+          </a>
+          {% endfor %}
+
+          {% if pending_links %}
+          {% for lk in pending_links %}
+          <div class="pt-row" style="opacity:.65;cursor:default;">
+            <div>
+              <div class="pt-name">{{ lk.patient_name or 'Convidado' }}</div>
+              <div class="pt-plan">{{ lk.patient_phone or lk.patient_telegram or '—' }}</div>
+            </div>
+            <div class="pt-last">convite enviado</div>
+            <div class="pt-kcal">—</div>
+            <div><span class="badge-pending">⏳ Pendente</span></div>
+          </div>
+          {% endfor %}
+          {% endif %}
+
+          {% else %}
+          <div class="empty-state">
+            <div class="icon">👋</div>
+            <h3>Convide seu primeiro paciente</h3>
+            <p>Clique em "Convidar paciente" para gerar um link e enviar pelo WhatsApp ou Telegram.</p>
+          </div>
+          {% endif %}
+        </div>
+      </section>
+
+      <!-- ══════════════════════════════════════════════════════════
+           TAB 3 — GERENCIAMENTO DE CONVITES
+      ════════════════════════════════════════════════════════════ -->
+      <section class="tab-section" id="tab-convites">
+        <div class="section-bar">
+          <div>
+            <div class="pg-title">Gerenciamento de Convites</div>
+            <div class="pg-subtitle">Histórico completo de todos os convites enviados</div>
+          </div>
+          {% if active_count < max_patients %}
+          <button class="btn-invite" onclick="abrirModalConvite()">+ Novo convite</button>
+          {% endif %}
+        </div>
+
+        <!-- Pendentes -->
+        {% if pending_links %}
+        <div class="convites-group">
+          <div class="convites-group-header">
+            <span>⏳</span> Pendentes ({{ pending_links | length }})
+          </div>
+          {% for lk in pending_links %}
+          <div class="convite-card">
+            <div class="convite-avatar">{{ (lk.patient_name or 'C')[0].upper() }}</div>
+            <div class="convite-info">
+              <div class="convite-name">{{ lk.patient_name or 'Convidado' }}</div>
+              <div class="convite-meta">
+                {{ lk.patient_phone or lk.patient_telegram or '—' }}
+                · Enviado {{ lk.invited_at.strftime('%d/%m/%Y') }}
+                · Expira {{ lk.expires_at.strftime('%d/%m/%Y') if lk.expires_at else '—' }}
+              </div>
+            </div>
+            <span class="badge-pending">⏳ Aguardando</span>
+            <div class="convite-actions">
+              <button class="btn-sm btn-sm-ghost"
+                onclick="copiarLink('{{ base_url }}/convite/{{ lk.invite_token }}')" title="Copiar link do convite">
+                📋 Copiar link
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
         {% endif %}
 
-        {% else %}
+        <!-- Ativos (vinculados) -->
+        {% if patients_data %}
+        <div class="convites-group">
+          <div class="convites-group-header">
+            <span>✅</span> Ativos ({{ patients_data | length }})
+          </div>
+          {% for p in patients_data %}
+          <div class="convite-card">
+            <div class="convite-avatar">{{ (p.patient.first_name or 'P')[0].upper() }}</div>
+            <div class="convite-info">
+              <div class="convite-name">{{ p.patient.first_name or p.link.patient_name or 'Paciente' }}</div>
+              <div class="convite-meta">
+                Vinculado em {{ p.link.consented_at.strftime('%d/%m/%Y') if p.link.consented_at else p.link.invited_at.strftime('%d/%m/%Y') }}
+              </div>
+            </div>
+            <span class="badge-active">✓ Ativo</span>
+            <div class="convite-actions">
+              <a class="btn-sm btn-sm-primary"
+                href="/nutricionista/paciente/{{ p.patient.id }}">
+                👁 Ver perfil
+              </a>
+              <a class="btn-sm btn-sm-ghost"
+                href="/api/nutricionista/paciente/{{ p.patient.id }}/pdf">
+                📄 PDF
+              </a>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Expirados -->
+        {% if expired_links %}
+        <div class="convites-group">
+          <div class="convites-group-header">
+            <span>⏰</span> Expirados ({{ expired_links | length }})
+          </div>
+          {% for lk in expired_links %}
+          <div class="convite-card" style="opacity:.7;">
+            <div class="convite-avatar" style="background:rgba(156,163,175,.3);color:var(--text-3);">{{ (lk.patient_name or 'C')[0].upper() }}</div>
+            <div class="convite-info">
+              <div class="convite-name" style="color:var(--text-2);">{{ lk.patient_name or 'Convidado' }}</div>
+              <div class="convite-meta">
+                {{ lk.patient_phone or lk.patient_telegram or '—' }}
+                · Expirou {{ lk.expires_at.strftime('%d/%m/%Y') if lk.expires_at else '—' }}
+              </div>
+            </div>
+            <span class="badge-expired">⏰ Expirado</span>
+            <div class="convite-actions">
+              <button class="btn-sm btn-sm-ghost" onclick="abrirModalConviteComNome('{{ lk.patient_name | replace("'", "\\'") }}', '{{ lk.patient_phone or "" }}')">
+                🔁 Reenviar
+              </button>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Recusados / Revogados -->
+        {% if declined_links or revoked_links %}
+        <div class="convites-group">
+          <div class="convites-group-header">
+            <span>🚫</span> Recusados / Revogados ({{ (declined_links | length) + (revoked_links | length) }})
+          </div>
+          {% for lk in declined_links %}
+          <div class="convite-card" style="opacity:.6;">
+            <div class="convite-avatar" style="background:rgba(239,68,68,.15);color:#EF4444;">{{ (lk.patient_name or 'C')[0].upper() }}</div>
+            <div class="convite-info">
+              <div class="convite-name" style="color:var(--text-2);">{{ lk.patient_name or 'Convidado' }}</div>
+              <div class="convite-meta">{{ lk.patient_phone or lk.patient_telegram or '—' }} · Recusou {{ lk.invited_at.strftime('%d/%m/%Y') }}</div>
+            </div>
+            <span class="badge-declined">✗ Recusado</span>
+          </div>
+          {% endfor %}
+          {% for lk in revoked_links %}
+          <div class="convite-card" style="opacity:.6;">
+            <div class="convite-avatar" style="background:rgba(156,163,175,.2);color:var(--text-3);">{{ (lk.patient_name or 'P')[0].upper() }}</div>
+            <div class="convite-info">
+              <div class="convite-name" style="color:var(--text-2);">{{ lk.patient_name or 'Paciente' }}</div>
+              <div class="convite-meta">Acesso revogado {{ lk.revoked_at.strftime('%d/%m/%Y') if lk.revoked_at else '' }}</div>
+            </div>
+            <span class="badge-expired">🚫 Revogado</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Empty state se não houver nenhum convite -->
+        {% if not pending_links and not patients_data and not expired_links and not declined_links and not revoked_links %}
         <div class="empty-state">
-          <div class="icon">👋</div>
-          <h3>Convide seu primeiro paciente</h3>
-          <p>Clique em "Convidar paciente" para gerar um link de acesso e enviar pelo WhatsApp ou Telegram.</p>
+          <div class="icon">📩</div>
+          <h3>Nenhum convite ainda</h3>
+          <p>Clique em "Novo convite" para gerar um link e enviar ao seu paciente.</p>
         </div>
         {% endif %}
-      </div>
+      </section>
 
-    </div>
+    </div><!-- /nutri-inner -->
   </main>
-</div>
+</div><!-- /nutri-shell -->
 
-<!-- Modal: Convidar Paciente -->
+<!-- ── Modal: Convidar Paciente ───────────────────────────────────── -->
 <div class="modal-overlay" id="modal-invite">
   <div class="modal">
     <h3>Convidar paciente</h3>
@@ -378,24 +750,63 @@
         <button class="btn-copy" onclick="copyInviteLink()">Copiar</button>
       </div>
       <p style="margin-top:10px;font-size:11.5px;color:var(--text-3)">
-        Quando o paciente clicar no link, o bot perguntará o consentimento automaticamente.
+        Quando o paciente clicar no link, o bot pedirá o consentimento automaticamente.
       </p>
     </div>
 
     <p id="invite-error" style="display:none;color:#EF4444;font-size:13px;margin-top:8px;"></p>
 
     <div class="modal-actions">
-      <button class="btn-cancel" onclick="fecharModalConvite()">
-        Fechar
-      </button>
-      <button class="btn-primary" id="btn-gerar" onclick="gerarConvite()">
-        Gerar convite
-      </button>
+      <button class="btn-cancel" onclick="fecharModalConvite()">Fechar</button>
+      <button class="btn-primary" id="btn-gerar" onclick="gerarConvite()">Gerar convite</button>
     </div>
   </div>
 </div>
 
+<!-- Toast -->
+<div id="toast-global" style="
+  position:fixed;bottom:20px;right:20px;z-index:300;
+  background:#1E1B4B;color:#A5B4FC;border-radius:10px;
+  padding:12px 18px;font-size:13.5px;font-weight:500;
+  box-shadow:0 4px 24px rgba(0,0,0,.35);
+  transform:translateY(40px);opacity:0;
+  transition:transform .25s,opacity .25s;
+  max-width:300px;pointer-events:none;
+"></div>
+
 <script>
+// ── Tab switching ────────────────────────────────────────────────────────────
+function switchTab(name) {
+  document.querySelectorAll('.tab-section').forEach(s => s.classList.remove('tab-active'));
+  document.querySelectorAll('.nsb-link[data-tab]').forEach(l => l.classList.remove('active'));
+  const section = document.getElementById('tab-' + name);
+  if (section) section.classList.add('tab-active');
+  const link = document.querySelector('.nsb-link[data-tab="' + name + '"]');
+  if (link) link.classList.add('active');
+  history.replaceState(null, '', '#' + name);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  // Init tab from URL hash or default to dashboard
+  const hash = location.hash.replace('#', '') || 'dashboard';
+  const valid = ['dashboard', 'pacientes', 'convites'];
+  switchTab(valid.includes(hash) ? hash : 'dashboard');
+
+  // Sidebar links
+  document.querySelectorAll('.nsb-link[data-tab]').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      switchTab(link.dataset.tab);
+    });
+  });
+
+  // Modal overlay click closes modal
+  document.getElementById('modal-invite').addEventListener('click', e => {
+    if (e.target === e.currentTarget) fecharModalConvite();
+  });
+});
+
+// ── Modal helpers ────────────────────────────────────────────────────────────
 function _resetModalConvite() {
   document.getElementById('inv-name').value = '';
   document.getElementById('inv-phone').value = '';
@@ -403,39 +814,32 @@ function _resetModalConvite() {
   document.getElementById('invite-result').style.display = 'none';
   document.getElementById('invite-error').style.display = 'none';
   document.getElementById('btn-gerar').textContent = 'Gerar convite';
-  document.getElementById('inv-name').focus();
+  document.getElementById('btn-gerar').disabled = false;
 }
 
-// Fecha o modal E limpa o formulário
+function abrirModalConvite() {
+  _resetModalConvite();
+  document.getElementById('modal-invite').classList.add('open');
+  setTimeout(() => document.getElementById('inv-name').focus(), 80);
+}
+
+function abrirModalConviteComNome(nome, phone) {
+  _resetModalConvite();
+  document.getElementById('inv-name').value = nome;
+  document.getElementById('inv-phone').value = phone;
+  document.getElementById('modal-invite').classList.add('open');
+  setTimeout(() => document.getElementById('inv-phone').focus(), 80);
+}
+
 function fecharModalConvite() {
   document.getElementById('modal-invite').classList.remove('open');
   _resetModalConvite();
 }
 
-// Abre o modal sempre com campos limpos
-document.addEventListener('DOMContentLoaded', () => {
-  const openBtn = document.querySelector('.btn-invite');
-  if (openBtn) {
-    openBtn.addEventListener('click', () => {
-      _resetModalConvite();
-      document.getElementById('modal-invite').classList.add('open');
-    });
-  }
-  // Clique fora do modal também limpa
-  document.getElementById('modal-invite').addEventListener('click', (e) => {
-    if (e.target === e.currentTarget) fecharModalConvite();
-  });
-});
-
 async function gerarConvite() {
   const btn = document.getElementById('btn-gerar');
   const resultEl = document.getElementById('invite-result');
-
-  // Se já há um resultado visível, "Gerar novo convite" = limpar e recomeçar
-  if (resultEl.style.display !== 'none') {
-    _resetModalConvite();
-    return;
-  }
+  if (resultEl.style.display !== 'none') { _resetModalConvite(); return; }
 
   const name  = document.getElementById('inv-name').value.trim();
   const phone = document.getElementById('inv-phone').value.trim();
@@ -443,16 +847,8 @@ async function gerarConvite() {
   const errEl = document.getElementById('invite-error');
   errEl.style.display = 'none';
 
-  if (!name) {
-    errEl.textContent = 'Nome é obrigatório.';
-    errEl.style.display = 'block';
-    return;
-  }
-  if (!phone && !tg) {
-    errEl.textContent = 'Informe WhatsApp ou Telegram.';
-    errEl.style.display = 'block';
-    return;
-  }
+  if (!name) { errEl.textContent = 'Nome é obrigatório.'; errEl.style.display = 'block'; return; }
+  if (!phone && !tg) { errEl.textContent = 'Informe WhatsApp ou Telegram.'; errEl.style.display = 'block'; return; }
 
   btn.disabled = true;
   btn.textContent = 'Gerando…';
@@ -491,6 +887,19 @@ function copyInviteLink() {
     btn.textContent = 'Copiado ✓';
     setTimeout(() => btn.textContent = orig, 2000);
   });
+}
+
+// ── Toast ────────────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const t = document.getElementById('toast-global');
+  t.textContent = msg;
+  t.style.transform = 'translateY(0)';
+  t.style.opacity = '1';
+  setTimeout(() => { t.style.transform = 'translateY(40px)'; t.style.opacity = '0'; }, 2500);
+}
+
+function copiarLink(url) {
+  navigator.clipboard.writeText(url).then(() => showToast('✓ Link copiado!'));
 }
 </script>
 {% endblock %}

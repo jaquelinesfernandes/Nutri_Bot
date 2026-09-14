@@ -19,10 +19,13 @@ O login em /auth/login-form já redireciona para /nutricionista/ quando plan='nu
 """
 from __future__ import annotations
 
+import logging
 import re
 import secrets
 from datetime import datetime, timedelta
 from pathlib import Path
+
+logger = logging.getLogger(__name__)
 from zoneinfo import ZoneInfo
 
 from fastapi import APIRouter, Depends, Form, HTTPException, Request, status
@@ -408,6 +411,9 @@ async def painel_nutricionista(
         week_meals = week_result.scalars().all()
         avg_kcal = round(sum(m.total_calories_kcal for m in week_meals) / 7, 0) if week_meals else None
 
+        # Dias únicos com registro nos últimos 7 dias (para dashboard engajamento)
+        days_with_data_7d = len({m.logged_at.astimezone(tz).date() for m in week_meals})
+
         # Inactive flag: sem registro há mais de 3 dias
         is_inactive = (
             last_logged_at is None
@@ -419,6 +425,7 @@ async def painel_nutricionista(
             "patient": patient,
             "last_logged_at": last_logged_at,
             "avg_kcal": avg_kcal,
+            "days_with_data_7d": days_with_data_7d,
             "is_inactive": is_inactive,
         })
 
@@ -428,6 +435,9 @@ async def painel_nutricionista(
         delta = user.trial_ends_at.replace(tzinfo=None) - datetime.utcnow()
         trial_days_left = max(0, delta.days)
 
+    from app.config import settings as _settings
+    _base = (_settings.app_url or "https://nutri-bot-ot0p.onrender.com").rstrip("/")
+
     return templates.TemplateResponse(
         request=request,
         name="nutricionista_painel.html",
@@ -436,11 +446,15 @@ async def painel_nutricionista(
             "active": "nutricionista",
             "patients_data": patients_data,
             "pending_links": pending_links,
+            "expired_links": [lk for lk in links if lk.status == "expired"],
+            "declined_links": [lk for lk in links if lk.status == "declined"],
+            "revoked_links":  [lk for lk in links if lk.status == "revoked"],
             "active_count": len(active_links),
             "inactive_count": sum(1 for p in patients_data if p["is_inactive"]),
             "pending_count": len(pending_links),
             "trial_days_left": trial_days_left,
             "max_patients": _MAX_PATIENTS,
+            "base_url": _base,
             # now_utc (naive) usado no template para calcular "X dias atrás"
             "now_utc": datetime.utcnow(),
         },
@@ -836,7 +850,7 @@ async def adicionar_nota(
     }, status_code=201)
 
 
-# ── B2B-2: Download PDF do paciente ──────────────────────────────────────────
+# ── B2B-2: Download PDF do paciente (enriquecido) ────────────────────────────
 
 @router.get("/api/nutricionista/paciente/{patient_id}/pdf")
 async def baixar_pdf_paciente(
@@ -844,24 +858,35 @@ async def baixar_pdf_paciente(
     user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    """Gera e retorna o PDF dos últimos 30 dias do paciente.
+    """Gera PDF clínico completo dos últimos 30 dias do paciente.
 
-    Reutiliza report_service.generate_report() existente.
-    O PDF não é salvo no banco (save=False) — geração sob demanda.
+    Usa template dedicado (data/report_nutri_template.html) com:
+    - Resumo executivo (kcal, aderência, meta)
+    - Macronutrientes (média proteína/carb/gordura)
+    - Calendário de aderência 30d
+    - Top alimentos consumidos
+    - Notas clínicas da nutricionista
+    - Histórico diário detalhado (kcal + macros por refeição)
     """
+    import uuid as _uuid
+    from collections import Counter, defaultdict
     from datetime import date as _date, timedelta as _td
+    from pathlib import Path as _Path
+
     from fastapi.responses import Response as _Response
-    from app.services.report import report_service
+    from jinja2 import Environment, FileSystemLoader
+    from sqlalchemy.orm import selectinload
+
+    from app.models.meal_log import MealLog
 
     nutri = _require_nutritionist(user)
 
-    import uuid as _uuid
     try:
         pid = _uuid.UUID(patient_id)
     except ValueError:
         raise HTTPException(status_code=422, detail="ID inválido")
 
-    # Verifica vínculo ativo
+    # ── Verifica vínculo ativo ────────────────────────────────────────────────
     link_result = await db.execute(
         select(NutritionistPatient).where(
             NutritionistPatient.nutritionist_id == nutri.id,
@@ -869,7 +894,8 @@ async def baixar_pdf_paciente(
             NutritionistPatient.status == "active",
         )
     )
-    if not link_result.scalar_one_or_none():
+    link = link_result.scalar_one_or_none()
+    if not link:
         raise HTTPException(status_code=403, detail="Sem vínculo ativo com este paciente")
 
     pat_result = await db.execute(select(User).where(User.id == pid))
@@ -877,23 +903,157 @@ async def baixar_pdf_paciente(
     if not patient or patient.deleted_at:
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
 
-    end_date = _date.today()
-    start_date = end_date - _td(days=29)
+    tz = ZoneInfo("America/Sao_Paulo")
+    today = datetime.now(tz).date()
+    end_date = today
+    start_date = today - _td(days=29)
+    total_days = 30
 
-    try:
-        file_bytes, ext = await report_service.generate_report(
-            user=patient,
-            start_date=start_date,
-            end_date=end_date + _td(days=1),
-            period_type="monthly",
-            db=db,
-            save=False,
+    # ── Busca todos os registros dos últimos 30 dias ──────────────────────────
+    period_start = datetime(start_date.year, start_date.month, start_date.day, 0, 0, tzinfo=tz)
+    period_end   = datetime(end_date.year,  end_date.month,  end_date.day,  23, 59, 59, tzinfo=tz)
+
+    all_logs_result = await db.execute(
+        select(MealLog)
+        .options(selectinload(MealLog.food_items))
+        .where(
+            MealLog.user_id == pid,
+            MealLog.confirmed.is_(True),
+            MealLog.logged_at >= period_start,
+            MealLog.logged_at <= period_end,
         )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao gerar PDF: {e}")
+        .order_by(MealLog.logged_at.asc())
+    )
+    all_logs = all_logs_result.scalars().all()
 
-    media_type = "application/pdf" if ext == "pdf" else "text/html"
-    fname = f"nutribot_{patient.first_name or 'paciente'}_{end_date.strftime('%Y-%m-%d')}.{ext}"
+    # ── Agrupa por data ───────────────────────────────────────────────────────
+    days_map: dict = defaultdict(list)
+    for log in all_logs:
+        d = log.logged_at.astimezone(tz).date()
+        days_map[d].append(log)
+    days_sorted = sorted(days_map.keys(), reverse=True)
+
+    # ── Calendário de 30 dias (para grid visual) ──────────────────────────────
+    chart_days = []
+    for i in range(total_days):
+        d = start_date + _td(days=i)
+        logs_day = days_map.get(d, [])
+        day_kcal = round(sum(m.total_calories_kcal for m in logs_day), 0) if logs_day else 0.0
+        chart_days.append({"label": d.strftime("%d/%m"), "day_num": d.day, "kcal": day_kcal})
+
+    # ── Métricas agregadas ────────────────────────────────────────────────────
+    days_with_data = sum(1 for item in chart_days if item["kcal"] > 0)
+    goal_kcal = patient.daily_calorie_goal or 2000
+
+    all_kcal   = [m.total_calories_kcal for m in all_logs]
+    all_prot   = [m.total_protein_g     for m in all_logs]
+    all_carb   = [m.total_carb_g        for m in all_logs]
+    all_fat    = [m.total_fat_g         for m in all_logs]
+
+    avg_kcal_30d = round(sum(all_kcal) / days_with_data) if days_with_data else 0
+    avg_prot_30d = round(sum(all_prot) / days_with_data, 1) if days_with_data else 0.0
+    avg_carb_30d = round(sum(all_carb) / days_with_data, 1) if days_with_data else 0.0
+    avg_fat_30d  = round(sum(all_fat)  / days_with_data, 1) if days_with_data else 0.0
+
+    days_on_goal = sum(
+        1 for item in chart_days
+        if item["kcal"] > 0 and goal_kcal * 0.85 <= item["kcal"] <= goal_kcal * 1.15
+    )
+
+    # Metas de macros estimadas a partir da meta calórica (referência geral)
+    # P 25% · C 50% · G 25% (perfil default)
+    goal_prot = round(goal_kcal * 0.25 / 4)   # kcal → g (4 kcal/g)
+    goal_carb = round(goal_kcal * 0.50 / 4)
+    goal_fat  = round(goal_kcal * 0.25 / 9)   # kcal → g (9 kcal/g)
+
+    # ── Top alimentos ─────────────────────────────────────────────────────────
+    food_counter: Counter = Counter()
+    food_kcal_sum: dict[str, float] = defaultdict(float)
+    for log in all_logs:
+        for fi in log.food_items:
+            name = (fi.food_name or "").strip().lower()
+            if name:
+                food_counter[name] += 1
+                food_kcal_sum[name] += fi.calories_kcal or 0.0
+
+    top_raw = food_counter.most_common(10)
+    max_count = top_raw[0][1] if top_raw else 1
+    top_foods = [
+        {
+            "name": name.capitalize(),
+            "count": cnt,
+            "avg_kcal": round(food_kcal_sum[name] / cnt, 0) if cnt else 0,
+            "freq_pct": int(cnt / max_count * 100),
+        }
+        for name, cnt in top_raw
+    ]
+
+    # ── Notas clínicas ────────────────────────────────────────────────────────
+    notes_result = await db.execute(
+        select(ClinicalNote)
+        .where(
+            ClinicalNote.nutritionist_id == nutri.id,
+            ClinicalNote.patient_id == pid,
+        )
+        .order_by(ClinicalNote.consultation_date.desc())
+    )
+    notes = notes_result.scalars().all()
+
+    _MEAL_LABELS = {
+        "breakfast":       "☀️ Café",
+        "morning_snack":   "🍌 Lanche manhã",
+        "lunch":           "🍽️ Almoço",
+        "afternoon_snack": "🍊 Lanche tarde",
+        "dinner":          "🌙 Jantar",
+        "snack":           "🍎 Lanche",
+        "other":           "🍴 Outro",
+    }
+
+    # ── Renderiza template HTML ───────────────────────────────────────────────
+    template_dir = _Path(__file__).parent.parent.parent / "data"
+    env = Environment(loader=FileSystemLoader(str(template_dir)), autoescape=False)
+    tmpl = env.get_template("report_nutri_template.html")
+
+    html_content = tmpl.render(
+        patient_name=patient.first_name or link.patient_name or "Paciente",
+        nutritionist_name=nutri.first_name or nutri.email or "Nutricionista",
+        period_label=f"{start_date.strftime('%d/%m/%Y')} a {end_date.strftime('%d/%m/%Y')}",
+        generated_at=datetime.now(tz).strftime("%d/%m/%Y %H:%M"),
+        total_days=total_days,
+        days_with_data=days_with_data,
+        days_on_goal=days_on_goal,
+        avg_kcal_30d=avg_kcal_30d,
+        avg_prot_30d=avg_prot_30d,
+        avg_carb_30d=avg_carb_30d,
+        avg_fat_30d=avg_fat_30d,
+        goal_kcal=goal_kcal,
+        goal_prot=goal_prot,
+        goal_carb=goal_carb,
+        goal_fat=goal_fat,
+        chart_days=chart_days,
+        top_foods=top_foods,
+        notes=notes,
+        days_sorted=days_sorted,
+        days_map=dict(days_map),
+        meal_labels=_MEAL_LABELS,
+    )
+
+    # ── Gera PDF com WeasyPrint ───────────────────────────────────────────────
+    try:
+        import weasyprint as _wp  # type: ignore
+        pdf_bytes = _wp.HTML(string=html_content, base_url=str(template_dir)).write_pdf()
+        media_type = "application/pdf"
+        ext = "pdf"
+        file_bytes = pdf_bytes
+    except Exception as wp_err:
+        logger.warning("[PDF-NUTRI] WeasyPrint falhou (%s) — entregando HTML", wp_err)
+        media_type = "text/html; charset=utf-8"
+        ext = "html"
+        file_bytes = html_content.encode()
+
+    fname_safe = (patient.first_name or "paciente").replace(" ", "_").lower()
+    fname = f"nutribot_relatorio_{fname_safe}_{end_date.strftime('%Y-%m-%d')}.{ext}"
+    from fastapi.responses import Response as _Response
     return _Response(
         content=file_bytes,
         media_type=media_type,

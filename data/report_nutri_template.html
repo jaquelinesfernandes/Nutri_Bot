@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<style>
+/* ── Página (WeasyPrint) ───────────────────────────────────────────── */
+@page {
+  size: A4;
+  margin: 0 0 14mm 0;
+  @bottom-center {
+    content: "NutriBot · Relatório do Paciente · Pág. " counter(page);
+    font-size: 7.5pt; color: #9096C0;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
+  font-size: 10pt; color: #1E1B4B; line-height: 1.5;
+  background: #F8F8FF;
+}
+
+/* ── Header ─────────────────────────────────────────────────────────── */
+.header {
+  background: linear-gradient(135deg, #0F0D2E 0%, #1E1B4B 60%, #13113D 100%);
+  padding: 26pt 30pt 20pt; color: white; position: relative; overflow: hidden;
+}
+.header::before {
+  content: ''; position: absolute; bottom: -40pt; left: -30pt;
+  width: 180pt; height: 180pt;
+  background: radial-gradient(circle, rgba(99,102,241,.28) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.header::after {
+  content: ''; position: absolute; top: -20pt; right: -30pt;
+  width: 140pt; height: 140pt;
+  background: radial-gradient(circle, rgba(14,165,233,.2) 0%, transparent 70%);
+  border-radius: 50%;
+}
+.header-logo {
+  font-size: 8pt; font-weight: 700; letter-spacing: 2pt;
+  text-transform: uppercase; color: #A5B4FC; margin-bottom: 4pt;
+}
+.header-top {
+  display: flex; justify-content: space-between; align-items: flex-start;
+  position: relative; z-index: 1;
+}
+.header-patient h1 {
+  font-size: 22pt; font-weight: 700; margin: 0 0 4pt;
+  letter-spacing: -0.5pt; color: #fff;
+}
+.header-patient .subtitle {
+  font-size: 10pt; color: rgba(255,255,255,.65);
+}
+.header-meta {
+  text-align: right; font-size: 9pt; color: rgba(255,255,255,.55);
+  line-height: 1.7;
+}
+.header-meta strong { color: rgba(255,255,255,.85); }
+
+/* ── Body wrapper ─────────────────────────────────────────────────── */
+.body-wrap { padding: 20pt 28pt 0; }
+
+/* ── Section title ────────────────────────────────────────────────── */
+.section-title {
+  font-size: 9pt; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 1.2pt; color: #6366F1;
+  border-bottom: 1.5pt solid #E8E8F8; padding-bottom: 4pt;
+  margin: 18pt 0 12pt;
+}
+
+/* ── KPI cards ────────────────────────────────────────────────────── */
+.kpi-row { display: flex; gap: 10pt; margin-bottom: 18pt; }
+.kpi-card {
+  flex: 1; background: #fff; border-radius: 10pt;
+  padding: 12pt 14pt;
+  border: 1pt solid #E8E8F8;
+  box-shadow: 0 1pt 4pt rgba(30,27,75,.06);
+}
+.kpi-card .val {
+  font-size: 20pt; font-weight: 700; color: #1E1B4B; line-height: 1;
+}
+.kpi-card .val.ok   { color: #059669; }
+.kpi-card .val.warn { color: #D97706; }
+.kpi-card .val.err  { color: #DC2626; }
+.kpi-card .lbl { font-size: 8pt; color: #6B7280; margin-top: 3pt; }
+
+/* ── Macro bars ───────────────────────────────────────────────────── */
+.macro-row { display: flex; gap: 8pt; margin-bottom: 18pt; }
+.macro-item { flex: 1; }
+.macro-label { font-size: 8pt; font-weight: 600; color: #374151; margin-bottom: 3pt; }
+.macro-val { font-size: 14pt; font-weight: 700; color: #1E1B4B; }
+.macro-unit { font-size: 8pt; color: #9CA3AF; }
+.macro-bar-track { height: 6pt; background: #E8E8F8; border-radius: 9pt; overflow: hidden; margin-top: 4pt; }
+.macro-bar-fill { height: 100%; border-radius: 9pt; }
+.macro-bar-prot { background: #6366F1; }
+.macro-bar-carb { background: #0EA5E9; }
+.macro-bar-fat  { background: #F59E0B; }
+
+/* ── CSS Bar chart ────────────────────────────────────────────────── */
+.chart-section { margin-bottom: 18pt; }
+.chart-wrap {
+  background: #fff; border: 1pt solid #E8E8F8; border-radius: 10pt;
+  padding: 14pt 12pt 10pt;
+  box-shadow: 0 1pt 4pt rgba(30,27,75,.06);
+}
+.chart-title { font-size: 9pt; font-weight: 700; color: #374151; margin-bottom: 10pt; }
+.chart-bars {
+  display: flex; align-items: flex-end; gap: 2.5pt;
+  height: 80pt; padding-bottom: 16pt; position: relative;
+}
+/* Goal line (dashed) drawn as pseudo-element — approximated */
+.chart-bars::before {
+  content: ''; position: absolute;
+  left: 0; right: 0;
+  border-top: 1pt dashed rgba(16,185,129,.5);
+  bottom: {{ goal_bar_pct | default(50) }}%;
+  z-index: 0;
+}
+.bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; }
+.bar-fill {
+  width: 100%; border-radius: 2pt 2pt 0 0;
+  position: relative; z-index: 1;
+  min-height: 1pt;
+}
+.bar-label { font-size: 5pt; color: #9CA3AF; margin-top: 3pt; transform: rotate(-45deg); }
+
+/* ── Top foods table ─────────────────────────────────────────────── */
+.top-foods-table { width: 100%; border-collapse: collapse; }
+.top-foods-table th {
+  font-size: 8pt; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .05em; color: #6B7280;
+  border-bottom: 1pt solid #E8E8F8; padding: 5pt 8pt; text-align: left;
+}
+.top-foods-table td {
+  font-size: 9pt; color: #374151; padding: 6pt 8pt;
+  border-bottom: 0.5pt solid #F3F3FB;
+}
+.top-foods-table tr:last-child td { border-bottom: none; }
+.rank-badge {
+  display: inline-block; width: 14pt; height: 14pt; border-radius: 50%;
+  background: #6366F1; color: #fff; font-size: 7.5pt; font-weight: 700;
+  text-align: center; line-height: 14pt;
+}
+.rank-badge.gold { background: #F59E0B; }
+.rank-badge.silver { background: #94A3B8; }
+.rank-badge.bronze { background: #B45309; }
+.top-bar-track { width: 60pt; height: 5pt; background: #E8E8F8; border-radius: 9pt; display: inline-block; vertical-align: middle; margin-left: 6pt; }
+.top-bar-fill  { height: 100%; background: rgba(99,102,241,.5); border-radius: 9pt; }
+
+/* ── Daily log table ─────────────────────────────────────────────── */
+.day-section { page-break-inside: avoid; margin-bottom: 10pt; }
+.day-header {
+  display: flex; justify-content: space-between; align-items: center;
+  background: #F0F0FA; border-radius: 6pt 6pt 0 0;
+  padding: 6pt 10pt; font-size: 9pt;
+}
+.day-header .day-name { font-weight: 700; color: #1E1B4B; }
+.day-header .day-kcal { font-weight: 700; color: #6366F1; }
+.day-header .day-badge {
+  font-size: 7.5pt; font-weight: 600; border-radius: 20pt; padding: 1pt 7pt;
+}
+.badge-ok   { background: rgba(5,150,105,.12); color: #059669; }
+.badge-low  { background: rgba(217,119,6,.12);  color: #D97706; }
+.badge-over { background: rgba(220,38,38,.12);  color: #DC2626; }
+.badge-miss { background: rgba(156,163,175,.12); color: #6B7280; }
+.day-meals-table { width: 100%; border-collapse: collapse; border: 1pt solid #E8E8F8; border-top: none; border-radius: 0 0 6pt 6pt; overflow: hidden; }
+.day-meals-table td {
+  font-size: 8.5pt; color: #374151; padding: 5pt 10pt;
+  border-bottom: 0.5pt solid #F3F3FB; vertical-align: top;
+}
+.day-meals-table tr:last-child td { border-bottom: none; }
+.meal-type-cell { color: #6366F1; font-weight: 600; width: 80pt; }
+.meal-kcal-cell { color: #9CA3AF; font-size: 8pt; text-align: right; white-space: nowrap; }
+
+/* ── Notes ───────────────────────────────────────────────────────── */
+.note-item {
+  background: #fff; border-left: 3pt solid #6366F1;
+  border-radius: 0 8pt 8pt 0; padding: 10pt 14pt;
+  margin-bottom: 8pt; page-break-inside: avoid;
+  box-shadow: 0 1pt 3pt rgba(30,27,75,.06);
+}
+.note-date { font-size: 8pt; color: #6B7280; font-weight: 600; margin-bottom: 4pt; }
+.note-text { font-size: 9pt; color: #374151; white-space: pre-wrap; line-height: 1.5; }
+
+/* ── Adherence calendar ──────────────────────────────────────────── */
+.cal-grid { display: flex; flex-wrap: wrap; gap: 3pt; margin-top: 8pt; }
+.cal-day {
+  width: 18pt; height: 18pt; border-radius: 4pt;
+  font-size: 6.5pt; font-weight: 600; color: #fff;
+  display: flex; align-items: center; justify-content: center;
+}
+.cal-day.ok   { background: #059669; }
+.cal-day.low  { background: #D97706; }
+.cal-day.over { background: #DC2626; }
+.cal-day.miss { background: #E8E8F8; color: #9CA3AF; }
+
+/* ── Footer ─────────────────────────────────────────────────────── */
+.report-footer {
+  margin-top: 24pt; padding-top: 12pt;
+  border-top: 1pt solid #E8E8F8;
+  font-size: 7.5pt; color: #9CA3AF; text-align: center; line-height: 1.6;
+}
+.disclaimer {
+  background: #F0F0FA; border-radius: 8pt; padding: 10pt 14pt;
+  font-size: 8pt; color: #6B7280; line-height: 1.5;
+  margin-top: 16pt;
+}
+</style>
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  HEADER                                                          -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="header">
+  <div class="header-logo">🥗 NutriBot · Relatório Clínico do Paciente</div>
+  <div class="header-top">
+    <div class="header-patient">
+      <h1>{{ patient_name }}</h1>
+      <div class="subtitle">
+        Período: {{ period_label }} &nbsp;·&nbsp;
+        {{ total_days }} dias analisados
+      </div>
+    </div>
+    <div class="header-meta">
+      <div><strong>Nutricionista</strong></div>
+      <div>{{ nutritionist_name }}</div>
+      <div style="margin-top:4pt;"><strong>Gerado em</strong></div>
+      <div>{{ generated_at }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="body-wrap">
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  RESUMO EXECUTIVO                                                 -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="section-title">Resumo Executivo</div>
+<div class="kpi-row">
+  <div class="kpi-card">
+    {% if avg_kcal_30d == 0 %}
+      <div class="val">—</div>
+    {% elif avg_kcal_30d >= goal_kcal * 0.85 and avg_kcal_30d <= goal_kcal * 1.15 %}
+      <div class="val ok">{{ avg_kcal_30d }}</div>
+    {% elif avg_kcal_30d < goal_kcal * 0.7 or avg_kcal_30d > goal_kcal * 1.3 %}
+      <div class="val err">{{ avg_kcal_30d }}</div>
+    {% else %}
+      <div class="val warn">{{ avg_kcal_30d }}</div>
+    {% endif %}
+    <div class="lbl">Média kcal/dia ({{ total_days }}d)</div>
+  </div>
+  <div class="kpi-card">
+    <div class="val">{{ goal_kcal or '—' }}</div>
+    <div class="lbl">Meta diária (kcal)</div>
+  </div>
+  <div class="kpi-card">
+    {% set adh_pct = ((days_with_data / total_days) * 100) | int %}
+    <div class="val {% if adh_pct >= 70 %}ok{% elif adh_pct >= 40 %}warn{% else %}err{% endif %}">{{ days_with_data }}/{{ total_days }}</div>
+    <div class="lbl">Dias com registro ({{ adh_pct }}% aderência)</div>
+  </div>
+  <div class="kpi-card">
+    {% set goal_adh = days_on_goal %}
+    <div class="val {% if goal_adh >= days_with_data * 0.7 %}ok{% elif goal_adh >= days_with_data * 0.4 %}warn{% else %}err{% endif %}">{{ goal_adh }}</div>
+    <div class="lbl">Dias dentro da meta (±15%)</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  MACRONUTRIENTES                                                  -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="section-title">Macronutrientes — Médias Diárias</div>
+<div class="macro-row">
+  <div class="macro-item">
+    <div class="macro-label">🥩 Proteínas</div>
+    <div class="macro-val">{{ avg_prot_30d }}<span class="macro-unit"> g</span></div>
+    <div class="macro-bar-track">
+      <div class="macro-bar-fill macro-bar-prot" style="width:{{ [((avg_prot_30d / (goal_prot or 120)) * 100) | int, 100] | min }}%;"></div>
+    </div>
+    <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta aprox. {{ goal_prot }}g</div>
+  </div>
+  <div class="macro-item">
+    <div class="macro-label">🍚 Carboidratos</div>
+    <div class="macro-val">{{ avg_carb_30d }}<span class="macro-unit"> g</span></div>
+    <div class="macro-bar-track">
+      <div class="macro-bar-fill macro-bar-carb" style="width:{{ [((avg_carb_30d / (goal_carb or 250)) * 100) | int, 100] | min }}%;"></div>
+    </div>
+    <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta aprox. {{ goal_carb }}g</div>
+  </div>
+  <div class="macro-item">
+    <div class="macro-label">🥑 Gorduras</div>
+    <div class="macro-val">{{ avg_fat_30d }}<span class="macro-unit"> g</span></div>
+    <div class="macro-bar-track">
+      <div class="macro-bar-fill macro-bar-fat" style="width:{{ [((avg_fat_30d / (goal_fat or 65)) * 100) | int, 100] | min }}%;"></div>
+    </div>
+    <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Meta aprox. {{ goal_fat }}g</div>
+  </div>
+  <div class="macro-item">
+    <div class="macro-label">📊 Distribuição %</div>
+    {% set total_macro_kcal = (avg_prot_30d * 4) + (avg_carb_30d * 4) + (avg_fat_30d * 9) %}
+    {% if total_macro_kcal > 0 %}
+      {% set pct_prot = ((avg_prot_30d * 4 / total_macro_kcal) * 100) | round(0) | int %}
+      {% set pct_carb = ((avg_carb_30d * 4 / total_macro_kcal) * 100) | round(0) | int %}
+      {% set pct_fat  = ((avg_fat_30d  * 9 / total_macro_kcal) * 100) | round(0) | int %}
+      <div class="macro-val" style="font-size:9pt;line-height:1.8;">
+        <span style="color:#6366F1;">P {{ pct_prot }}%</span> &nbsp;
+        <span style="color:#0EA5E9;">C {{ pct_carb }}%</span> &nbsp;
+        <span style="color:#F59E0B;">G {{ pct_fat }}%</span>
+      </div>
+    {% else %}
+      <div class="macro-val">—</div>
+    {% endif %}
+    <div style="font-size:7pt;color:#9CA3AF;margin-top:2pt;">Ref.: P 25% · C 50% · G 25%</div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  CALENDÁRIO DE ADERÊNCIA (últimos 30 dias)                       -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="section-title">Calendário de Aderência (30 dias)</div>
+<div class="chart-wrap">
+  <div style="font-size:8pt;color:#6B7280;margin-bottom:6pt;">
+    <span style="display:inline-block;width:10pt;height:10pt;border-radius:2pt;background:#059669;vertical-align:middle;"></span> Na meta &nbsp;
+    <span style="display:inline-block;width:10pt;height:10pt;border-radius:2pt;background:#D97706;vertical-align:middle;"></span> Fora da meta &nbsp;
+    <span style="display:inline-block;width:10pt;height:10pt;border-radius:2pt;background:#DC2626;vertical-align:middle;"></span> Muito acima &nbsp;
+    <span style="display:inline-block;width:10pt;height:10pt;border-radius:2pt;background:#E8E8F8;vertical-align:middle;"></span> Sem registro
+  </div>
+  <div class="cal-grid">
+    {% for item in chart_days %}
+    {% set kcal = item.kcal %}
+    {% if kcal == 0 %}
+      <div class="cal-day miss" title="{{ item.label }}">{{ item.day_num }}</div>
+    {% elif kcal >= goal_kcal * 0.85 and kcal <= goal_kcal * 1.15 %}
+      <div class="cal-day ok" title="{{ item.label }}: {{ kcal }}kcal">{{ item.day_num }}</div>
+    {% elif kcal > goal_kcal * 1.3 %}
+      <div class="cal-day over" title="{{ item.label }}: {{ kcal }}kcal">{{ item.day_num }}</div>
+    {% else %}
+      <div class="cal-day low" title="{{ item.label }}: {{ kcal }}kcal">{{ item.day_num }}</div>
+    {% endif %}
+    {% endfor %}
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  TOP ALIMENTOS CONSUMIDOS                                         -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+{% if top_foods %}
+<div class="section-title">Top Alimentos Consumidos (30 dias)</div>
+<div class="chart-wrap" style="padding-bottom:14pt;">
+  <table class="top-foods-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Alimento</th>
+        <th>Ocorrências</th>
+        <th>Média kcal</th>
+        <th>Frequência</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for food in top_foods %}
+      <tr>
+        <td>
+          {% if loop.index == 1 %}<span class="rank-badge gold">1</span>
+          {% elif loop.index == 2 %}<span class="rank-badge silver">2</span>
+          {% elif loop.index == 3 %}<span class="rank-badge bronze">3</span>
+          {% else %}<span class="rank-badge">{{ loop.index }}</span>
+          {% endif %}
+        </td>
+        <td>{{ food.name }}</td>
+        <td>{{ food.count }}x</td>
+        <td>{{ food.avg_kcal | round(0) | int }} kcal</td>
+        <td>
+          <div class="top-bar-track">
+            <div class="top-bar-fill" style="width:{{ food.freq_pct }}%;"></div>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  NOTAS CLÍNICAS                                                   -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+{% if notes %}
+<div class="section-title">Notas Clínicas</div>
+{% for note in notes %}
+<div class="note-item">
+  <div class="note-date">🗓️ Consulta em {{ note.consultation_date.strftime('%d/%m/%Y') }} &nbsp;·&nbsp; Adicionado em {{ note.created_at.strftime('%d/%m/%Y %H:%M') }}</div>
+  <div class="note-text">{{ note.note_text }}</div>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  HISTÓRICO DE REFEIÇÕES (30 dias)                                 -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+{% if days_sorted %}
+<div class="section-title">Histórico de Refeições — 30 dias</div>
+{% for day in days_sorted %}
+  {% set logs = days_map[day] %}
+  {% set day_kcal = logs | sum(attribute='total_calories_kcal') | round(0) | int %}
+  {% set day_pct = ((day_kcal / goal_kcal) * 100) | int if goal_kcal else 0 %}
+<div class="day-section">
+  <div class="day-header">
+    <span class="day-name">{{ day.strftime('%A, %d/%m/%Y') | title }}</span>
+    <span class="day-kcal">{{ day_kcal }} kcal</span>
+    {% if day_pct == 0 %}
+      <span class="day-badge badge-miss">Sem meta</span>
+    {% elif day_pct >= 85 and day_pct <= 115 %}
+      <span class="day-badge badge-ok">✓ Na meta</span>
+    {% elif day_pct < 70 %}
+      <span class="day-badge badge-low">↓ Abaixo</span>
+    {% else %}
+      <span class="day-badge badge-over">↑ Acima</span>
+    {% endif %}
+  </div>
+  <table class="day-meals-table">
+    {% for log in logs | sort(attribute='logged_at') %}
+    <tr>
+      <td class="meal-type-cell">{{ meal_labels.get(log.meal_type, log.meal_type) }}</td>
+      <td>
+        {% if log.food_items %}
+          {% for fi in log.food_items %}
+            {{ fi.food_name }}{% if fi.quantity_g %} ({{ fi.quantity_g | int }}g){% endif %}{% if not loop.last %}, {% endif %}
+          {% endfor %}
+        {% else %}
+          <span style="color:#9CA3AF;">—</span>
+        {% endif %}
+      </td>
+      <td class="meal-kcal-cell">{{ log.total_calories_kcal | round(0) | int }} kcal · P {{ log.total_protein_g | round(1) }}g · C {{ log.total_carb_g | round(1) }}g · G {{ log.total_fat_g | round(1) }}g</td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+{% endfor %}
+{% endif %}
+
+<!-- ════════════════════════════════════════════════════════════════ -->
+<!--  DISCLAIMER + RODAPÉ                                              -->
+<!-- ════════════════════════════════════════════════════════════════ -->
+<div class="disclaimer">
+  <strong>⚠️ Aviso:</strong> Este relatório foi gerado pelo NutriBot com base nos dados registrados pelo próprio paciente. Os valores nutricionais são estimativas baseadas nas tabelas TACO/UNICAMP, TBCA/USP-FoRC e USDA e não substituem a avaliação clínica profissional. Dados de saúde protegidos pela LGPD (Lei 13.709/2018) — uso restrito ao nutricionista responsável.
+</div>
+
+<div class="report-footer">
+  Relatório gerado pelo <strong>NutriBot</strong> · {{ generated_at }}<br>
+  Paciente: <strong>{{ patient_name }}</strong> &nbsp;·&nbsp; Nutricionista: <strong>{{ nutritionist_name }}</strong><br>
+  <em>Este documento é confidencial. Não compartilhe sem o consentimento do paciente.</em>
+</div>
+
+</div><!-- /body-wrap -->
+</body>
+</html>
