@@ -292,7 +292,7 @@
 
 <!-- ── Resumo do dia ────────────────────────────────────── -->
 <!-- ── Totais do dia ─────────────────────────────────────── -->
-<div class="grid grid-cols-3 md:grid-cols-5 gap-3 mb-6" id="totalsGrid">
+<div class="grid grid-cols-3 md:grid-cols-6 gap-3 mb-6" id="totalsGrid">
   <div class="bg-white rounded-xl shadow-sm p-4">
     <p class="text-xs text-slate-400 mb-1">Calorias</p>
     <p class="text-xl font-bold text-slate-800" id="totKcal">
@@ -316,7 +316,70 @@
     <p class="text-xs text-slate-400 mb-1">🌿 Fibra</p>
     <p class="text-xl font-bold text-green-600" id="totFiber">{% if balance %}{{ balance.total_fiber_g | round(1) }}{% else %}0{% endif %}g</p>
   </div>
+  <!-- Tile de água -->
+  {% set w_color = '#0EA5E9' if pct_water >= 80 else ('#F59E0B' if pct_water >= 40 else '#94A3B8') %}
+  <div class="bg-white rounded-xl shadow-sm p-4" style="border-top:2px solid {{ w_color }};">
+    <p class="text-xs text-slate-400 mb-1">💧 Água</p>
+    <p class="text-xl font-bold" id="totWater" style="color:{{ w_color }};">
+      <span id="waterMlVal">{{ water_day_ml }}</span><span class="text-xs font-normal text-slate-400">/ {{ goal_water_ml }}ml</span>
+    </p>
+    <div style="height:3px;background:var(--card-b);border-radius:99px;margin-top:6px;overflow:hidden;">
+      <div id="waterBarH" style="height:100%;width:{{ pct_water }}%;background:{{ w_color }};border-radius:99px;transition:width .3s;"></div>
+    </div>
+  </div>
 </div>
+
+<!-- ── Card de hidratação do dia ──────────────────────────── -->
+<div class="bg-white rounded-xl shadow-sm p-5 mb-4" id="waterCard">
+  <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+      <p class="text-sm font-semibold text-slate-700">💧 Hidratação do dia</p>
+      <p class="text-xs text-slate-400" id="waterCardSub">
+        <span id="waterCardMl">{{ water_day_ml }}</span>ml de {{ goal_water_ml }}ml · <span id="waterCardPct">{{ pct_water }}</span>%
+      </p>
+    </div>
+    <!-- Botões rápidos -->
+    <div style="display:flex;gap:6px;flex-wrap:wrap;">
+      <button class="hist-water-btn" data-ml="150" title="1 copo americano (150ml)">🥤 150ml</button>
+      <button class="hist-water-btn" data-ml="250" title="1 copo (250ml)">🥤 copo</button>
+      <button class="hist-water-btn" data-ml="500" title="500ml">500ml</button>
+      <button class="hist-water-btn" data-ml="1000" title="1 litro">1L</button>
+      <button class="hist-water-btn hist-water-custom-toggle" title="Quantidade personalizada" style="border-color:#64748B;color:#64748B;">✏️ outro</button>
+    </div>
+  </div>
+  <!-- Input personalizado -->
+  <div id="histWaterCustom" style="display:none;margin-top:12px;">
+    <form id="histWaterForm" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+      <input id="histWaterInput" type="number" min="50" max="5000" step="50"
+             placeholder="ml (ex: 350)"
+             style="width:110px;padding:7px 10px;border:1px solid var(--card-b);border-radius:10px;background:var(--bg);color:var(--text-1);font-size:0.9rem;">
+      <button type="submit"
+              style="padding:7px 16px;border-radius:10px;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-weight:600;font-size:0.9rem;">
+        + Adicionar
+      </button>
+      <button type="button" id="histWaterCancel"
+              style="padding:7px 12px;border-radius:10px;background:var(--card);border:1px solid var(--card-b);color:var(--text-2);cursor:pointer;font-size:0.9rem;">
+        Cancelar
+      </button>
+    </form>
+  </div>
+  <div id="histWaterMsg" style="margin-top:8px;font-size:0.82rem;color:#16A34A;display:none;"></div>
+</div>
+
+<style>
+.hist-water-btn {
+  padding: 6px 12px;
+  border-radius: 20px;
+  border: 1.5px solid #0EA5E9;
+  background: transparent;
+  color: #0EA5E9;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 600;
+  transition: background .15s, color .15s;
+}
+.hist-water-btn:hover { background: #0EA5E9; color: #fff; }
+</style>
 
 <!-- ── Lista de refeições ────────────────────────────────── -->
 <div class="space-y-4" id="mealsList">
@@ -992,6 +1055,77 @@
       setSubmitLoading(false);
     }
   });
+
+  /* ── Água: registro no histórico ───────────────────────── */
+  (function () {
+    const selectedDate = document.getElementById('datePicker').value
+                      || document.getElementById('fmDate').value;
+    const goalWater = {{ goal_water_ml }};
+    let totalWater  = {{ water_day_ml }};
+
+    function wColor(pct) {
+      return pct >= 80 ? '#0EA5E9' : (pct >= 40 ? '#F59E0B' : '#94A3B8');
+    }
+
+    function updateWaterUI(newTotal) {
+      totalWater = newTotal;
+      const pct = Math.min(Math.round(newTotal / goalWater * 100), 100);
+      const c   = wColor(pct);
+
+      // Tile no grid de totais
+      document.getElementById('waterMlVal').textContent = newTotal;
+      const totEl = document.getElementById('totWater');
+      totEl.style.color = c;
+      totEl.closest('.rounded-xl').style.borderTopColor = c;
+      document.getElementById('waterBarH').style.width = pct + '%';
+      document.getElementById('waterBarH').style.background = c;
+
+      // Card de hidratação
+      document.getElementById('waterCardMl').textContent = newTotal;
+      document.getElementById('waterCardPct').textContent = pct;
+    }
+
+    async function addWater(ml) {
+      const fd = new FormData();
+      fd.append('volume_ml', ml);
+      fd.append('logged_date', selectedDate);
+      try {
+        const r = await fetch('/api/agua', { method: 'POST', body: fd });
+        const data = await r.json();
+        if (data.error) { showToast('❌ ' + data.error, true); return; }
+        updateWaterUI(data.total_ml);
+        const msg = document.getElementById('histWaterMsg');
+        msg.textContent = '+' + ml + 'ml adicionado! 💧';
+        msg.style.display = 'block';
+        setTimeout(() => { msg.style.display = 'none'; }, 2500);
+      } catch { showToast('Erro ao registrar água. Tente novamente.', true); }
+    }
+
+    document.querySelectorAll('.hist-water-btn[data-ml]').forEach(btn => {
+      btn.addEventListener('click', () => addWater(parseInt(btn.dataset.ml)));
+    });
+
+    document.querySelector('.hist-water-custom-toggle').addEventListener('click', () => {
+      const el = document.getElementById('histWaterCustom');
+      el.style.display = el.style.display === 'none' ? 'block' : 'none';
+      if (el.style.display === 'block') document.getElementById('histWaterInput').focus();
+    });
+
+    document.getElementById('histWaterCancel').addEventListener('click', () => {
+      document.getElementById('histWaterCustom').style.display = 'none';
+    });
+
+    document.getElementById('histWaterForm').addEventListener('submit', function (e) {
+      e.preventDefault();
+      const val = parseInt(document.getElementById('histWaterInput').value);
+      if (!val || val < 50 || val > 5000) {
+        showToast('Use entre 50 e 5.000ml.', true); return;
+      }
+      addWater(val);
+      document.getElementById('histWaterInput').value = '';
+      document.getElementById('histWaterCustom').style.display = 'none';
+    });
+  })();
 
   /* ── Delete: delegação de eventos ──────────────────────── */
   document.getElementById('mealsList').addEventListener('click', async (e) => {

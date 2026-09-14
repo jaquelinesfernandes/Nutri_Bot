@@ -228,10 +228,11 @@ async def logout_web():
 @router.post("/api/agua")
 async def registrar_agua(
     volume_ml: int = Form(...),
+    logged_date: str | None = Form(default=None),   # YYYY-MM-DD; None = hoje
     user: User | None = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db),
 ):
-    """Registra ingestão de água pelo painel web. Retorna totais atualizados."""
+    """Registra ingestão de água pelo painel web. Retorna totais do dia atualizados."""
     if user is None:
         return JSONResponse(status_code=401, content={"error": "Não autenticado"})
     if volume_ml < 50 or volume_ml > 5000:
@@ -242,10 +243,26 @@ async def registrar_agua(
 
     tz = ZoneInfo(user.timezone or "America/Sao_Paulo")
     now = datetime.now(tz)
-    day_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
-    day_end   = now.replace(hour=23, minute=59, second=59, microsecond=999999)
 
-    db.add(WaterLog(user_id=user.id, volume_ml=float(volume_ml)))
+    # Determina o dia alvo (hoje ou data informada)
+    if logged_date:
+        try:
+            from datetime import date as _date
+            tgt = _date.fromisoformat(logged_date)
+            # Bloqueia datas futuras
+            if tgt > now.date():
+                return JSONResponse(status_code=422, content={"error": "Não é possível registrar água em datas futuras."})
+            log_ts = datetime(tgt.year, tgt.month, tgt.day, now.hour, now.minute, tzinfo=tz)
+        except (ValueError, TypeError):
+            log_ts = now
+    else:
+        log_ts = now
+        tgt = now.date()
+
+    day_start = datetime(tgt.year, tgt.month, tgt.day, 0, 0, tzinfo=tz)
+    day_end   = datetime(tgt.year, tgt.month, tgt.day, 23, 59, 59, tzinfo=tz)
+
+    db.add(WaterLog(user_id=user.id, volume_ml=float(volume_ml), logged_at=log_ts))
     await db.flush()
 
     result = await db.execute(
@@ -258,8 +275,8 @@ async def registrar_agua(
     total = int(result.scalar_one() or 0)
     await db.commit()
 
-    goal  = user.daily_water_goal_ml or 2000
-    pct   = min(round(total / goal * 100), 100) if goal else 0
+    goal = user.daily_water_goal_ml or 2000
+    pct  = min(round(total / goal * 100), 100) if goal else 0
     return JSONResponse(content={"total_ml": total, "goal_ml": goal, "pct": pct, "added_ml": volume_ml})
 
 
@@ -501,12 +518,29 @@ async def historico(
             meals=[MealLogRead.model_validate(m) for m in meals],
         )
 
+    # ── Hidratação do dia selecionado ─────────────────────────────────────────
+    from app.models.water_log import WaterLog as _WL
+    from sqlalchemy import func as _sf
+    w_res = await db.execute(
+        select(_sf.coalesce(_sf.sum(_WL.volume_ml), 0.0)).where(
+            _WL.user_id == user.id,
+            _WL.logged_at >= day_start,
+            _WL.logged_at <= day_end,
+        )
+    )
+    water_day_ml  = int(w_res.scalar_one() or 0)
+    goal_water_ml = user.daily_water_goal_ml or 2000
+    pct_water     = min(round(water_day_ml / goal_water_ml * 100), 100) if goal_water_ml else 0
+
     return templates.TemplateResponse(
         request=request, name="historico.html",
         context={
             "user": user, "active": "historico",
             "selected_date": target.isoformat(),
             "balance": balance, "meal_labels": _MEAL_LABELS,
+            "water_day_ml":  water_day_ml,
+            "goal_water_ml": goal_water_ml,
+            "pct_water":     pct_water,
         }
     )
 
