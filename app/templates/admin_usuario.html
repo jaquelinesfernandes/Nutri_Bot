@@ -181,6 +181,174 @@
   </div>
 </div>
 
+<!-- Pacientes (só exibido para nutricionistas) -->
+{% if u.plan == 'nutritionist' %}
+<div class="sect-label" style="margin-top:20px">
+  Pacientes vinculados
+  <span style="font-size:11px;color:var(--t3);font-weight:400;text-transform:none;letter-spacing:0;margin-left:6px">
+    ({{ patients | length }} vínculo{{ 's' if patients | length != 1 else '' }})
+  </span>
+</div>
+
+<!-- Tabela de pacientes -->
+<div class="card" style="padding:0;margin-bottom:14px">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Paciente</th>
+          <th>Canal</th>
+          <th>Status</th>
+          <th>Consentimento</th>
+          <th>Convite</th>
+          <th>Metas prescritas</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for link, patient in patients %}
+        <tr id="link-{{ link.id }}">
+          <td>
+            {% if patient and not patient.deleted_at %}
+            <a href="/admin/usuarios/{{ patient.id }}" class="tbl-link">
+              {{ patient.first_name or link.patient_name or '(sem nome)' }}
+            </a>
+            {% if patient.email %}
+            <div style="font-size:11px;color:var(--t3)">{{ patient.email }}</div>
+            {% endif %}
+            {% elif link.patient_name %}
+            <span style="color:var(--t2)">{{ link.patient_name }}</span>
+            <div style="font-size:11px;color:var(--t3)">Conta não criada ainda</div>
+            {% else %}
+            <span style="color:var(--t3);font-size:12px">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if patient %}
+            <span style="font-size:11px;color:var(--t3);text-transform:uppercase">{{ patient.channel_type }}</span>
+            <div style="font-family:monospace;font-size:11px;color:var(--t2)">{{ patient.channel_id[:22] if patient.channel_id else '—' }}</div>
+            {% elif link.patient_phone %}
+            <span style="font-size:12px;color:var(--t3)">{{ link.patient_phone }}</span>
+            {% else %}
+            <span style="color:var(--t3)">—</span>
+            {% endif %}
+          </td>
+          <td>
+            <span class="pill
+              {% if link.status == 'active' %}pill-ok
+              {% elif link.status == 'pending' %}pill-warn
+              {% elif link.status == 'revoked' %}pill-deleted
+              {% elif link.status == 'declined' %}pill-deleted
+              {% else %}pill-free{% endif %}">
+              {{ link.status }}
+            </span>
+          </td>
+          <td style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums">
+            {{ link.consented_at.strftime('%d/%m/%Y') if link.consented_at else '—' }}
+            {% if link.revoked_at %}
+            <div style="font-size:11px;color:var(--danger)">
+              Revogado {{ link.revoked_at.strftime('%d/%m/%Y') }}
+            </div>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;font-variant-numeric:tabular-nums;color:var(--t3)">
+            {{ link.invited_at.strftime('%d/%m/%Y') if link.invited_at else '—' }}
+            {% if link.expires_at and link.status == 'pending' %}
+            <div style="font-size:11px;color:var(--warn)">
+              Expira {{ link.expires_at.strftime('%d/%m/%Y') }}
+            </div>
+            {% endif %}
+          </td>
+          <td style="font-size:11px;color:var(--t3)">
+            {% set has_goals = link.goal_protein_g or link.goal_carb_g or link.goal_fat_g %}
+            {% if has_goals %}
+            <span title="Prot: {{ link.goal_protein_g or '?' }}g · Carb: {{ link.goal_carb_g or '?' }}g · Fat: {{ link.goal_fat_g or '?' }}g">
+              Prot {{ link.goal_protein_g or '?' }}g
+              · Carb {{ link.goal_carb_g or '?' }}g
+              · Fat {{ link.goal_fat_g or '?' }}g
+            </span>
+            {% else %}
+            <span style="color:var(--t3)">padrão</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if link.status in ('active', 'pending') %}
+            <button class="btn btn-danger btn-sm"
+                    onclick="unlinkPatient('{{ u.id }}', '{{ link.id }}', this)">
+              Revogar
+            </button>
+            {% elif patient and not patient.deleted_at %}
+            <a href="/admin/usuarios/{{ patient.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="7" style="text-align:center;color:var(--t3);padding:24px">
+            Nenhum paciente vinculado ainda.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Vínculo manual de paciente -->
+{% if not u.deleted_at %}
+<div class="card" style="margin-bottom:14px">
+  <div class="card-title">Vincular paciente manualmente</div>
+  <p style="font-size:13px;color:var(--t2);margin-bottom:14px">
+    Busque um usuário cadastrado e crie o vínculo diretamente, sem passar pelo fluxo de convite.
+    O consentimento LGPD é de responsabilidade do admin — use apenas com autorização explícita do paciente.
+  </p>
+
+  <!-- Busca -->
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <input type="search" id="patientSearch"
+           placeholder="Nome, e-mail ou Telegram ID…"
+           style="flex:1"
+           oninput="searchPatients(this.value)">
+    <button class="btn btn-secondary" type="button" onclick="searchPatients(document.getElementById('patientSearch').value)">
+      🔍 Buscar
+    </button>
+  </div>
+
+  <!-- Resultados da busca -->
+  <div id="searchResults" style="display:none">
+    <div style="font-size:11px;color:var(--t3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.05em;font-weight:600">
+      Resultados
+    </div>
+    <div class="card" style="padding:0;background:var(--surface)">
+      <div class="tbl-wrap">
+        <table id="searchTable">
+          <thead>
+            <tr>
+              <th>Nome</th>
+              <th>Canal / ID</th>
+              <th>Plano</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="searchBody">
+            <!-- preenchido via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div id="searchEmpty" style="display:none;color:var(--t3);font-size:13px;padding:12px 0">
+    Nenhum usuário encontrado para esta busca.
+  </div>
+  <div id="searchLoading" style="display:none;color:var(--t3);font-size:13px;padding:12px 0">
+    ⏳ Buscando…
+  </div>
+</div>
+{% endif %}
+
+{% endif %}{# fim if u.plan == 'nutritionist' #}
+
 <!-- Histórico de alterações de plano -->
 {% if plan_history %}
 <div class="sect-label" style="margin-top:20px">Histórico de alterações de plano (admin)</div>
@@ -306,6 +474,107 @@ async function deleteUser() {
       setTimeout(() => location.href = '/admin/usuarios', 1800);
     } else showToast('❌ ' + (r.detail || 'Erro'), 'err');
   } catch(e) { showToast('❌ Erro de rede', 'err'); }
+}
+
+// ── Busca de pacientes para vincular ──────────────────────────────────────────
+let _searchTimer = null;
+
+function searchPatients(q) {
+  clearTimeout(_searchTimer);
+  if (q.length < 2) {
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('searchEmpty').style.display = 'none';
+    document.getElementById('searchLoading').style.display = 'none';
+    return;
+  }
+  document.getElementById('searchLoading').style.display = 'block';
+  document.getElementById('searchResults').style.display = 'none';
+  document.getElementById('searchEmpty').style.display = 'none';
+
+  _searchTimer = setTimeout(async () => {
+    try {
+      const url = '/admin/api/usuarios/buscar?q=' + encodeURIComponent(q)
+                + '&exclude_nutri_id=' + encodeURIComponent(userId);
+      const resp = await fetch(url);
+      const users = await resp.json();
+      document.getElementById('searchLoading').style.display = 'none';
+
+      if (!users.length) {
+        document.getElementById('searchEmpty').style.display = 'block';
+        return;
+      }
+
+      const tbody = document.getElementById('searchBody');
+      tbody.innerHTML = users.map(u => `
+        <tr>
+          <td>
+            <span style="font-weight:500;color:var(--t1)">${u.name}</span>
+            ${u.email ? `<div style="font-size:11px;color:var(--t3)">${u.email}</div>` : ''}
+          </td>
+          <td>
+            <span style="font-size:11px;color:var(--t3);text-transform:uppercase">${u.channel_type}</span>
+            <div style="font-family:monospace;font-size:11px;color:var(--t2)">${u.channel_id.substring(0,24)}</div>
+          </td>
+          <td><span class="pill pill-${u.plan}">${u.plan}</span></td>
+          <td>
+            <button class="btn btn-primary btn-sm"
+                    onclick="linkPatient('${u.id}', '${u.name.replace(/'/g, "\\'")}', this)">
+              + Vincular
+            </button>
+          </td>
+        </tr>
+      `).join('');
+      document.getElementById('searchResults').style.display = 'block';
+    } catch(e) {
+      document.getElementById('searchLoading').style.display = 'none';
+      showToast('❌ Erro ao buscar usuários', 'err');
+    }
+  }, 400);
+}
+
+async function linkPatient(patientId, patientName, btn) {
+  if (!confirm(`Vincular "${patientName}" como paciente desta nutricionista?\n\nConfirme que o paciente autorizou o compartilhamento de seus dados.`)) return;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/nutricionistas/' + userId + '/vincular-paciente',
+                              { patient_id: patientId });
+    if (r.ok) {
+      showToast('✅ Paciente "' + r.patient_name + '" vinculado com sucesso.', 'ok');
+      setTimeout(() => location.reload(), 1600);
+    } else {
+      showToast('❌ ' + (r.detail || 'Erro ao vincular'), 'err');
+      btn.disabled = false;
+      btn.textContent = '+ Vincular';
+    }
+  } catch(e) {
+    showToast('❌ Erro de rede', 'err');
+    btn.disabled = false;
+    btn.textContent = '+ Vincular';
+  }
+}
+
+async function unlinkPatient(nutriId, linkId, btn) {
+  if (!confirm('Revogar o acesso deste paciente?\nO vínculo será marcado como "revoked" e registrado no audit log.')) return;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/nutricionistas/' + nutriId + '/desvincular-paciente/' + linkId);
+    if (r.ok) {
+      showToast('✅ Vínculo revogado.', 'ok');
+      const row = document.getElementById('link-' + linkId);
+      if (row) row.style.opacity = '0.4';
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast('❌ ' + (r.detail || 'Erro'), 'err');
+      btn.disabled = false;
+      btn.textContent = 'Revogar';
+    }
+  } catch(e) {
+    showToast('❌ Erro de rede', 'err');
+    btn.disabled = false;
+    btn.textContent = 'Revogar';
+  }
 }
 </script>
 {% endblock %}

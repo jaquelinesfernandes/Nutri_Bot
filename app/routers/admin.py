@@ -562,6 +562,17 @@ async def admin_usuario_detalhe(
         {"uid": str(uid)},
     )).mappings().all()
 
+    # ── Pacientes (só carrega quando é nutricionista) ──
+    patients: list = []
+    if user.plan == "nutritionist":
+        patient_rows = (await db.execute(
+            select(NutritionistPatient, User)
+            .outerjoin(User, NutritionistPatient.patient_id == User.id)
+            .where(NutritionistPatient.nutritionist_id == uid)
+            .order_by(NutritionistPatient.invited_at.desc())
+        )).all()
+        patients = patient_rows
+
     return templates.TemplateResponse(
         request=request, name="admin_usuario.html",
         context={
@@ -571,6 +582,7 @@ async def admin_usuario_detalhe(
             "last_meal": last_meal,
             "subscriptions": subscriptions,
             "plan_history": plan_history,
+            "patients": patients,
         },
     )
 
@@ -629,6 +641,140 @@ async def admin_assinaturas(
             "per_page": per_page,
         },
     )
+
+
+# ── API JSON: vínculo manual paciente ↔ nutricionista ─────────────────────────
+
+@router.post("/api/nutricionistas/{nutri_id}/vincular-paciente")
+async def admin_link_patient(
+    request: Request,
+    nutri_id: str,
+    patient_id: str = Form(...),
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Cria vínculo ativo entre nutricionista e paciente sem passar pelo convite."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    import secrets
+    import uuid as _uuid
+
+    try:
+        nutri_uid   = _uuid.UUID(nutri_id)
+        patient_uid = _uuid.UUID(patient_id)
+    except ValueError:
+        raise HTTPException(422, "UUID inválido")
+
+    if nutri_uid == patient_uid:
+        raise HTTPException(422, "Nutricionista não pode ser vinculada a si mesma")
+
+    # Verifica que ambos existem
+    nutri = (await db.execute(
+        select(User).where(User.id == nutri_uid, User.plan == "nutritionist", User.deleted_at.is_(None))
+    )).scalar_one_or_none()
+    if not nutri:
+        raise HTTPException(404, "Nutricionista não encontrada ou plano incorreto")
+
+    patient = (await db.execute(
+        select(User).where(User.id == patient_uid, User.deleted_at.is_(None))
+    )).scalar_one_or_none()
+    if not patient:
+        raise HTTPException(404, "Paciente não encontrado")
+
+    # Verifica vínculo ativo ou pendente já existente
+    existing = (await db.execute(
+        select(NutritionistPatient)
+        .where(
+            NutritionistPatient.nutritionist_id == nutri_uid,
+            NutritionistPatient.patient_id == patient_uid,
+            NutritionistPatient.status.in_(["active", "pending"]),
+        )
+    )).scalar_one_or_none()
+    if existing:
+        raise HTTPException(409, f"Vínculo já existe com status '{existing.status}'")
+
+    now_utc = datetime.now(timezone.utc)
+    link = NutritionistPatient(
+        nutritionist_id=nutri_uid,
+        patient_id=patient_uid,
+        patient_name=patient.first_name,
+        invite_token=secrets.token_urlsafe(32),
+        status="active",
+        invited_at=now_utc,
+        expires_at=now_utc + timedelta(days=3650),   # 10 anos — vínculo manual
+        consented_at=now_utc,                        # admin bypass — responsabilidade do admin
+    )
+    db.add(link)
+    await db.commit()
+
+    await _log_action(
+        db, "link_patient_manual", nutri_uid,
+        {
+            "patient_id": str(patient_uid),
+            "patient_name": patient.first_name or "",
+            "nutri_name": nutri.first_name or "",
+        },
+        ip=_client_ip(request),
+    )
+    logger.info(
+        "[Admin] vínculo manual: nutri=%s → paciente=%s",
+        nutri.channel_id, patient.channel_id,
+    )
+    return JSONResponse({
+        "ok": True,
+        "link_id": str(link.id),
+        "patient_name": patient.first_name or "(sem nome)",
+        "patient_channel": patient.channel_id,
+    })
+
+
+@router.post("/api/nutricionistas/{nutri_id}/desvincular-paciente/{link_id}")
+async def admin_unlink_patient(
+    request: Request,
+    nutri_id: str,
+    link_id: str,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Revoga vínculo paciente (altera status para 'revoked')."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    import uuid as _uuid
+    try:
+        nutri_uid = _uuid.UUID(nutri_id)
+        link_uuid = _uuid.UUID(link_id)
+    except ValueError:
+        raise HTTPException(422, "UUID inválido")
+
+    link = (await db.execute(
+        select(NutritionistPatient)
+        .where(
+            NutritionistPatient.id == link_uuid,
+            NutritionistPatient.nutritionist_id == nutri_uid,
+        )
+    )).scalar_one_or_none()
+    if not link:
+        raise HTTPException(404, "Vínculo não encontrado")
+    if link.status == "revoked":
+        raise HTTPException(409, "Vínculo já está revogado")
+
+    old_status = link.status
+    link.status = "revoked"
+    link.revoked_at = datetime.now(timezone.utc)
+    await db.commit()
+
+    await _log_action(
+        db, "unlink_patient_admin", nutri_uid,
+        {
+            "link_id": str(link_uuid),
+            "patient_id": str(link.patient_id) if link.patient_id else None,
+            "old_status": old_status,
+        },
+        ip=_client_ip(request),
+    )
+    return JSONResponse({"ok": True, "old_status": old_status})
 
 
 # ── ② Painel de Nutricionistas ────────────────────────────────────────────────
@@ -749,6 +895,70 @@ async def admin_nutricionistas(
             },
         },
     )
+
+
+# ── API JSON: busca de usuários (para autocomplete) ──────────────────────────
+# ATENÇÃO: rota GET sem path param — deve vir ANTES de qualquer /{user_id}
+
+@router.get("/api/usuarios/buscar")
+async def admin_buscar_usuarios(
+    q: str = "",
+    exclude_nutri_id: str = "",   # exclui já-vinculados a esta nutricionista
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Retorna até 20 usuários que batem com q (nome, e-mail ou channel_id)."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    if len(q) < 2:
+        return JSONResponse([])
+
+    like = f"%{q}%"
+    stmt = (
+        select(User.id, User.first_name, User.email, User.channel_type, User.channel_id, User.plan)
+        .where(
+            User.deleted_at.is_(None),
+            User.first_name.ilike(like) | User.channel_id.ilike(like) | User.email.ilike(like),
+        )
+        .order_by(User.first_name)
+        .limit(20)
+    )
+
+    rows = (await db.execute(stmt)).mappings().all()
+
+    # Se foi passado nutri_id, exclui quem já está vinculado (ativo ou pendente)
+    excluded_ids: set[str] = set()
+    if exclude_nutri_id:
+        import uuid as _uuid
+        try:
+            nutri_uid = _uuid.UUID(exclude_nutri_id)
+            links = (await db.execute(
+                select(NutritionistPatient.patient_id)
+                .where(
+                    NutritionistPatient.nutritionist_id == nutri_uid,
+                    NutritionistPatient.status.in_(["active", "pending"]),
+                    NutritionistPatient.patient_id.isnot(None),
+                )
+            )).scalars().all()
+            excluded_ids = {str(pid) for pid in links}
+            excluded_ids.add(exclude_nutri_id)   # não vincular a si mesmo
+        except ValueError:
+            pass
+
+    result = [
+        {
+            "id": str(r.id),
+            "name": r.first_name or "(sem nome)",
+            "email": r.email or "",
+            "channel_type": r.channel_type,
+            "channel_id": r.channel_id,
+            "plan": r.plan,
+        }
+        for r in rows
+        if str(r.id) not in excluded_ids
+    ]
+    return JSONResponse(result)
 
 
 # ── API JSON: ações sobre usuários ───────────────────────────────────────────
