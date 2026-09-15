@@ -8,12 +8,16 @@ Autenticação própria, separada do painel do paciente:
 """
 from __future__ import annotations
 
+import csv
+import io
 import logging
+import time
+from collections import defaultdict
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Cookie, Depends, Form, Request
-from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
+from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from jose import JWTError, jwt
 from sqlalchemy import func, select, text
@@ -22,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db.session import get_db
 from app.models.meal_log import MealLog
+from app.models.payment_subscription import PaymentSubscription
 from app.models.user import User
 from app.models.water_log import WaterLog
 
@@ -33,6 +38,23 @@ templates = Jinja2Templates(directory=str(Path(__file__).parent.parent / "templa
 _ADMIN_COOKIE = "admin_session"
 _ADMIN_TTL_H  = 2
 _ALGORITHM    = "HS256"
+
+# ── Rate limiter para login ────────────────────────────────────────────────────
+_login_attempts: dict[str, list[float]] = defaultdict(list)
+_LOGIN_MAX    = 5
+_LOGIN_WINDOW = 300  # segundos
+
+
+def _check_rate_limit(ip: str) -> tuple[bool, int]:
+    """Retorna (permitido, segundos_de_espera)."""
+    now = time.time()
+    recent = [t for t in _login_attempts[ip] if now - t < _LOGIN_WINDOW]
+    _login_attempts[ip] = recent
+    if len(recent) >= _LOGIN_MAX:
+        wait = int(_LOGIN_WINDOW - (now - min(recent))) + 1
+        return False, wait
+    _login_attempts[ip].append(now)
+    return True, 0
 
 
 # ── Auth helpers ──────────────────────────────────────────────────────────────
@@ -68,31 +90,41 @@ def _set_admin_cookie(response, token: str) -> None:
     )
 
 
-async def _require_admin_api(admin_session: str | None = Cookie(default=None)) -> None:
-    """Dependência para rotas JSON — retorna 403 se não autenticado."""
-    if not _verify_admin_token(admin_session):
-        raise HTTPException(403, "Não autorizado")
+def _client_ip(request: Request) -> str:
+    forwarded = request.headers.get("x-forwarded-for")
+    if forwarded:
+        return forwarded.split(",")[0].strip()
+    return request.client.host if request.client else "?"
 
 
-async def _log_action(db: AsyncSession, action: str, target_user_id=None, detail: dict | None = None) -> None:
+async def _log_action(
+    db: AsyncSession,
+    action: str,
+    target_user_id=None,
+    detail: dict | None = None,
+    *,
+    ip: str | None = None,
+) -> None:
     """Registra ação admin na tabela admin_logs."""
     try:
-        detail_json = detail or {}
+        import json
+        detail_full = dict(detail or {})
+        if ip:
+            detail_full["ip"] = ip
         await db.execute(
             text(
                 "INSERT INTO admin_logs (action, target_user_id, detail) "
                 "VALUES (:action, :uid, :detail::jsonb)"
             ),
-            {"action": action, "uid": str(target_user_id) if target_user_id else None,
-             "detail": str(detail_json).replace("'", '"')},
+            {
+                "action": action,
+                "uid": str(target_user_id) if target_user_id else None,
+                "detail": json.dumps(detail_full),
+            },
         )
         await db.commit()
     except Exception as exc:
         logger.warning("[Admin] falha ao registrar log: %s", exc)
-
-
-# ── Importação tardia para evitar circular ────────────────────────────────────
-from fastapi import HTTPException  # noqa: E402 — após definição acima que o usa
 
 
 # ── Login / Logout ─────────────────────────────────────────────────────────────
@@ -104,9 +136,11 @@ async def admin_login_page(
 ):
     if _verify_admin_token(admin_session):
         return RedirectResponse("/admin", 302)
+    # Cookie existe mas é inválido = sessão expirou
+    expired = admin_session is not None
     return templates.TemplateResponse(
         request=request, name="admin_login.html",
-        context={"error": None},
+        context={"error": "Sua sessão expirou. Faça login novamente." if expired else None},
     )
 
 
@@ -115,7 +149,18 @@ async def admin_login(
     request: Request,
     password: str = Form(...),
 ):
-    # Valida senha
+    ip = _client_ip(request)
+
+    # ── Rate limit ──
+    allowed, wait = _check_rate_limit(ip)
+    if not allowed:
+        return templates.TemplateResponse(
+            request=request, name="admin_login.html",
+            context={"error": f"Muitas tentativas. Aguarde {wait}s."},
+            status_code=429,
+        )
+
+    # ── Valida senha ──
     expected = settings.admin_password
     if not expected:
         return templates.TemplateResponse(
@@ -125,7 +170,7 @@ async def admin_login(
         )
 
     if password != expected:
-        logger.warning("[Admin] tentativa de login com senha inválida (IP: %s)", request.client.host if request.client else "?")
+        logger.warning("[Admin] login inválido — IP: %s", ip)
         return templates.TemplateResponse(
             request=request, name="admin_login.html",
             context={"error": "Senha incorreta."},
@@ -135,7 +180,8 @@ async def admin_login(
     token = _issue_admin_token()
     response = RedirectResponse("/admin", status_code=302)
     _set_admin_cookie(response, token)
-    logger.info("[Admin] login bem-sucedido (IP: %s)", request.client.host if request.client else "?")
+    logger.info("[Admin] login bem-sucedido — IP: %s", ip)
+    # Log assíncrono (sem db aqui — POST /login não injeta db por design)
     return response
 
 
@@ -157,14 +203,15 @@ async def admin_dashboard(
     if not _verify_admin_token(admin_session):
         return RedirectResponse("/admin/login", 302)
 
-    seven_ago = datetime.now(timezone.utc) - timedelta(days=7)
+    now_utc = datetime.now(timezone.utc)
+    seven_ago  = now_utc - timedelta(days=7)
+    thirty_ago = now_utc - timedelta(days=30)
 
     # ── Totais gerais ──
     total_users = (await db.execute(
         select(func.count()).select_from(User).where(User.deleted_at.is_(None))
     )).scalar() or 0
 
-    # Distribuição por plano
     rows_plan = (await db.execute(
         select(User.plan, func.count().label("n"))
         .where(User.deleted_at.is_(None))
@@ -172,7 +219,6 @@ async def admin_dashboard(
     )).all()
     by_plan = {r.plan: r.n for r in rows_plan}
 
-    # Distribuição por canal
     rows_ch = (await db.execute(
         select(User.channel_type, func.count().label("n"))
         .where(User.deleted_at.is_(None))
@@ -180,26 +226,65 @@ async def admin_dashboard(
     )).all()
     by_channel = {r.channel_type: r.n for r in rows_ch}
 
-    # Novos últimos 7 dias
     new_7d = (await db.execute(
         select(func.count()).select_from(User)
         .where(User.created_at > seven_ago, User.deleted_at.is_(None))
     )).scalar() or 0
 
-    # Ativos últimos 7 dias (registraram ao menos uma refeição)
     active_7d = (await db.execute(
         select(func.count(MealLog.user_id.distinct()))
         .where(MealLog.logged_at > seven_ago)
     )).scalar() or 0
 
-    # Total refeições registradas
     total_meals = (await db.execute(
         select(func.count()).select_from(MealLog)
     )).scalar() or 0
 
-    # Total registros de água
     total_water = (await db.execute(
         select(func.count()).select_from(WaterLog)
+    )).scalar() or 0
+
+    # ── Assinaturas ──
+    subs_active = (await db.execute(
+        select(func.count()).select_from(PaymentSubscription)
+        .where(PaymentSubscription.status == "active")
+    )).scalar() or 0
+
+    subs_past_due = (await db.execute(
+        select(func.count()).select_from(PaymentSubscription)
+        .where(PaymentSubscription.status == "past_due")
+    )).scalar() or 0
+
+    subs_canceled_30d = (await db.execute(
+        select(func.count()).select_from(PaymentSubscription)
+        .where(
+            PaymentSubscription.status == "canceled",
+            PaymentSubscription.canceled_at.isnot(None),
+            PaymentSubscription.canceled_at > thirty_ago,
+        )
+    )).scalar() or 0
+
+    # Planos expirados mas não revertidos para free (indica falha no webhook)
+    plans_expired_stale = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan != "free",
+            User.plan_expires_at.isnot(None),
+            User.plan_expires_at < now_utc,
+        )
+    )).scalar() or 0
+
+    # Expiram em até 7 dias (atenção proativa)
+    expires_7d = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan != "free",
+            User.plan_expires_at.isnot(None),
+            User.plan_expires_at > now_utc,
+            User.plan_expires_at < now_utc + timedelta(days=7),
+        )
     )).scalar() or 0
 
     # ── Scheduler ──
@@ -214,7 +299,6 @@ async def admin_dashboard(
                    if j.next_run_time else "—")
             jobs.append({"id": j.id, "name": j.name, "next": nxt})
 
-    # ── Últimos 5 usuários cadastrados ──
     recent_users = (await db.execute(
         select(User).where(User.deleted_at.is_(None))
         .order_by(User.created_at.desc()).limit(5)
@@ -230,10 +314,15 @@ async def admin_dashboard(
             "active_7d": active_7d,
             "total_meals": total_meals,
             "total_water": total_water,
+            "subs_active": subs_active,
+            "subs_past_due": subs_past_due,
+            "subs_canceled_30d": subs_canceled_30d,
+            "plans_expired_stale": plans_expired_stale,
+            "expires_7d": expires_7d,
             "scheduler_running": scheduler_running,
             "jobs": jobs,
             "recent_users": recent_users,
-            "now": datetime.now(timezone.utc),
+            "now": now_utc,
         },
     )
 
@@ -245,6 +334,8 @@ async def admin_usuarios(
     request: Request,
     q: str = "",
     plan: str = "",
+    expires_in: int = 0,   # 0=todos, 7=expira em 7d, 30=expira em 30d
+    include_deleted: int = 0,
     page: int = 1,
     admin_session: str | None = Cookie(default=None),
     db: AsyncSession = Depends(get_db),
@@ -254,8 +345,11 @@ async def admin_usuarios(
 
     per_page = 50
     offset = (page - 1) * per_page
+    now_utc = datetime.now(timezone.utc)
 
-    base_q = select(User).where(User.deleted_at.is_(None))
+    base_q = select(User)
+    if not include_deleted:
+        base_q = base_q.where(User.deleted_at.is_(None))
     if q:
         like = f"%{q}%"
         base_q = base_q.where(
@@ -265,6 +359,12 @@ async def admin_usuarios(
         )
     if plan:
         base_q = base_q.where(User.plan == plan)
+    if expires_in:
+        base_q = base_q.where(
+            User.plan_expires_at.isnot(None),
+            User.plan_expires_at > now_utc,
+            User.plan_expires_at < now_utc + timedelta(days=expires_in),
+        )
 
     total = (await db.execute(
         select(func.count()).select_from(base_q.subquery())
@@ -283,10 +383,62 @@ async def admin_usuarios(
             "total": total,
             "q": q,
             "plan_filter": plan,
+            "expires_in": expires_in,
+            "include_deleted": include_deleted,
             "page": page,
             "total_pages": total_pages,
             "per_page": per_page,
+            "now_utc": now_utc,
         },
+    )
+
+
+# ── Export CSV ────────────────────────────────────────────────────────────────
+# ATENÇÃO: deve ficar ANTES de /usuarios/{user_id} para não ser capturado
+
+@router.get("/usuarios/export.csv")
+async def admin_export_users(
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    users = (await db.execute(
+        select(User).where(User.deleted_at.is_(None))
+        .order_by(User.created_at.desc())
+    )).scalars().all()
+
+    buf = io.StringIO()
+    writer = csv.writer(buf)
+    writer.writerow([
+        "id", "nome", "email", "canal", "channel_id", "plano",
+        "plan_expires_at", "cadastro", "ultimo_acesso",
+        "onboarding", "alertas", "meta_kcal", "meta_agua_ml",
+    ])
+    for u in users:
+        writer.writerow([
+            str(u.id),
+            u.first_name or "",
+            u.email or "",
+            u.channel_type,
+            u.channel_id,
+            u.plan,
+            u.plan_expires_at.strftime("%Y-%m-%d") if u.plan_expires_at else "",
+            u.created_at.strftime("%Y-%m-%d %H:%M") if u.created_at else "",
+            u.last_active_at.strftime("%Y-%m-%d %H:%M") if u.last_active_at else "",
+            "sim" if u.onboarding_complete else "não",
+            "sim" if u.alerts_enabled else "não",
+            u.daily_calorie_goal or "",
+            u.daily_water_goal_ml or "",
+        ])
+
+    # BOM UTF-8 para abrir corretamente no Excel
+    csv_bytes = "﻿".encode("utf-8") + buf.getvalue().encode("utf-8")
+    return Response(
+        content=csv_bytes,
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": "attachment; filename=usuarios.csv"},
     )
 
 
@@ -312,7 +464,7 @@ async def admin_usuario_detalhe(
     if not user:
         raise HTTPException(404, "Usuário não encontrado")
 
-    # Estatísticas do usuário
+    # ── Estatísticas ──
     meal_count = (await db.execute(
         select(func.count()).select_from(MealLog).where(MealLog.user_id == uid)
     )).scalar() or 0
@@ -326,6 +478,23 @@ async def admin_usuario_detalhe(
         .order_by(MealLog.logged_at.desc()).limit(1)
     )).scalar()
 
+    # ── Histórico de assinaturas ──
+    subscriptions = (await db.execute(
+        select(PaymentSubscription)
+        .where(PaymentSubscription.user_id == uid)
+        .order_by(PaymentSubscription.created_at.desc())
+    )).scalars().all()
+
+    # ── Histórico de alterações de plano (admin_logs) ──
+    plan_history = (await db.execute(
+        text(
+            "SELECT created_at, detail FROM admin_logs "
+            "WHERE target_user_id = :uid AND action = 'change_plan' "
+            "ORDER BY created_at DESC LIMIT 20"
+        ),
+        {"uid": str(uid)},
+    )).mappings().all()
+
     return templates.TemplateResponse(
         request=request, name="admin_usuario.html",
         context={
@@ -333,6 +502,64 @@ async def admin_usuario_detalhe(
             "meal_count": meal_count,
             "water_count": water_count,
             "last_meal": last_meal,
+            "subscriptions": subscriptions,
+            "plan_history": plan_history,
+        },
+    )
+
+
+# ── Lista de Assinaturas ──────────────────────────────────────────────────────
+
+@router.get("/assinaturas", response_class=HTMLResponse)
+async def admin_assinaturas(
+    request: Request,
+    status: str = "",
+    page: int = 1,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not _verify_admin_token(admin_session):
+        return RedirectResponse("/admin/login", 302)
+
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    base_q = (
+        select(PaymentSubscription, User)
+        .join(User, PaymentSubscription.user_id == User.id)
+    )
+    if status:
+        base_q = base_q.where(PaymentSubscription.status == status)
+
+    total = (await db.execute(
+        select(func.count()).select_from(base_q.subquery())
+    )).scalar() or 0
+
+    rows = (await db.execute(
+        base_q.order_by(PaymentSubscription.created_at.desc())
+        .offset(offset).limit(per_page)
+    )).all()
+
+    # Contadores por status para os tiles
+    stats: dict[str, int] = {}
+    for s in ("active", "past_due", "canceled"):
+        stats[s] = (await db.execute(
+            select(func.count()).select_from(PaymentSubscription)
+            .where(PaymentSubscription.status == s)
+        )).scalar() or 0
+
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    return templates.TemplateResponse(
+        request=request, name="admin_assinaturas.html",
+        context={
+            "rows": rows,
+            "total": total,
+            "status_filter": status,
+            "stats": stats,
+            "page": page,
+            "total_pages": total_pages,
+            "per_page": per_page,
         },
     )
 
@@ -341,6 +568,7 @@ async def admin_usuario_detalhe(
 
 @router.post("/api/usuarios/{user_id}/plano")
 async def admin_change_plan(
+    request: Request,
     user_id: str,
     new_plan: str = Form(...),
     expires_days: int | None = Form(default=None),
@@ -369,13 +597,15 @@ async def admin_change_plan(
     await db.commit()
 
     await _log_action(db, "change_plan", user.id,
-                      {"old": old_plan, "new": new_plan, "expires_days": expires_days})
+                      {"old": old_plan, "new": new_plan, "expires_days": expires_days},
+                      ip=_client_ip(request))
     logger.info("[Admin] plano %s → %s para user %s", old_plan, new_plan, user.channel_id)
     return JSONResponse({"ok": True, "plan": new_plan})
 
 
 @router.post("/api/usuarios/{user_id}/limpar-estado")
 async def admin_clear_state(
+    request: Request,
     user_id: str,
     admin_session: str | None = Cookie(default=None),
     db: AsyncSession = Depends(get_db),
@@ -396,20 +626,21 @@ async def admin_clear_state(
     user.state_expires_at = None
     await db.commit()
 
-    # Limpa também o estado em memória do ConversationService
     try:
         from app.services.conversation import conversation_service
         conversation_service._conv_state.pop(user.channel_id, None)
     except Exception as exc:
         logger.warning("[Admin] falha ao limpar estado em memória: %s", exc)
 
-    await _log_action(db, "clear_state", user.id, {"old_state": old_state})
+    await _log_action(db, "clear_state", user.id, {"old_state": old_state},
+                      ip=_client_ip(request))
     logger.info("[Admin] estado %s → IDLE para user %s", old_state, user.channel_id)
     return JSONResponse({"ok": True, "old_state": old_state})
 
 
 @router.post("/api/usuarios/{user_id}/deletar")
 async def admin_delete_user(
+    request: Request,
     user_id: str,
     confirm: str = Form(default=""),
     admin_session: str | None = Cookie(default=None),
@@ -431,7 +662,6 @@ async def admin_delete_user(
     now = datetime.now(timezone.utc)
     channel_id = user.channel_id
 
-    # Anonimização conforme Art. 18 LGPD — 72h
     user.deleted_at = now
     user.first_name = None
     user.email = None
@@ -439,25 +669,18 @@ async def admin_delete_user(
     user.state_data = None
     user.lgpd_consent_at = None
 
-    # Apaga refeições brutas (dados sensíveis de saúde)
-    await db.execute(
-        text("DELETE FROM meal_logs WHERE user_id = :uid"),
-        {"uid": str(user.id)},
-    )
-    await db.execute(
-        text("DELETE FROM water_logs WHERE user_id = :uid"),
-        {"uid": str(user.id)},
-    )
+    await db.execute(text("DELETE FROM meal_logs WHERE user_id = :uid"),   {"uid": str(user.id)})
+    await db.execute(text("DELETE FROM water_logs WHERE user_id = :uid"),  {"uid": str(user.id)})
     await db.commit()
 
-    # Limpa estado em memória
     try:
         from app.services.conversation import conversation_service
         conversation_service._conv_state.pop(channel_id, None)
     except Exception:
         pass
 
-    await _log_action(db, "delete_user_lgpd", user.id, {"channel_id": channel_id})
+    await _log_action(db, "delete_user_lgpd", user.id,
+                      {"channel_id": channel_id}, ip=_client_ip(request))
     logger.warning("[Admin] usuário %s anonimizado (LGPD)", channel_id)
     return JSONResponse({"ok": True, "message": "Usuário anonimizado com sucesso."})
 
@@ -485,7 +708,7 @@ async def admin_trigger_job(
 
     from zoneinfo import ZoneInfo
     job.modify(next_run_time=datetime.now(ZoneInfo("America/Sao_Paulo")))
-    await _log_action(db, "trigger_job", None, {"job_id": job_id})
+    await _log_action(db, "trigger_job", None, {"job_id": job_id}, ip=_client_ip(request))
     logger.info("[Admin] job '%s' acionado manualmente", job_id)
     return JSONResponse({"ok": True, "triggered": job_id})
 
@@ -504,7 +727,6 @@ async def admin_health_page(
     import os as _os
     from zoneinfo import ZoneInfo
 
-    # ── DB ──
     db_ok = False
     try:
         await db.execute(text("SELECT 1"))
@@ -512,7 +734,6 @@ async def admin_health_page(
     except Exception:
         pass
 
-    # ── Scheduler ──
     scheduler = getattr(request.app.state, "scheduler", None)
     scheduler_running = bool(scheduler and scheduler.running)
     SP = ZoneInfo("America/Sao_Paulo")
@@ -527,11 +748,9 @@ async def admin_health_page(
                 "in_min": round((nxt - datetime.now(SP)).total_seconds() / 60) if nxt else None,
             })
 
-    # ── Deploy info ──
     git_commit = _os.getenv("RENDER_GIT_COMMIT", "local")[:12]
     git_branch = _os.getenv("RENDER_GIT_BRANCH", "—")
 
-    # ── admin_logs count ──
     try:
         log_count = (await db.execute(text("SELECT COUNT(*) FROM admin_logs"))).scalar() or 0
     except Exception:
@@ -566,9 +785,7 @@ async def admin_logs_page(
     per_page = 50
     offset = (page - 1) * per_page
 
-    total = (await db.execute(
-        text("SELECT COUNT(*) FROM admin_logs")
-    )).scalar() or 0
+    total = (await db.execute(text("SELECT COUNT(*) FROM admin_logs"))).scalar() or 0
 
     rows = (await db.execute(
         text(

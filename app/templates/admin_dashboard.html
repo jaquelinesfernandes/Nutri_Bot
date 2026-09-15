@@ -4,7 +4,7 @@
 
 {% block content %}
 
-<!-- Stat tiles -->
+<!-- Tiles principais -->
 <div class="stats-row">
   <div class="stat-tile accent">
     <div class="stat-val">{{ total_users }}</div>
@@ -23,6 +23,49 @@
     <div class="stat-lbl">Refeições registradas</div>
   </div>
 </div>
+
+<!-- Tiles de assinaturas -->
+<div class="sect-label">Assinaturas MercadoPago</div>
+<div class="stats-row">
+  <div class="stat-tile success">
+    <div class="stat-val">{{ subs_active }}</div>
+    <div class="stat-lbl">
+      <a href="/admin/assinaturas?status=active" style="color:inherit;text-decoration:none">
+        Ativas →
+      </a>
+    </div>
+  </div>
+  <div class="stat-tile {{ 'danger' if subs_past_due > 0 else '' }}">
+    <div class="stat-val">{{ subs_past_due }}</div>
+    <div class="stat-lbl">
+      <a href="/admin/assinaturas?status=past_due" style="color:inherit;text-decoration:none">
+        Inadimplentes →
+      </a>
+    </div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-val">{{ subs_canceled_30d }}</div>
+    <div class="stat-lbl">Canceladas (30d)</div>
+  </div>
+  <div class="stat-tile {{ 'warn' if expires_7d > 0 else '' }}">
+    <div class="stat-val">{{ expires_7d }}</div>
+    <div class="stat-lbl">
+      <a href="/admin/usuarios?expires_in=7" style="color:inherit;text-decoration:none">
+        Expiram em 7d →
+      </a>
+    </div>
+  </div>
+</div>
+
+{% if plans_expired_stale > 0 %}
+<div class="alert alert-danger" style="margin-bottom:16px">
+  ⚠️ <strong>{{ plans_expired_stale }} usuário{{ 's' if plans_expired_stale != 1 else '' }}</strong>
+  com plano expirado mas ainda registrado como não-free. Possível falha no webhook do MercadoPago.
+  <a href="/admin/usuarios?expires_in=0&plan=premium" style="color:inherit;margin-left:8px;text-decoration:underline">
+    Verificar →
+  </a>
+</div>
+{% endif %}
 
 <!-- Distribuições + Scheduler -->
 <div class="grid-2">
@@ -57,7 +100,7 @@
   </div>
 
   <!-- Scheduler -->
-  <div class="card">
+  <div class="card" id="scheduler">
     <div class="card-title">
       Scheduler
       <span style="margin-left:8px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
@@ -131,8 +174,9 @@
       </tbody>
     </table>
   </div>
-  <div style="margin-top:12px">
-    <a href="/admin/usuarios" class="btn btn-secondary btn-sm">Ver todos os usuários →</a>
+  <div style="margin-top:12px;display:flex;gap:8px">
+    <a href="/admin/usuarios" class="btn btn-secondary btn-sm">Ver todos →</a>
+    <a href="/admin/usuarios/export.csv" class="btn btn-secondary btn-sm">⬇ Export CSV</a>
   </div>
 </div>
 

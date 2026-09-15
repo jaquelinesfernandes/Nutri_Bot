@@ -131,6 +131,83 @@
   </div>
 </div>
 
+<!-- Assinaturas MercadoPago -->
+<div class="sect-label" style="margin-top:20px">Assinaturas MercadoPago</div>
+<div class="card" style="padding:0">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Gateway ID</th>
+          <th>Plano</th>
+          <th>Status</th>
+          <th>Próx. cobrança</th>
+          <th>Início</th>
+          <th>Cancelamento</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in subscriptions %}
+        <tr>
+          <td style="font-family:monospace;font-size:11px;color:var(--t2)">{{ s.gateway_subscription_id }}</td>
+          <td style="font-size:12px">{{ s.plan }}</td>
+          <td>
+            <span class="pill
+              {% if s.status == 'active' %}pill-ok
+              {% elif s.status == 'past_due' %}pill-deleted
+              {% else %}pill-free{% endif %}">
+              {{ s.status }}
+            </span>
+          </td>
+          <td style="font-size:12px;font-variant-numeric:tabular-nums;color:var(--t3)">
+            {{ s.current_period_end.strftime('%d/%m/%Y') if s.current_period_end else '—' }}
+          </td>
+          <td style="font-size:12px;color:var(--t3)">
+            {{ s.created_at.strftime('%d/%m/%Y') if s.created_at else '—' }}
+          </td>
+          <td style="font-size:12px;color:var(--t3)">
+            {{ s.canceled_at.strftime('%d/%m/%Y') if s.canceled_at else '—' }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="6" style="text-align:center;color:var(--t3);padding:20px">
+            Nenhuma assinatura via gateway registrada.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Histórico de alterações de plano -->
+{% if plan_history %}
+<div class="sect-label" style="margin-top:20px">Histórico de alterações de plano (admin)</div>
+<div class="card" style="padding:0">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr><th>Data</th><th>De</th><th>Para</th><th>Expiração (dias)</th><th>IP</th></tr>
+      </thead>
+      <tbody>
+        {% for h in plan_history %}
+        <tr>
+          <td style="font-size:12px;color:var(--t3);white-space:nowrap;font-variant-numeric:tabular-nums">
+            {{ h.created_at.strftime('%d/%m/%Y %H:%M') if h.created_at else '—' }}
+          </td>
+          <td><span class="pill pill-{{ h.detail.get('old','?') }}">{{ h.detail.get('old','?') }}</span></td>
+          <td><span class="pill pill-{{ h.detail.get('new','?') }}">{{ h.detail.get('new','?') }}</span></td>
+          <td style="font-size:12px;color:var(--t3)">{{ h.detail.get('expires_days') or '—' }}</td>
+          <td style="font-size:11px;font-family:monospace;color:var(--t3)">{{ h.detail.get('ip','—') }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
 <!-- Ações admin -->
 {% if not u.deleted_at %}
 <div class="sect-label" style="margin-top:20px">Ações administrativas</div>
@@ -177,7 +254,7 @@
       <div>
         <p style="font-size:13px;color:var(--t2);margin-bottom:8px">
           <strong style="color:var(--danger)">⚠️ Irreversível.</strong>
-          Anonimiza dados do usuário (LGPD Art. 18): apaga nome, e-mail, refeições e registros de água. Mantém o ID para fins de auditoria.
+          Anonimiza dados do usuário (LGPD Art. 18): apaga nome, e-mail, refeições e registros de água.
         </p>
         <button class="btn btn-danger" onclick="deleteUser()">
           🗑️ Deletar dados (LGPD)
@@ -203,7 +280,7 @@ async function changePlan() {
   if (days) body.expires_days = days;
   try {
     const r = await adminPost('/admin/api/usuarios/' + userId + '/plano', body);
-    if (r.ok) showToast('✅ Plano alterado para ' + plan, 'ok');
+    if (r.ok) { showToast('✅ Plano alterado para ' + plan, 'ok'); setTimeout(() => location.reload(), 1500); }
     else showToast('❌ ' + (r.detail || 'Erro'), 'err');
   } catch(e) { showToast('❌ Erro de rede', 'err'); }
 }
