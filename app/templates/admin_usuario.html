@@ -272,14 +272,26 @@
             {% endif %}
           </td>
           <td>
+            <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-start">
             {% if link.status in ('active', 'pending') %}
-            <button class="btn btn-danger btn-sm"
-                    onclick="unlinkPatient('{{ u.id }}', '{{ link.id }}', this)">
-              Revogar
-            </button>
-            {% elif patient and not patient.deleted_at %}
-            <a href="/admin/usuarios/{{ patient.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+              <button class="btn btn-danger btn-sm"
+                      onclick="unlinkPatient('{{ u.id }}', '{{ link.id }}', this)">
+                Revogar
+              </button>
+            {% elif link.status in ('expired', 'declined') %}
+              <button class="btn btn-warn btn-sm"
+                      onclick="resendInvite('{{ u.id }}', '{{ link.id }}', this)">
+                🔄 Reenviar convite
+              </button>
+              <button class="btn btn-danger btn-sm"
+                      onclick="deleteLink('{{ u.id }}', '{{ link.id }}', this)">
+                🗑️ Excluir
+              </button>
             {% endif %}
+            {% if patient and not patient.deleted_at and link.status not in ('active','pending') %}
+              <a href="/admin/usuarios/{{ patient.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+            {% endif %}
+            </div>
           </td>
         </tr>
         {% else %}
@@ -551,6 +563,50 @@ async function linkPatient(patientId, patientName, btn) {
     showToast('❌ Erro de rede', 'err');
     btn.disabled = false;
     btn.textContent = '+ Vincular';
+  }
+}
+
+async function resendInvite(nutriId, linkId, btn) {
+  if (!confirm('Reenviar convite?\nO link será regenerado com nova validade de 7 dias e status voltará a "pending".')) return;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/nutricionistas/' + nutriId + '/reenviar-convite/' + linkId);
+    if (r.ok) {
+      showToast('✅ Convite regenerado. Novo token ativo por 7 dias.', 'ok');
+      setTimeout(() => location.reload(), 1500);
+    } else {
+      showToast('❌ ' + (r.detail || 'Erro'), 'err');
+      btn.disabled = false;
+      btn.textContent = '🔄 Reenviar convite';
+    }
+  } catch(e) {
+    showToast('❌ Erro de rede', 'err');
+    btn.disabled = false;
+    btn.textContent = '🔄 Reenviar convite';
+  }
+}
+
+async function deleteLink(nutriId, linkId, btn) {
+  if (!confirm('Excluir este vínculo permanentemente?\nEsta ação não pode ser desfeita.')) return;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/nutricionistas/' + nutriId + '/excluir-link/' + linkId);
+    if (r.ok) {
+      showToast('✅ Vínculo excluído.', 'ok');
+      const row = document.getElementById('link-' + linkId);
+      if (row) { row.style.opacity = '0'; row.style.transition = 'opacity .3s'; }
+      setTimeout(() => location.reload(), 1200);
+    } else {
+      showToast('❌ ' + (r.detail || 'Erro'), 'err');
+      btn.disabled = false;
+      btn.textContent = '🗑️ Excluir';
+    }
+  } catch(e) {
+    showToast('❌ Erro de rede', 'err');
+    btn.disabled = false;
+    btn.textContent = '🗑️ Excluir';
   }
 }
 

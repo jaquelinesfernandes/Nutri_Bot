@@ -777,6 +777,112 @@ async def admin_unlink_patient(
     return JSONResponse({"ok": True, "old_status": old_status})
 
 
+@router.post("/api/nutricionistas/{nutri_id}/reenviar-convite/{link_id}")
+async def admin_resend_invite(
+    request: Request,
+    nutri_id: str,
+    link_id: str,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Regenera token e reativa prazo (7 dias) para um convite expirado ou recusado."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    import secrets
+    import uuid as _uuid
+
+    try:
+        nutri_uid = _uuid.UUID(nutri_id)
+        link_uuid = _uuid.UUID(link_id)
+    except ValueError:
+        raise HTTPException(422, "UUID inválido")
+
+    link = (await db.execute(
+        select(NutritionistPatient)
+        .where(
+            NutritionistPatient.id == link_uuid,
+            NutritionistPatient.nutritionist_id == nutri_uid,
+        )
+    )).scalar_one_or_none()
+    if not link:
+        raise HTTPException(404, "Vínculo não encontrado")
+    if link.status in ("active", "pending"):
+        raise HTTPException(409, f"Convite já está com status '{link.status}' — não é necessário reenviar")
+
+    now_utc = datetime.now(timezone.utc)
+    old_status = link.status
+    link.status = "pending"
+    link.invite_token = secrets.token_urlsafe(32)
+    link.invited_at = now_utc
+    link.expires_at = now_utc + timedelta(days=7)
+    link.consented_at = None
+    link.revoked_at = None
+    await db.commit()
+
+    await _log_action(
+        db, "resend_invite", nutri_uid,
+        {
+            "link_id": str(link_uuid),
+            "patient_id": str(link.patient_id) if link.patient_id else None,
+            "old_status": old_status,
+        },
+        ip=_client_ip(request),
+    )
+    logger.info("[Admin] convite regenerado: link=%s (era %s)", link_uuid, old_status)
+    return JSONResponse({"ok": True, "new_status": "pending", "old_status": old_status})
+
+
+@router.post("/api/nutricionistas/{nutri_id}/excluir-link/{link_id}")
+async def admin_delete_link(
+    request: Request,
+    nutri_id: str,
+    link_id: str,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove permanentemente um vínculo expirado, recusado ou revogado."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    import uuid as _uuid
+
+    try:
+        nutri_uid = _uuid.UUID(nutri_id)
+        link_uuid = _uuid.UUID(link_id)
+    except ValueError:
+        raise HTTPException(422, "UUID inválido")
+
+    link = (await db.execute(
+        select(NutritionistPatient)
+        .where(
+            NutritionistPatient.id == link_uuid,
+            NutritionistPatient.nutritionist_id == nutri_uid,
+        )
+    )).scalar_one_or_none()
+    if not link:
+        raise HTTPException(404, "Vínculo não encontrado")
+    if link.status in ("active", "pending"):
+        raise HTTPException(409, "Não é possível excluir um vínculo ativo ou pendente — revogue primeiro")
+
+    old_status = link.status
+    patient_id_str = str(link.patient_id) if link.patient_id else None
+    await db.delete(link)
+    await db.commit()
+
+    await _log_action(
+        db, "delete_link", nutri_uid,
+        {
+            "link_id": str(link_uuid),
+            "patient_id": patient_id_str,
+            "old_status": old_status,
+        },
+        ip=_client_ip(request),
+    )
+    logger.info("[Admin] vínculo excluído: link=%s (era %s)", link_uuid, old_status)
+    return JSONResponse({"ok": True, "deleted": str(link_uuid)})
+
+
 # ── ② Painel de Nutricionistas ────────────────────────────────────────────────
 
 @router.get("/nutricionistas", response_class=HTMLResponse)
