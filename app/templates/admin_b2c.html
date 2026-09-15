@@ -99,6 +99,22 @@
 
 </div>
 
+<!-- ── Gráfico 30 dias ── -->
+<div class="card" style="margin-bottom:20px">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+    <div class="card-title" style="margin-bottom:0">Atividade B2C — 30 dias</div>
+    <div style="display:flex;gap:14px">
+      <span style="font-size:12px;color:var(--accent);display:flex;align-items:center;gap:5px">
+        <span style="display:inline-block;width:10px;height:3px;background:var(--accent);border-radius:2px"></span>Cadastros
+      </span>
+      <span style="font-size:12px;color:var(--success);display:flex;align-items:center;gap:5px">
+        <span style="display:inline-block;width:10px;height:3px;background:var(--success);border-radius:2px"></span>Ativos
+      </span>
+    </div>
+  </div>
+  <canvas id="b2cChart" height="100" style="width:100%;display:block"></canvas>
+</div>
+
 <!-- ── Engajamento + Conversão ── -->
 <div class="grid-2" style="margin-bottom:20px">
 
@@ -199,12 +215,52 @@
   </div>
 </div>
 
+<!-- Batch action bar (flutuante, aparece quando linhas selecionadas) -->
+<div id="batchBar" hidden
+     style="position:sticky;bottom:16px;z-index:20;background:var(--card);
+            border:1px solid var(--accent);border-radius:12px;padding:12px 18px;
+            display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+            box-shadow:0 8px 32px rgba(0,0,0,.5)">
+  <span id="batchCount" style="font-size:13px;font-weight:700;color:var(--t1);white-space:nowrap">0 selecionados</span>
+  <select id="batchPlan" style="width:120px">
+    <option value="free">free</option>
+    <option value="premium">premium</option>
+    <option value="nutritionist">nutritionist</option>
+  </select>
+  <input type="number" id="batchDays" min="1" max="730" placeholder="dias (opcional)"
+         style="width:130px" title="Validade do plano em dias">
+  <button class="btn btn-primary btn-sm" onclick="submitBatch()">✓ Alterar plano</button>
+  <button class="btn btn-secondary btn-sm" onclick="clearSelection()">✕ Desmarcar</button>
+</div>
+
+<!-- Modal de notificação -->
+<div id="notifModal" hidden
+     style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);
+            display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;
+              padding:24px;width:100%;max-width:420px;box-shadow:0 16px 48px rgba(0,0,0,.5)">
+    <div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:4px">📨 Enviar mensagem</div>
+    <div id="notifUserName" style="font-size:12px;color:var(--t3);margin-bottom:14px"></div>
+    <textarea id="notifMsg" rows="4" placeholder="Digite a mensagem de reengajamento…"
+              style="resize:vertical;min-height:80px"></textarea>
+    <div style="font-size:11px;color:var(--t3);margin-top:4px;margin-bottom:14px">Entre 5 e 1000 caracteres.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary btn-sm" onclick="closeNotif()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="sendNotif()">Enviar via bot</button>
+    </div>
+  </div>
+</div>
+
 <!-- Tabela -->
 <div class="card" style="padding:0">
   <div class="tbl-wrap">
     <table>
       <thead>
         <tr>
+          <th style="width:32px">
+            <input type="checkbox" id="chkAll" onchange="toggleAll(this)"
+                   style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)">
+          </th>
           <th>Usuário</th>
           <th>Canal</th>
           <th>Plano</th>
@@ -218,7 +274,13 @@
       <tbody>
         {% for user, meal_count, last_meal in rows %}
         {% set days_inactive = ((now_utc - last_meal).days) if last_meal else none %}
-        <tr>
+        {% set is_notifiable = (days_inactive is not none and days_inactive >= 7) or (meal_count == 0) %}
+        <tr data-uid="{{ user.id }}">
+          <td>
+            <input type="checkbox" class="row-chk" value="{{ user.id }}"
+                   onchange="updateBatch()"
+                   style="width:14px;height:14px;cursor:pointer;accent-color:var(--accent)">
+          </td>
           <td>
             <a href="/admin/usuarios/{{ user.id }}" class="tbl-link">
               {{ user.first_name or '(sem nome)' }}
@@ -273,12 +335,19 @@
             {{ user.created_at.strftime('%d/%m/%Y') if user.created_at else '—' }}
           </td>
           <td>
-            <a href="/admin/usuarios/{{ user.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+            <div style="display:flex;gap:5px;flex-wrap:nowrap">
+              <a href="/admin/usuarios/{{ user.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+              {% if is_notifiable %}
+              <button class="btn btn-warn btn-sm"
+                      onclick="openNotif('{{ user.id }}', '{{ user.first_name or 'Usuário' | e }}')"
+                      title="Enviar mensagem de reengajamento">📨</button>
+              {% endif %}
+            </div>
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="8" style="text-align:center;color:var(--t3);padding:28px">
+          <td colspan="9" style="text-align:center;color:var(--t3);padding:28px">
             Nenhum usuário neste segmento.
           </td>
         </tr>
@@ -308,4 +377,137 @@
 </div>
 {% endif %}
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Gráfico 30 dias (Canvas) ──
+(function() {
+  const labels = {{ chart_labels | safe }};
+  const dataNew    = {{ chart_new    | safe }};
+  const dataActive = {{ chart_active | safe }};
+  const canvas = document.getElementById('b2cChart');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = canvas.offsetWidth * dpr;
+  canvas.height = 100 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = 100;
+  const n = labels.length;
+  const step = W / n;
+  const pad = { top: 8, bot: 22, left: 4, right: 4 };
+  const chartH = H - pad.top - pad.bot;
+  const maxVal = Math.max(...dataNew, ...dataActive, 1);
+
+  function drawSeries(data, color) {
+    ctx.beginPath();
+    data.forEach((v, i) => {
+      const x = pad.left + i * step + step / 2;
+      const y = pad.top + chartH - (v / maxVal * chartH);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    });
+    ctx.strokeStyle = color; ctx.lineWidth = 1.5; ctx.stroke();
+    const lx = pad.left + (n-1)*step + step/2;
+    const ly = pad.top + chartH - (data[n-1] / maxVal * chartH);
+    ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI*2);
+    ctx.fillStyle = color; ctx.fill();
+  }
+
+  // grid lines
+  ctx.strokeStyle = 'rgba(148,163,184,.08)'; ctx.lineWidth = 1;
+  [0.33, 0.66, 1].forEach(f => {
+    const y = pad.top + chartH * (1 - f);
+    ctx.beginPath(); ctx.moveTo(pad.left, y); ctx.lineTo(W - pad.right, y); ctx.stroke();
+  });
+
+  drawSeries(dataActive, '#10B981');
+  drawSeries(dataNew,    '#6366F1');
+
+  // x-axis labels (every 5th day)
+  ctx.fillStyle = '#475569'; ctx.font = '10px system-ui, sans-serif'; ctx.textAlign = 'center';
+  labels.forEach((lbl, i) => {
+    if (i % 5 === 0 || i === n-1) {
+      ctx.fillText(lbl, pad.left + i * step + step/2, H - 4);
+    }
+  });
+})();
+
+// ── Checkboxes & batch action bar ──
+function updateBatch() {
+  const checked = document.querySelectorAll('.row-chk:checked');
+  const bar = document.getElementById('batchBar');
+  document.getElementById('batchCount').textContent = checked.length + ' selecionado' + (checked.length === 1 ? '' : 's');
+  bar.hidden = checked.length === 0;
+  const all = document.querySelectorAll('.row-chk');
+  document.getElementById('chkAll').checked = (checked.length === all.length && all.length > 0);
+}
+
+function toggleAll(master) {
+  document.querySelectorAll('.row-chk').forEach(c => c.checked = master.checked);
+  updateBatch();
+}
+
+function clearSelection() {
+  document.querySelectorAll('.row-chk').forEach(c => c.checked = false);
+  document.getElementById('chkAll').checked = false;
+  updateBatch();
+}
+
+async function submitBatch() {
+  const checked = [...document.querySelectorAll('.row-chk:checked')].map(c => c.value);
+  if (checked.length === 0) return;
+  const plan = document.getElementById('batchPlan').value;
+  const days = document.getElementById('batchDays').value;
+  if (!confirm('Alterar plano de ' + checked.length + ' usuário(s) para "' + plan + '"?')) return;
+  const fd = new FormData();
+  fd.append('new_plan', plan);
+  fd.append('user_ids', JSON.stringify(checked));
+  if (days) fd.append('expires_days', days);
+  try {
+    const r = await fetch('/admin/api/b2c/batch-plan', { method: 'POST', body: fd });
+    const j = await r.json();
+    if (j.ok) {
+      showToast('✅ ' + j.message, 'ok');
+      clearSelection();
+      setTimeout(() => location.reload(), 1600);
+    } else {
+      showToast('❌ ' + (j.detail || 'Erro'), 'err');
+    }
+  } catch(e) {
+    showToast('❌ Erro de rede', 'err');
+  }
+}
+
+// ── Notificação ──
+let _notifUserId = null;
+function openNotif(uid, name) {
+  _notifUserId = uid;
+  document.getElementById('notifUserName').textContent = 'Para: ' + name;
+  document.getElementById('notifMsg').value = '';
+  document.getElementById('notifModal').hidden = false;
+  setTimeout(() => document.getElementById('notifMsg').focus(), 50);
+}
+function closeNotif() {
+  document.getElementById('notifModal').hidden = true;
+  _notifUserId = null;
+}
+async function sendNotif() {
+  const msg = document.getElementById('notifMsg').value.trim();
+  if (msg.length < 5) { showToast('Mensagem muito curta (mínimo 5 caracteres).', 'err'); return; }
+  if (msg.length > 1000) { showToast('Mensagem muito longa (máximo 1000).', 'err'); return; }
+  const fd = new FormData(); fd.append('message', msg);
+  try {
+    const r = await fetch('/admin/api/b2c/notificar/' + _notifUserId, { method: 'POST', body: fd });
+    const j = await r.json();
+    if (j.ok) { showToast('✅ Mensagem enviada!', 'ok'); closeNotif(); }
+    else showToast('❌ ' + (j.detail || 'Erro'), 'err');
+  } catch(e) {
+    showToast('❌ Erro de rede', 'err');
+  }
+}
+document.getElementById('notifModal').addEventListener('click', function(e) {
+  if (e.target === this) closeNotif();
+});
+</script>
 {% endblock %}

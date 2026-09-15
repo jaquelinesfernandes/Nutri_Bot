@@ -24,6 +24,29 @@
   </div>
 </div>
 
+<!-- Tiles de hoje -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
+    <div style="font-size:28px">🌅</div>
+    <div>
+      <div style="font-size:24px;font-weight:800;color:var(--t1);font-variant-numeric:tabular-nums">{{ new_today }}</div>
+      <div style="font-size:11px;color:var(--t3)">Cadastros hoje</div>
+    </div>
+  </div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px">
+    <div style="font-size:28px">🍽️</div>
+    <div>
+      <div style="font-size:24px;font-weight:800;color:var(--t1);font-variant-numeric:tabular-nums">{{ meals_today }}</div>
+      <div style="font-size:11px;color:var(--t3)">Refeições hoje</div>
+    </div>
+  </div>
+  <!-- Mini-gráfico 14 dias -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 18px">
+    <div style="font-size:11px;color:var(--t3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:6px">Cadastros — 14 dias</div>
+    <canvas id="dashMiniChart" height="44" style="width:100%;display:block"></canvas>
+  </div>
+</div>
+
 <!-- Tiles de assinaturas -->
 <div class="sect-label">Assinaturas MercadoPago</div>
 <div class="stats-row">
@@ -229,6 +252,57 @@
 
 </div>
 
+<!-- Audit log recente -->
+<div class="sect-label">Ações recentes no painel</div>
+<div class="card" style="padding:0;margin-bottom:20px">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Hora</th>
+          <th>Ação</th>
+          <th>IP</th>
+          <th>Detalhe</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in recent_logs %}
+        <tr>
+          <td style="font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--t3)">
+            {{ log.created_at.strftime('%d/%m %H:%M') if log.created_at else '—' }}
+          </td>
+          <td>
+            {% set ac = log.action or '' %}
+            <span class="pill {% if 'login_success' in ac %}pill-ok{% elif 'fail' in ac or 'block' in ac %}pill-deleted{% elif 'fix' in ac or 'bulk' in ac %}pill-warn{% else %}pill-free{% endif %}"
+                  style="font-size:11px">{{ ac }}</span>
+          </td>
+          <td style="font-family:monospace;font-size:11px;color:var(--t3)">
+            {{ (log.detail or {}).get('ip', '—') }}
+          </td>
+          <td style="font-size:12px;color:var(--t2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">
+            {% set d = log.detail or {} %}
+            {% if d.get('plan') %}→ {{ d.plan }}{% endif %}
+            {% if d.get('fixed') %}{{ d.fixed }} corrigidos{% endif %}
+            {% if d.get('target_name') %}{{ d.target_name }}{% endif %}
+          </td>
+          <td>
+            {% if log.target_user_id %}
+            <a href="/admin/usuarios/{{ log.target_user_id }}" class="btn btn-secondary btn-sm">Ver →</a>
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5" style="color:var(--t3);text-align:center;padding:20px">Nenhuma ação registrada ainda.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  <div style="padding:10px 14px;border-top:1px solid var(--border)">
+    <a href="/admin/logs" class="btn btn-secondary btn-sm">Ver todos os logs →</a>
+  </div>
+</div>
+
 <!-- Últimos cadastros -->
 <div class="sect-label">Últimos cadastros</div>
 <div class="card">
@@ -277,6 +351,52 @@
 
 {% block scripts %}
 <script>
+// ── Mini-gráfico 14 dias (cadastros) ──
+(function() {
+  const labels = {{ dash_chart_labels | safe }};
+  const data   = {{ dash_chart_data   | safe }};
+  const canvas = document.getElementById('dashMiniChart');
+  if (!canvas) return;
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = canvas.offsetWidth  * dpr;
+  canvas.height = 44 * dpr;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  const W = canvas.offsetWidth, H = 44;
+  const maxVal = Math.max(...data, 1);
+  const n = data.length;
+  const step = W / n;
+  const pad = 3;
+  // area fill
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = i * step + step / 2;
+    const y = H - pad - ((v / maxVal) * (H - pad * 2));
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.lineTo((n-1) * step + step/2, H);
+  ctx.lineTo(step/2, H);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(99,102,241,.18)';
+  ctx.fill();
+  // line
+  ctx.beginPath();
+  data.forEach((v, i) => {
+    const x = i * step + step / 2;
+    const y = H - pad - ((v / maxVal) * (H - pad * 2));
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.strokeStyle = '#6366F1';
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  // dot on last
+  const lx = (n-1) * step + step/2;
+  const lv = data[n-1];
+  const ly = H - pad - ((lv / maxVal) * (H - pad * 2));
+  ctx.beginPath(); ctx.arc(lx, ly, 3, 0, Math.PI*2);
+  ctx.fillStyle = '#6366F1'; ctx.fill();
+})();
+
 async function triggerJob(jobId, btn) {
   btn.disabled = true;
   btn.textContent = '⏳';

@@ -28,23 +28,58 @@
     }
     .form-group { margin-bottom: 18px; }
     label { font-size: 12px; color: #94A3B8; display: block; margin-bottom: 5px; }
-    input[type="password"] {
+
+    /* Wrapper para input + botão show/hide */
+    .pw-wrap {
+      position: relative;
+    }
+    .pw-wrap input {
       width: 100%; background: #1A2235; border: 1px solid rgba(148,163,184,.15);
-      border-radius: 8px; color: #E2E8F0; padding: 10px 14px;
+      border-radius: 8px; color: #E2E8F0; padding: 10px 42px 10px 14px;
       font-size: 14px; outline: none; transition: border-color .15s;
     }
-    input[type="password"]:focus { border-color: #6366F1; }
+    .pw-wrap input:focus { border-color: #6366F1; }
+    .pw-toggle {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      background: none; border: none; cursor: pointer; color: #64748B;
+      font-size: 16px; padding: 4px; line-height: 1;
+      transition: color .15s;
+    }
+    .pw-toggle:hover { color: #A5B4FC; }
+
+    /* Caps lock warning */
+    .caps-warn {
+      font-size: 11px; color: #F59E0B;
+      margin-top: 5px; display: none; align-items: center; gap: 5px;
+    }
+    .caps-warn.visible { display: flex; }
+
     .btn-login {
       width: 100%; padding: 11px; border-radius: 8px;
       background: #6366F1; color: #fff; border: none;
       font-size: 14px; font-weight: 600; cursor: pointer;
-      transition: opacity .15s;
+      transition: opacity .15s; display: flex; align-items: center;
+      justify-content: center; gap: 8px;
     }
-    .btn-login:hover { opacity: .88; }
+    .btn-login:hover:not(:disabled) { opacity: .88; }
+    .btn-login:disabled { opacity: .55; cursor: not-allowed; }
+
+    /* Spinner */
+    .spinner {
+      width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.3);
+      border-top-color: #fff; border-radius: 50%;
+      animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
     .error-msg {
       background: rgba(239,68,68,.1); border: 1px solid rgba(239,68,68,.25);
       color: #F87171; border-radius: 8px; padding: 10px 14px;
       font-size: 13px; margin-bottom: 16px;
+    }
+    /* Countdown dentro da mensagem de erro */
+    .rate-limit-countdown {
+      font-weight: 700; font-variant-numeric: tabular-nums;
     }
     .footer-note { text-align: center; font-size: 11px; color: #475569; margin-top: 20px; }
   </style>
@@ -58,19 +93,97 @@
     </div>
 
     {% if error %}
-    <div class="error-msg">⚠️ {{ error }}</div>
+    <div class="error-msg" id="errorMsg">⚠️ {{ error }}</div>
     {% endif %}
 
-    <form method="post" action="/admin/login">
+    <form method="post" action="/admin/login" id="loginForm">
       <div class="form-group">
         <label for="password">Senha de acesso</label>
-        <input type="password" id="password" name="password"
-               placeholder="••••••••••••" autofocus autocomplete="current-password">
+        <div class="pw-wrap">
+          <input type="password" id="password" name="password"
+                 placeholder="••••••••••••" autofocus autocomplete="current-password">
+          <button type="button" class="pw-toggle" id="pwToggle"
+                  onclick="togglePw()" aria-label="Mostrar/ocultar senha" title="Mostrar senha">
+            👁
+          </button>
+        </div>
+        <div class="caps-warn" id="capsWarn">
+          ⚠ Caps Lock ativado
+        </div>
       </div>
-      <button type="submit" class="btn-login">Entrar no painel</button>
+      <button type="submit" class="btn-login" id="submitBtn">
+        <span id="btnLabel">Entrar no painel</span>
+      </button>
     </form>
 
     <div class="footer-note">Sessão expira em 2 horas por segurança.</div>
   </div>
+
+<script>
+// ── Show / Hide senha ──
+function togglePw() {
+  const inp = document.getElementById('password');
+  const btn = document.getElementById('pwToggle');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    btn.textContent = '🙈';
+    btn.title = 'Ocultar senha';
+  } else {
+    inp.type = 'password';
+    btn.textContent = '👁';
+    btn.title = 'Mostrar senha';
+  }
+}
+
+// ── Caps Lock warning ──
+document.getElementById('password').addEventListener('keyup', function(e) {
+  const warn = document.getElementById('capsWarn');
+  if (e.getModifierState && e.getModifierState('CapsLock')) {
+    warn.classList.add('visible');
+  } else {
+    warn.classList.remove('visible');
+  }
+});
+
+// ── Loading state no submit ──
+document.getElementById('loginForm').addEventListener('submit', function() {
+  const btn   = document.getElementById('submitBtn');
+  const label = document.getElementById('btnLabel');
+  btn.disabled = true;
+  label.textContent = 'Entrando…';
+  const spinner = document.createElement('span');
+  spinner.className = 'spinner';
+  btn.appendChild(spinner);
+});
+
+// ── Countdown para rate limit ──
+(function() {
+  const msg = document.getElementById('errorMsg');
+  if (!msg) return;
+  const text = msg.textContent;
+  // Extrai "Aguarde Xs" do texto de erro
+  const m = text.match(/Aguarde\s+(\d+)\s*s/i);
+  if (!m) return;
+  let secs = parseInt(m[1], 10);
+  // Substitui os segundos por um span animado
+  msg.innerHTML = msg.innerHTML.replace(
+    /Aguarde\s+\d+\s*s/i,
+    'Aguarde <span class="rate-limit-countdown" id="cdSpan">' + secs + 's</span>'
+  );
+  const span = document.getElementById('cdSpan');
+  const btn  = document.getElementById('submitBtn');
+  if (btn) btn.disabled = true;
+  const iv = setInterval(() => {
+    secs--;
+    if (secs <= 0) {
+      clearInterval(iv);
+      span.textContent = '0s';
+      if (btn) { btn.disabled = false; }
+    } else {
+      span.textContent = secs + 's';
+    }
+  }, 1000);
+})();
+</script>
 </body>
 </html>

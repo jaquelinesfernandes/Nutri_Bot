@@ -355,6 +355,45 @@ async def admin_dashboard(
                    if j.next_run_time else "—")
             jobs.append({"id": j.id, "name": j.name, "next": nxt})
 
+    # ── Dados de "hoje" ──
+    today_start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
+
+    new_today = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.created_at >= today_start, User.deleted_at.is_(None))
+    )).scalar() or 0
+
+    meals_today = (await db.execute(
+        select(func.count()).select_from(MealLog)
+        .where(MealLog.logged_at >= today_start)
+    )).scalar() or 0
+
+    # ── Últimas 6 ações no audit log ──
+    recent_logs = (await db.execute(
+        text(
+            "SELECT created_at, action, target_user_id, detail "
+            "FROM admin_logs ORDER BY created_at DESC LIMIT 6"
+        )
+    )).mappings().all()
+
+    # ── Gráfico de cadastros (14 dias) ──
+    import json as _json
+    reg_by_day = (await db.execute(
+        text(
+            "SELECT date_trunc('day', created_at AT TIME ZONE 'America/Sao_Paulo')::date AS d,"
+            " COUNT(*) AS n FROM users "
+            "WHERE deleted_at IS NULL AND created_at > :since "
+            "GROUP BY d ORDER BY d"
+        ),
+        {"since": now_utc - timedelta(days=14)},
+    )).mappings().all()
+    reg_map = {str(r["d"]): r["n"] for r in reg_by_day}
+    dash_chart_labels, dash_chart_data = [], []
+    for i in range(13, -1, -1):
+        d = (now_utc - timedelta(days=i)).date()
+        dash_chart_labels.append(d.strftime("%d/%m"))
+        dash_chart_data.append(reg_map.get(str(d), 0))
+
     recent_users = (await db.execute(
         select(User).where(User.deleted_at.is_(None))
         .order_by(User.created_at.desc()).limit(5)
@@ -390,6 +429,15 @@ async def admin_dashboard(
             "jobs": jobs,
             "recent_users": recent_users,
             "now": now_utc,
+            # ── Hoje ──
+            "new_today": new_today,
+            "meals_today": meals_today,
+            # ── Audit log recente ──
+            "recent_logs": recent_logs,
+            # ── Mini-gráfico 14 dias ──
+            "dash_chart_labels": _json.dumps(dash_chart_labels),
+            "dash_chart_data":   _json.dumps(dash_chart_data),
+            "active": "dashboard",
         },
     )
 
@@ -787,6 +835,41 @@ async def admin_b2c(
 
     total_pages = max(1, (total_filtered + per_page - 1) // per_page)
 
+    # ── Dados do gráfico (30 dias) ────────────────────────────────────────────
+    import json as _json
+
+    new_by_day = (await db.execute(
+        text(
+            "SELECT date_trunc('day', created_at AT TIME ZONE 'America/Sao_Paulo')::date AS d,"
+            " COUNT(*) AS n FROM users "
+            "WHERE deleted_at IS NULL AND plan IN ('free','premium') AND created_at > :since "
+            "GROUP BY d ORDER BY d"
+        ),
+        {"since": thirty_ago},
+    )).mappings().all()
+
+    active_by_day = (await db.execute(
+        text(
+            "SELECT date_trunc('day', ml.logged_at AT TIME ZONE 'America/Sao_Paulo')::date AS d,"
+            " COUNT(DISTINCT ml.user_id) AS n "
+            "FROM meal_logs ml JOIN users u ON u.id = ml.user_id "
+            "WHERE ml.logged_at > :since AND u.plan IN ('free','premium') AND u.deleted_at IS NULL "
+            "GROUP BY d ORDER BY d"
+        ),
+        {"since": thirty_ago},
+    )).mappings().all()
+
+    # Preenche 30 posições (uma por dia), zeros quando sem dado
+    chart_labels, chart_new, chart_active = [], [], []
+    new_map    = {str(r["d"]): r["n"] for r in new_by_day}
+    active_map = {str(r["d"]): r["n"] for r in active_by_day}
+    for i in range(29, -1, -1):
+        d = (now_utc - timedelta(days=i)).date()
+        ds = str(d)
+        chart_labels.append(d.strftime("%d/%m"))
+        chart_new.append(new_map.get(ds, 0))
+        chart_active.append(active_map.get(ds, 0))
+
     return templates.TemplateResponse(
         request=request, name="admin_b2c.html",
         context={
@@ -819,8 +902,102 @@ async def admin_b2c(
             "q": q,
             "plan_f": plan_f,
             "now_utc": now_utc,
+            # gráfico
+            "chart_labels": _json.dumps(chart_labels),
+            "chart_new":    _json.dumps(chart_new),
+            "chart_active": _json.dumps(chart_active),
+            "active": "b2c",
         },
     )
+
+
+# ── API JSON: ações em lote B2C ───────────────────────────────────────────────
+
+@router.post("/api/b2c/batch-plan")
+async def admin_b2c_batch_plan(
+    request: Request,
+    new_plan: str = Form(...),
+    expires_days: int | None = Form(default=None),
+    user_ids: str = Form(...),   # JSON array de UUIDs
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Altera plano de múltiplos usuários B2C de uma vez (máx 100)."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+    if new_plan not in ("free", "premium", "nutritionist"):
+        raise HTTPException(422, "Plano inválido")
+
+    import json as _json, uuid as _uuid
+    try:
+        ids = _json.loads(user_ids)
+        if not isinstance(ids, list) or len(ids) == 0:
+            raise ValueError
+        if len(ids) > 100:
+            raise HTTPException(422, "Máximo de 100 usuários por lote")
+        uuids = [_uuid.UUID(i) for i in ids]
+    except (ValueError, _json.JSONDecodeError):
+        raise HTTPException(422, "user_ids inválido — envie um array JSON de UUIDs")
+
+    users = (await db.execute(
+        select(User).where(User.id.in_(uuids), User.deleted_at.is_(None))
+    )).scalars().all()
+
+    now_utc = datetime.now(timezone.utc)
+    new_expires = now_utc + timedelta(days=expires_days) if expires_days else None
+    ip = _client_ip(request)
+    changed = 0
+    for user in users:
+        old_plan = user.plan
+        user.plan = new_plan
+        user.plan_expires_at = new_expires
+        await _log_action(db, "batch_change_plan", user.id,
+                          {"old": old_plan, "new": new_plan, "expires_days": expires_days},
+                          ip=ip)
+        changed += 1
+
+    await db.commit()
+    logger.info("[Admin] batch-plan: %d usuários → %s", changed, new_plan)
+    return JSONResponse({"ok": True, "changed": changed, "plan": new_plan})
+
+
+@router.post("/api/b2c/notificar/{user_id}")
+async def admin_b2c_notify(
+    request: Request,
+    user_id: str,
+    message: str = Form(...),
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Envia mensagem de re-engajamento para um usuário B2C via canal nativo."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    msg = message.strip()
+    if len(msg) < 5:
+        raise HTTPException(422, "Mensagem muito curta (mínimo 5 caracteres)")
+    if len(msg) > 1000:
+        raise HTTPException(422, "Mensagem muito longa (máximo 1000 caracteres)")
+
+    import uuid as _uuid
+    user = (await db.execute(
+        select(User).where(User.id == _uuid.UUID(user_id), User.deleted_at.is_(None))
+    )).scalar_one_or_none()
+    if not user:
+        raise HTTPException(404, "Usuário não encontrado")
+
+    from app.services.notification import NotificationService
+    notif = NotificationService()
+    sent = await notif.send_text(user, msg)
+
+    await _log_action(db, "admin_notify", user.id,
+                      {"channel": user.channel_type, "msg_len": len(msg), "sent": sent},
+                      ip=_client_ip(request))
+
+    if not sent:
+        return JSONResponse({"ok": False,
+                             "detail": "Mensagem não enviada — verifique token do bot e channel_id"})
+    return JSONResponse({"ok": True, "channel": user.channel_type})
 
 
 # ── Lista de Assinaturas ──────────────────────────────────────────────────────
