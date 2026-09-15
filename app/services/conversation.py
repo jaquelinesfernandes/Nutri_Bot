@@ -217,8 +217,6 @@ class ConversationService:
         if message_type == "photo":
             return await self._process_photo_meal(user, bytes(content), caption, db)
         if message_type == "audio":
-            if not user.is_premium:
-                return "🎤 Registro por áudio é exclusivo do plano Premium!\nUse /premium para saber mais."
             return await self._process_audio_meal(user, bytes(content), db)
 
         return UNRECOGNIZED_RESPONSE
@@ -1432,8 +1430,7 @@ class ConversationService:
             "• /exportar\\_dados — exportar dados\n"
             "• /deletar\\_dados — apagar tudo (72h)\n"
             "• /feedback [texto] — enviar feedback\n"
-            "• /cancelar — cancelar ação em curso\n\n"
-            "🔓 */premium* — desbloquear foto, áudio e relatórios completos"
+            "• /cancelar — cancelar ação em curso"
         )
 
     async def _cmd_hoje(self, user: User, args, db: AsyncSession) -> str:
@@ -1698,7 +1695,6 @@ class ConversationService:
             analytics.premium_cta_shown(user.channel_id, "cmd_premium")
         return (
             "🌟 *NutriBot Premium*\n\n"
-            "✅ Registro por foto e áudio\n"
             "✅ Alertas de refeição personalizados\n"
             "✅ Relatório semanal completo com insights de IA\n"
             "✅ Histórico ilimitado\n\n"
