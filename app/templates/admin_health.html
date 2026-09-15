@@ -1,0 +1,103 @@
+{% extends "admin_base.html" %}
+{% block title %}Health Check{% endblock %}
+{% block page_title %}🩺 Health Check{% endblock %}
+
+{% block content %}
+
+<!-- Status geral -->
+<div class="stats-row" style="grid-template-columns:repeat(3,1fr)">
+
+  <div class="stat-tile {{ 'success' if db_ok else 'danger' }}">
+    <div class="stat-val" style="font-size:22px">
+      {{ '✅ Conectado' if db_ok else '❌ Falha' }}
+    </div>
+    <div class="stat-lbl">Banco de dados (Neon)</div>
+  </div>
+
+  <div class="stat-tile {{ 'success' if scheduler_running else 'danger' }}">
+    <div class="stat-val" style="font-size:22px">
+      {{ '✅ Rodando' if scheduler_running else '❌ Parado' }}
+    </div>
+    <div class="stat-lbl">Scheduler (APScheduler)</div>
+  </div>
+
+  <div class="stat-tile accent">
+    <div class="stat-val" style="font-size:16px;font-family:monospace">
+      {{ git_commit }}
+    </div>
+    <div class="stat-lbl">Deploy atual · branch {{ git_branch }}</div>
+  </div>
+
+</div>
+
+<!-- Jobs do scheduler -->
+<div class="sect-label">Jobs agendados</div>
+<div class="card" style="padding:0">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Job ID</th>
+          <th>Nome</th>
+          <th>Próximo disparo (BRT)</th>
+          <th>Em</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for j in jobs %}
+        <tr>
+          <td style="font-family:monospace;font-size:12px;color:var(--t2)">{{ j.id }}</td>
+          <td style="color:var(--t1)">{{ j.name }}</td>
+          <td style="font-variant-numeric:tabular-nums;font-size:12px">{{ j.next }}</td>
+          <td style="font-size:12px;color:var(--t3)">
+            {% if j.in_min is not none %}
+              {% if j.in_min < 60 %}
+                {{ j.in_min }}min
+              {% else %}
+                {{ (j.in_min / 60) | round(1) }}h
+              {% endif %}
+            {% else %}—{% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="text-align:center;color:var(--t3);padding:20px">
+            Nenhum job registrado.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Info do sistema -->
+<div class="sect-label">Ambiente</div>
+<div class="card">
+  <div class="kv-list">
+    <div class="kv-key">Servidor</div>
+    <div class="kv-val">Render (Free tier)</div>
+
+    <div class="kv-key">Banco</div>
+    <div class="kv-val">Neon PostgreSQL (serverless)</div>
+
+    <div class="kv-key">Horário servidor</div>
+    <div class="kv-val" style="font-variant-numeric:tabular-nums">
+      {{ now.strftime('%d/%m/%Y %H:%M:%S') }} BRT
+    </div>
+
+    <div class="kv-key">Commit deployado</div>
+    <div class="kv-val" style="font-family:monospace">{{ git_commit }}</div>
+
+    <div class="kv-key">Branch</div>
+    <div class="kv-val">{{ git_branch }}</div>
+
+    <div class="kv-key">Logs de auditoria</div>
+    <div class="kv-val">
+      {{ log_count }} ações registradas
+      <a href="/admin/logs" style="font-size:12px;color:#A5B4FC;margin-left:8px">ver →</a>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

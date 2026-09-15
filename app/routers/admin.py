@@ -490,6 +490,67 @@ async def admin_trigger_job(
     return JSONResponse({"ok": True, "triggered": job_id})
 
 
+# ── Health check visual ───────────────────────────────────────────────────────
+
+@router.get("/health", response_class=HTMLResponse)
+async def admin_health_page(
+    request: Request,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not _verify_admin_token(admin_session):
+        return RedirectResponse("/admin/login", 302)
+
+    import os as _os
+    from zoneinfo import ZoneInfo
+
+    # ── DB ──
+    db_ok = False
+    try:
+        await db.execute(text("SELECT 1"))
+        db_ok = True
+    except Exception:
+        pass
+
+    # ── Scheduler ──
+    scheduler = getattr(request.app.state, "scheduler", None)
+    scheduler_running = bool(scheduler and scheduler.running)
+    SP = ZoneInfo("America/Sao_Paulo")
+    jobs: list[dict] = []
+    if scheduler_running:
+        for j in scheduler.get_jobs():
+            nxt = j.next_run_time
+            jobs.append({
+                "id": j.id,
+                "name": j.name,
+                "next": nxt.astimezone(SP).strftime("%d/%m %H:%M") if nxt else "—",
+                "in_min": round((nxt - datetime.now(SP)).total_seconds() / 60) if nxt else None,
+            })
+
+    # ── Deploy info ──
+    git_commit = _os.getenv("RENDER_GIT_COMMIT", "local")[:12]
+    git_branch = _os.getenv("RENDER_GIT_BRANCH", "—")
+
+    # ── admin_logs count ──
+    try:
+        log_count = (await db.execute(text("SELECT COUNT(*) FROM admin_logs"))).scalar() or 0
+    except Exception:
+        log_count = "—"
+
+    return templates.TemplateResponse(
+        request=request, name="admin_health.html",
+        context={
+            "db_ok": db_ok,
+            "scheduler_running": scheduler_running,
+            "jobs": jobs,
+            "git_commit": git_commit,
+            "git_branch": git_branch,
+            "log_count": log_count,
+            "now": datetime.now(SP),
+        },
+    )
+
+
 # ── Logs de auditoria ─────────────────────────────────────────────────────────
 
 @router.get("/logs", response_class=HTMLResponse)
