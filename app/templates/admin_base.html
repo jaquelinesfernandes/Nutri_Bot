@@ -248,11 +248,12 @@
         <span class="icon">👥</span> Usuários
       </a>
       <div class="nav-section-label" style="margin-top:10px">Sistema</div>
-      <a href="/health" target="_blank" class="nav-link">
-        <span class="icon">🩺</span> Health Check
+      <a href="/admin/logs" class="nav-link {% if active == 'logs' %}active{% endif %}">
+        <span class="icon">📋</span> Logs de auditoria
       </a>
-      <a href="/scheduler/status" target="_blank" class="nav-link">
-        <span class="icon">🗓️</span> Scheduler
+      <a href="/health" target="_blank" class="nav-link"
+         title="Status do servidor (nova aba)">
+        <span class="icon">🩺</span> Health Check
       </a>
     </nav>
     <div class="sidebar-footer">

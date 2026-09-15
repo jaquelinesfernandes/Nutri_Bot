@@ -488,3 +488,44 @@ async def admin_trigger_job(
     await _log_action(db, "trigger_job", None, {"job_id": job_id})
     logger.info("[Admin] job '%s' acionado manualmente", job_id)
     return JSONResponse({"ok": True, "triggered": job_id})
+
+
+# ── Logs de auditoria ─────────────────────────────────────────────────────────
+
+@router.get("/logs", response_class=HTMLResponse)
+async def admin_logs_page(
+    request: Request,
+    page: int = 1,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not _verify_admin_token(admin_session):
+        return RedirectResponse("/admin/login", 302)
+
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    total = (await db.execute(
+        text("SELECT COUNT(*) FROM admin_logs")
+    )).scalar() or 0
+
+    rows = (await db.execute(
+        text(
+            "SELECT id, created_at, action, target_user_id, detail "
+            "FROM admin_logs ORDER BY created_at DESC LIMIT :lim OFFSET :off"
+        ),
+        {"lim": per_page, "off": offset},
+    )).mappings().all()
+
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    return templates.TemplateResponse(
+        request=request, name="admin_logs.html",
+        context={
+            "rows": rows,
+            "total": total,
+            "page": page,
+            "total_pages": total_pages,
+            "per_page": per_page,
+        },
+    )

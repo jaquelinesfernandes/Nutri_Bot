@@ -1,0 +1,78 @@
+{% extends "admin_base.html" %}
+{% block title %}Logs de auditoria{% endblock %}
+{% block page_title %}📋 Logs de auditoria{% endblock %}
+
+{% block content %}
+
+<div style="font-size:12px;color:var(--t3);margin-bottom:14px">
+  {{ total }} registro{{ 's' if total != 1 else '' }} · mostrando página {{ page }} de {{ total_pages }}
+</div>
+
+<div class="card" style="padding:0">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Data/hora</th>
+          <th>Ação</th>
+          <th>Usuário alvo</th>
+          <th>Detalhe</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for r in rows %}
+        <tr>
+          <td style="font-size:12px;white-space:nowrap;color:var(--t3);font-variant-numeric:tabular-nums">
+            {{ r.created_at.strftime('%d/%m/%Y %H:%M:%S') if r.created_at else '—' }}
+          </td>
+          <td>
+            <span class="pill
+              {% if 'delete' in r.action %}pill-deleted
+              {% elif 'plan' in r.action %}pill-premium
+              {% elif 'trigger' in r.action %}pill-warn
+              {% else %}pill-ok{% endif %}">
+              {{ r.action }}
+            </span>
+          </td>
+          <td style="font-family:monospace;font-size:11px;color:var(--t2)">
+            {% if r.target_user_id %}
+            <a href="/admin/usuarios/{{ r.target_user_id }}" style="color:var(--t2);text-decoration:none">
+              {{ r.target_user_id | string | truncate(20, True, '…') }}
+            </a>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-family:monospace;font-size:11px;color:var(--t3);max-width:280px;word-break:break-all">
+            {{ r.detail }}
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="4" style="text-align:center;color:var(--t3);padding:28px">
+            Nenhum log registrado ainda.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a class="pg-btn" href="?page={{ page - 1 }}">← Anterior</a>
+  {% endif %}
+
+  {% for p in range([1, page - 2]|max, [total_pages + 1, page + 3]|min) %}
+  <a class="pg-btn {% if p == page %}current{% endif %}" href="?page={{ p }}">{{ p }}</a>
+  {% endfor %}
+
+  {% if page < total_pages %}
+  <a class="pg-btn" href="?page={{ page + 1 }}">Próxima →</a>
+  {% endif %}
+
+  <span class="pg-info">Página {{ page }} de {{ total_pages }}</span>
+</div>
+{% endif %}
+
+{% endblock %}
