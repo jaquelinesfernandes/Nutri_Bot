@@ -1,0 +1,113 @@
+{% extends "admin_base.html" %}
+{% block title %}Usuários{% endblock %}
+{% block page_title %}👥 Usuários{% endblock %}
+
+{% block content %}
+
+<!-- Filtros -->
+<form method="get" action="/admin/usuarios" style="display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;">
+  <div style="flex:1;min-width:200px">
+    <input type="search" name="q" value="{{ q }}"
+           placeholder="Buscar por nome, ID ou e-mail…">
+  </div>
+  <div style="width:160px">
+    <select name="plan">
+      <option value="">Todos os planos</option>
+      <option value="free"          {% if plan_filter == 'free' %}selected{% endif %}>free</option>
+      <option value="premium"       {% if plan_filter == 'premium' %}selected{% endif %}>premium</option>
+      <option value="nutritionist"  {% if plan_filter == 'nutritionist' %}selected{% endif %}>nutritionist</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" type="submit">Filtrar</button>
+  {% if q or plan_filter %}
+  <a href="/admin/usuarios" class="btn btn-secondary">Limpar</a>
+  {% endif %}
+</form>
+
+<!-- Contagem -->
+<div style="font-size:12px;color:var(--t3);margin-bottom:10px">
+  {{ total }} usuário{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}
+  {% if q %} · busca: "<strong style="color:var(--t2)">{{ q }}</strong>"{% endif %}
+  {% if plan_filter %} · plano: <strong style="color:var(--t2)">{{ plan_filter }}</strong>{% endif %}
+</div>
+
+<!-- Tabela -->
+<div class="card" style="padding:0">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Nome</th>
+          <th>Canal / ID</th>
+          <th>Plano</th>
+          <th>Estado conversa</th>
+          <th>Último acesso</th>
+          <th>Cadastro</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set offset = (page - 1) * per_page %}
+        {% for u in users %}
+        <tr {% if u.deleted_at %}style="opacity:.5"{% endif %}>
+          <td style="color:var(--t3);font-size:12px;font-variant-numeric:tabular-nums">
+            {{ offset + loop.index }}
+          </td>
+          <td>
+            <a href="/admin/usuarios/{{ u.id }}" class="tbl-link">
+              {{ u.first_name or '(sem nome)' }}
+            </a>
+            {% if u.deleted_at %}<span class="pill pill-deleted" style="margin-left:4px">deletado</span>{% endif %}
+            {% if u.email %}<div style="font-size:11px;color:var(--t3)">{{ u.email }}</div>{% endif %}
+          </td>
+          <td>
+            <span style="font-size:11px;color:var(--t3);text-transform:uppercase">{{ u.channel_type }}</span>
+            <div style="font-family:monospace;font-size:11px;color:var(--t2)">{{ u.channel_id[:28] }}</div>
+          </td>
+          <td><span class="pill pill-{{ u.plan }}">{{ u.plan }}</span></td>
+          <td style="font-family:monospace;font-size:12px;
+            color:{{ 'var(--warn)' if u.conversation_state != 'IDLE' else 'var(--t3)' }}">
+            {{ u.conversation_state }}
+          </td>
+          <td style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums">
+            {{ u.last_active_at.strftime('%d/%m/%y %H:%M') if u.last_active_at else '—' }}
+          </td>
+          <td style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap">
+            {{ u.created_at.strftime('%d/%m/%Y') if u.created_at else '—' }}
+          </td>
+          <td>
+            <a href="/admin/usuarios/{{ u.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;color:var(--t3);padding:24px">
+          Nenhum usuário encontrado.
+        </td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Paginação -->
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a class="pg-btn" href="?q={{ q }}&plan={{ plan_filter }}&page={{ page - 1 }}">← Anterior</a>
+  {% endif %}
+
+  {% for p in range([1, page - 2]|max, [total_pages + 1, page + 3]|min) %}
+  <a class="pg-btn {% if p == page %}current{% endif %}"
+     href="?q={{ q }}&plan={{ plan_filter }}&page={{ p }}">{{ p }}</a>
+  {% endfor %}
+
+  {% if page < total_pages %}
+  <a class="pg-btn" href="?q={{ q }}&plan={{ plan_filter }}&page={{ page + 1 }}">Próxima →</a>
+  {% endif %}
+
+  <span class="pg-info">Página {{ page }} de {{ total_pages }}</span>
+</div>
+{% endif %}
+
+{% endblock %}

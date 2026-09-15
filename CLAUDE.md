@@ -95,6 +95,7 @@ MERCADOPAGO_WEBHOOK_SECRET
 MERCADOPAGO_MONTHLY_PLAN_ID
 MERCADOPAGO_ANNUAL_PLAN_ID
 ADMIN_API_KEY             # Protects /scheduler/trigger and /scheduler/status
+ADMIN_PASSWORD            # Acesso ao painel admin /admin (obrigatório em produção)
 POSTHOG_API_KEY           # Analytics
 SENTRY_DSN                # Error monitoring
 APP_URL                   # Public URL (used in bot links)
@@ -125,6 +126,7 @@ app/
     meals.py               # REST API meals
     reports.py             # REST API reports
     users.py               # REST API user profile
+    admin.py               # Painel admin /admin — auth JWT própria (type=admin), gestão de usuários, LGPD, scheduler
   services/
     conversation.py        # Conversational state machine (~61 KB) — main bot logic
     ai_service.py          # Anthropic Claude integration (text, vision, audio)
@@ -191,6 +193,8 @@ docs/
   fuzzy-match.md
   infra-arch-render-neon.md     # GCP migration plan (9 phases)
   infra-setup-render-neon.md    # Step-by-step Render + Neon setup
+  admin-panel.md                # Painel admin: autenticação, rotas, auditoria, roadmap
+  prd-historico-peso.md         # PRD para implementação futura do histórico de peso
 ```
 
 *Endpoints marked `*` require `X-Admin-Key: <ADMIN_API_KEY>` header when `ADMIN_API_KEY` is set.*
@@ -223,4 +227,5 @@ docs/
 | Post-6 UX | Login redesenhado (Telegram como primário) · recuperação de senha via magic link · sessão 365 dias sem re-login · calculadora TDEE no cadastro · banner CTA Telegram · countdown preciso no rate-limit · datepicker bloqueia datas futuras | ✅ |
 | B2B-1 | Infra · cadastro nutricionista · convites · deep link Telegram · scheduler expiração · LGPD consentimento | ✅ |
 | B2B-2 | Perfil do paciente · gráfico kcal 30d · notas clínicas · PDF on-demand · revogação pelo bot (estado REVOKING) | ✅ |
+| Admin-1 | Painel admin /admin · auth JWT própria · gestão usuários · LGPD anonimização · scheduler trigger · auditoria admin_logs | ✅ |
 | Fase 3 | App nativo / Web | 🗓️ Planejado |

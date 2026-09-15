@@ -97,6 +97,10 @@ class Settings(BaseSettings):
     # Gere com: python -c "import secrets; print(secrets.token_hex(32))"
     admin_api_key: str = ""
 
+    # Painel admin — /admin (interface web administrativa)
+    # Gere com: python -c "import secrets; print(secrets.token_urlsafe(32))"
+    admin_password: str = ""  # Obrigatório para acessar /admin em produção
+
     # Analytics
     posthog_api_key: str = ""
     posthog_host: str = "https://app.posthog.com"

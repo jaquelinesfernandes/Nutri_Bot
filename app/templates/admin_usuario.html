@@ -1,0 +1,234 @@
+{% extends "admin_base.html" %}
+{% block title %}{{ u.first_name or u.channel_id }}{% endblock %}
+{% block page_title %}
+  <a href="/admin/usuarios" style="color:var(--t3);text-decoration:none;font-weight:400">Usuários</a>
+  <span style="color:var(--t3);margin:0 6px">/</span>
+  {{ u.first_name or '(sem nome)' }}
+{% endblock %}
+
+{% block content %}
+
+{% if u.deleted_at %}
+<div class="alert alert-danger" style="margin-bottom:18px">
+  ⚠️ Este usuário foi anonimizado em {{ u.deleted_at.strftime('%d/%m/%Y às %H:%M') }} (LGPD).
+</div>
+{% endif %}
+
+<div class="grid-2" style="margin-bottom:0">
+
+  <!-- Info do usuário -->
+  <div class="card">
+    <div class="card-title">Dados do usuário</div>
+    <div class="kv-list">
+      <div class="kv-key">ID</div>
+      <div class="kv-val" style="font-family:monospace;font-size:12px">{{ u.id }}</div>
+
+      <div class="kv-key">Nome</div>
+      <div class="kv-val">{{ u.first_name or '—' }}</div>
+
+      <div class="kv-key">E-mail</div>
+      <div class="kv-val">{{ u.email or '—' }}</div>
+
+      <div class="kv-key">Canal</div>
+      <div class="kv-val"><span class="pill pill-free">{{ u.channel_type }}</span></div>
+
+      <div class="kv-key">Channel ID</div>
+      <div class="kv-val" style="font-family:monospace;font-size:12px;word-break:break-all">{{ u.channel_id }}</div>
+
+      <div class="kv-key">Plano</div>
+      <div class="kv-val">
+        <span class="pill pill-{{ u.plan }}">{{ u.plan }}</span>
+        {% if u.plan_expires_at %}
+        <span style="font-size:12px;color:var(--t3);margin-left:6px">
+          até {{ u.plan_expires_at.strftime('%d/%m/%Y') }}
+        </span>
+        {% endif %}
+      </div>
+
+      <div class="kv-key">Onboarding</div>
+      <div class="kv-val">
+        {% if u.onboarding_complete %}
+        <span class="pill pill-ok">completo</span>
+        {% else %}
+        <span class="pill pill-warn">passo {{ u.onboarding_step }}</span>
+        {% endif %}
+      </div>
+
+      <div class="kv-key">LGPD consent</div>
+      <div class="kv-val">{{ u.lgpd_consent_at.strftime('%d/%m/%Y') if u.lgpd_consent_at else '—' }}</div>
+
+      <div class="kv-key">Cadastro</div>
+      <div class="kv-val">{{ u.created_at.strftime('%d/%m/%Y %H:%M') if u.created_at else '—' }}</div>
+
+      <div class="kv-key">Último acesso</div>
+      <div class="kv-val">{{ u.last_active_at.strftime('%d/%m/%Y %H:%M') if u.last_active_at else '—' }}</div>
+
+      <div class="kv-key">Alertas</div>
+      <div class="kv-val">
+        {% if u.alerts_enabled %}<span class="pill pill-ok">ativados</span>
+        {% else %}<span class="pill pill-warn">desativados</span>{% endif %}
+        {% if u.alerts_paused_until %}
+        <span style="font-size:12px;color:var(--warn);margin-left:6px">
+          pausado até {{ u.alerts_paused_until.strftime('%d/%m %H:%M') }}
+        </span>
+        {% endif %}
+      </div>
+
+      <div class="kv-key">Meta calórica</div>
+      <div class="kv-val">{{ u.daily_calorie_goal or '—' }}{% if u.daily_calorie_goal %} kcal/dia{% endif %}</div>
+
+      <div class="kv-key">Meta de água</div>
+      <div class="kv-val">{{ u.daily_water_goal_ml or 2000 }} ml/dia</div>
+    </div>
+  </div>
+
+  <!-- Stats + Estado -->
+  <div style="display:flex;flex-direction:column;gap:14px">
+
+    <!-- Stats -->
+    <div class="card">
+      <div class="card-title">Estatísticas</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+        <div style="text-align:center;background:var(--surface);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:24px;font-weight:800;color:var(--t1)">{{ meal_count }}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px">refeições</div>
+        </div>
+        <div style="text-align:center;background:var(--surface);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:24px;font-weight:800;color:#38BDF8">{{ water_count }}</div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px">registros água</div>
+        </div>
+        <div style="text-align:center;background:var(--surface);border-radius:10px;padding:14px;border:1px solid var(--border)">
+          <div style="font-size:13px;font-weight:700;color:var(--t1)">
+            {{ last_meal.strftime('%d/%m') if last_meal else '—' }}
+          </div>
+          <div style="font-size:11px;color:var(--t3);margin-top:3px">últ. refeição</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Estado de conversa -->
+    <div class="card">
+      <div class="card-title">
+        Estado de conversa
+        {% if u.conversation_state != 'IDLE' %}
+        <span class="pill pill-warn" style="margin-left:6px">{{ u.conversation_state }}</span>
+        {% else %}
+        <span class="pill pill-ok" style="margin-left:6px">IDLE</span>
+        {% endif %}
+      </div>
+      {% if u.state_data %}
+      <pre style="background:var(--surface);border-radius:8px;padding:12px;font-size:11px;color:var(--t2);overflow:auto;max-height:100px;border:1px solid var(--border)">{{ u.state_data | tojson(indent=2) }}</pre>
+      {% else %}
+      <div style="color:var(--t3);font-size:13px">Sem dados de estado pendente.</div>
+      {% endif %}
+      {% if u.state_expires_at %}
+      <div style="font-size:11px;color:var(--t3);margin-top:6px">
+        Expira: {{ u.state_expires_at.strftime('%d/%m/%Y %H:%M') }}
+      </div>
+      {% endif %}
+    </div>
+
+  </div>
+</div>
+
+<!-- Ações admin -->
+{% if not u.deleted_at %}
+<div class="sect-label" style="margin-top:20px">Ações administrativas</div>
+<div class="grid-2">
+
+  <!-- Alterar plano -->
+  <div class="card">
+    <div class="card-title">Alterar plano</div>
+    <form id="planForm" style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label>Novo plano</label>
+        <select id="newPlan">
+          <option value="free"         {% if u.plan == 'free' %}selected{% endif %}>free</option>
+          <option value="premium"      {% if u.plan == 'premium' %}selected{% endif %}>premium</option>
+          <option value="nutritionist" {% if u.plan == 'nutritionist' %}selected{% endif %}>nutritionist</option>
+        </select>
+      </div>
+      <div>
+        <label>Expiração (dias a partir de hoje — deixe vazio para sem expiração)</label>
+        <input type="number" id="expiresDays" min="1" max="3650" placeholder="Ex: 30">
+      </div>
+      <button type="button" class="btn btn-primary" onclick="changePlan()">
+        💾 Salvar plano
+      </button>
+    </form>
+  </div>
+
+  <!-- Ações rápidas -->
+  <div class="card">
+    <div class="card-title">Ações rápidas</div>
+    <div style="display:flex;flex-direction:column;gap:10px">
+
+      <div>
+        <p style="font-size:13px;color:var(--t2);margin-bottom:8px">
+          Limpa o estado de conversa em memória e no banco (útil quando usuário trava em onboarding ou confirmação).
+        </p>
+        <button class="btn btn-warn" onclick="clearState()">
+          🔄 Limpar estado de conversa
+        </button>
+      </div>
+
+      <hr style="border-color:var(--border)">
+
+      <div>
+        <p style="font-size:13px;color:var(--t2);margin-bottom:8px">
+          <strong style="color:var(--danger)">⚠️ Irreversível.</strong>
+          Anonimiza dados do usuário (LGPD Art. 18): apaga nome, e-mail, refeições e registros de água. Mantém o ID para fins de auditoria.
+        </p>
+        <button class="btn btn-danger" onclick="deleteUser()">
+          🗑️ Deletar dados (LGPD)
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+const userId = '{{ u.id }}';
+
+async function changePlan() {
+  const plan = document.getElementById('newPlan').value;
+  const days = document.getElementById('expiresDays').value;
+  const body = { new_plan: plan };
+  if (days) body.expires_days = days;
+  try {
+    const r = await adminPost('/admin/api/usuarios/' + userId + '/plano', body);
+    if (r.ok) showToast('✅ Plano alterado para ' + plan, 'ok');
+    else showToast('❌ ' + (r.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+}
+
+async function clearState() {
+  if (!confirm('Limpar estado de conversa deste usuário?')) return;
+  try {
+    const r = await adminPost('/admin/api/usuarios/' + userId + '/limpar-estado');
+    if (r.ok) {
+      showToast('✅ Estado limpo: ' + r.old_state + ' → IDLE', 'ok');
+      setTimeout(() => location.reload(), 1500);
+    } else showToast('❌ ' + (r.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+}
+
+async function deleteUser() {
+  const conf = prompt('⚠️ Esta ação é IRREVERSÍVEL. Digite CONFIRMAR para prosseguir:');
+  if (conf !== 'CONFIRMAR') { showToast('❌ Operação cancelada.', 'err'); return; }
+  try {
+    const r = await adminPost('/admin/api/usuarios/' + userId + '/deletar', { confirm: 'CONFIRMAR' });
+    if (r.ok) {
+      showToast('✅ Dados anonimizados com sucesso.', 'ok');
+      setTimeout(() => location.href = '/admin/usuarios', 1800);
+    } else showToast('❌ ' + (r.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+}
+</script>
+{% endblock %}

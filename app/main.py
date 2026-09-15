@@ -120,6 +120,16 @@ async def _apply_pending_ddl() -> None:
         "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_water_ml  INTEGER",
         # RF-AGUA-02: meta de água personalizada por usuário (nullable, default 2000 no código)
         "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_water_goal_ml INTEGER",
+        # Painel Admin: tabela de auditoria das ações administrativas
+        """
+        CREATE TABLE IF NOT EXISTS admin_logs (
+            id          BIGSERIAL PRIMARY KEY,
+            created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            action      TEXT NOT NULL,
+            target_user_id UUID,
+            detail      JSONB NOT NULL DEFAULT '{}'
+        )
+        """,
     ]
     try:
         async with engine.begin() as conn:
@@ -178,6 +188,7 @@ if _STATIC_DIR.exists():
     app.mount("/static", StaticFiles(directory=str(_STATIC_DIR)), name="static")
 
 from app.routers import (  # noqa: E402
+    admin,
     auth,
     dashboard,
     health,
@@ -207,3 +218,6 @@ app.include_router(dashboard.router)
 
 # ── Painel B2B Nutricionistas (HTML + API) ──
 app.include_router(nutritionist.router)
+
+# ── Painel Admin (HTML + API JSON) ──
+app.include_router(admin.router)
