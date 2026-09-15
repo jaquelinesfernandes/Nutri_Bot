@@ -343,6 +343,67 @@ async def admin_dashboard(
         .where(NutritionistPatient.status == "active")
     )).scalar() or 0
 
+    # ── B2C resumo para dashboard ──
+    _active_patient_sq_dash = (
+        select(NutritionistPatient.patient_id)
+        .where(NutritionistPatient.status == "active",
+               NutritionistPatient.patient_id.isnot(None))
+        .scalar_subquery()
+    )
+    dash_b2c_total = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan.in_(["free", "premium"]),
+            User.id.not_in(_active_patient_sq_dash),
+        )
+    )).scalar() or 0
+
+    _seven_ago = now_utc - timedelta(days=7)
+    _engaged_sq = (
+        select(MealLog.user_id.distinct())
+        .where(MealLog.logged_at >= _seven_ago)
+        .scalar_subquery()
+    )
+    dash_b2c_engaged = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan.in_(["free", "premium"]),
+            User.id.not_in(_active_patient_sq_dash),
+            User.id.in_(_engaged_sq),
+        )
+    )).scalar() or 0
+
+    _ever_logged_sq = select(MealLog.user_id.distinct()).scalar_subquery()
+    _fourteen_ago = now_utc - timedelta(days=14)
+    _recent_sq = (
+        select(MealLog.user_id.distinct())
+        .where(MealLog.logged_at >= _fourteen_ago)
+        .scalar_subquery()
+    )
+    dash_b2c_at_risk = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan.in_(["free", "premium"]),
+            User.id.not_in(_active_patient_sq_dash),
+            User.id.in_(_ever_logged_sq),
+            User.id.not_in(_recent_sq),
+        )
+    )).scalar() or 0
+
+    dash_b2c_eligible = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan == "free",
+            User.id.not_in(_active_patient_sq_dash),
+            User.id.in_(_engaged_sq),
+            User.onboarding_complete.is_(True),
+        )
+    )).scalar() or 0
+
     # ── Scheduler ──
     scheduler = getattr(request.app.state, "scheduler", None)
     scheduler_running = bool(scheduler and scheduler.running)
@@ -353,7 +414,16 @@ async def admin_dashboard(
         for j in scheduler.get_jobs():
             nxt = (j.next_run_time.astimezone(SP).strftime("%d/%m %H:%M")
                    if j.next_run_time else "—")
-            jobs.append({"id": j.id, "name": j.name, "next": nxt})
+            paused = j.next_run_time is None
+            # Extrai campos do CronTrigger para exibição/edição
+            cron_str = str(j.trigger) if j.trigger else ""
+            jobs.append({
+                "id": j.id,
+                "name": j.name or j.id,
+                "next": nxt,
+                "paused": paused,
+                "cron": cron_str,
+            })
 
     # ── Dados de "hoje" ──
     today_start = now_utc.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -437,6 +507,11 @@ async def admin_dashboard(
             # ── Mini-gráfico 14 dias ──
             "dash_chart_labels": _json.dumps(dash_chart_labels),
             "dash_chart_data":   _json.dumps(dash_chart_data),
+            # ── B2C resumo ──
+            "dash_b2c_total":    dash_b2c_total,
+            "dash_b2c_engaged":  dash_b2c_engaged,
+            "dash_b2c_at_risk":  dash_b2c_at_risk,
+            "dash_b2c_eligible": dash_b2c_eligible,
             "active": "dashboard",
         },
     )
@@ -1672,6 +1747,127 @@ async def admin_trigger_job(
     return JSONResponse({"ok": True, "triggered": job_id})
 
 
+@router.post("/api/scheduler/{job_id}/pause")
+async def admin_pause_job(
+    request: Request,
+    job_id: str,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler or not scheduler.running:
+        raise HTTPException(503, "Scheduler não está rodando")
+    job = scheduler.get_job(job_id)
+    if not job:
+        raise HTTPException(404, f"Job '{job_id}' não encontrado")
+    scheduler.pause_job(job_id)
+    await _log_action(db, "scheduler_pause", None, {"job_id": job_id}, ip=_client_ip(request))
+    return JSONResponse({"ok": True, "paused": job_id})
+
+
+@router.post("/api/scheduler/{job_id}/resume")
+async def admin_resume_job(
+    request: Request,
+    job_id: str,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler or not scheduler.running:
+        raise HTTPException(503, "Scheduler não está rodando")
+    job = scheduler.get_job(job_id)
+    if not job:
+        raise HTTPException(404, f"Job '{job_id}' não encontrado")
+    scheduler.resume_job(job_id)
+    await _log_action(db, "scheduler_resume", None, {"job_id": job_id}, ip=_client_ip(request))
+    return JSONResponse({"ok": True, "resumed": job_id})
+
+
+@router.post("/api/scheduler/{job_id}/reschedule")
+async def admin_reschedule_job(
+    request: Request,
+    job_id: str,
+    hour: str = Form(default=""),
+    minute: str = Form(default="0"),
+    day_of_week: str = Form(default=""),
+    day: str = Form(default=""),
+    month: str = Form(default=""),
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reprograma um job CronTrigger com os campos fornecidos.
+    Campos vazios não alteram o trigger (usa '*').
+    Alteração é em memória — não persiste após reinício do servidor.
+    """
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler or not scheduler.running:
+        raise HTTPException(503, "Scheduler não está rodando")
+    job = scheduler.get_job(job_id)
+    if not job:
+        raise HTTPException(404, f"Job '{job_id}' não encontrado")
+
+    from apscheduler.triggers.cron import CronTrigger as _CT
+    from zoneinfo import ZoneInfo as _ZI
+    SP = _ZI("America/Sao_Paulo")
+
+    kwargs: dict = {"timezone": SP}
+    if hour.strip():
+        kwargs["hour"] = hour.strip()
+    if minute.strip():
+        kwargs["minute"] = minute.strip()
+    if day_of_week.strip():
+        kwargs["day_of_week"] = day_of_week.strip()
+    if day.strip():
+        kwargs["day"] = day.strip()
+    if month.strip():
+        kwargs["month"] = month.strip()
+
+    try:
+        new_trigger = _CT(**kwargs)
+    except Exception as e:
+        raise HTTPException(400, f"Trigger inválido: {e}")
+
+    scheduler.reschedule_job(job_id, trigger=new_trigger)
+    detail = {"job_id": job_id, "new_trigger": str(new_trigger), **kwargs}
+    detail.pop("timezone", None)
+    await _log_action(db, "scheduler_reschedule", None, detail, ip=_client_ip(request))
+    logger.info("[Admin] job '%s' reprogramado: %s", job_id, new_trigger)
+
+    from zoneinfo import ZoneInfo
+    j = scheduler.get_job(job_id)
+    nxt = (j.next_run_time.astimezone(ZoneInfo("America/Sao_Paulo")).strftime("%d/%m %H:%M")
+           if j and j.next_run_time else "—")
+    return JSONResponse({"ok": True, "job_id": job_id, "next": nxt, "trigger": str(new_trigger)})
+
+
+@router.delete("/api/scheduler/{job_id}")
+async def admin_delete_job(
+    request: Request,
+    job_id: str,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Remove um job do scheduler (somente em memória — voltará no próximo reinício)."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+    scheduler = getattr(request.app.state, "scheduler", None)
+    if not scheduler or not scheduler.running:
+        raise HTTPException(503, "Scheduler não está rodando")
+    job = scheduler.get_job(job_id)
+    if not job:
+        raise HTTPException(404, f"Job '{job_id}' não encontrado")
+    scheduler.remove_job(job_id)
+    await _log_action(db, "scheduler_delete", None, {"job_id": job_id}, ip=_client_ip(request))
+    logger.warning("[Admin] job '%s' removido manualmente (voltará no reinício)", job_id)
+    return JSONResponse({"ok": True, "deleted": job_id})
+
+
 # ── Health check visual ───────────────────────────────────────────────────────
 
 @router.get("/health", response_class=HTMLResponse)
@@ -1700,11 +1896,22 @@ async def admin_health_page(
     if scheduler_running:
         for j in scheduler.get_jobs():
             nxt = j.next_run_time
+            paused = nxt is None
+            cron_str = str(j.trigger) if j.trigger else ""
+            # Extrai hour/minute/day_of_week do CronTrigger para pré-preencher o modal
+            fields: dict = {}
+            if hasattr(j.trigger, "fields"):
+                for f in j.trigger.fields:
+                    if not f.is_default:
+                        fields[f.name] = str(f)
             jobs.append({
                 "id": j.id,
-                "name": j.name,
+                "name": j.name or j.id,
                 "next": nxt.astimezone(SP).strftime("%d/%m %H:%M") if nxt else "—",
                 "in_min": round((nxt - datetime.now(SP)).total_seconds() / 60) if nxt else None,
+                "paused": paused,
+                "cron": cron_str,
+                "fields": fields,
             })
 
     git_commit = _os.getenv("RENDER_GIT_COMMIT", "local")[:12]

@@ -31,7 +31,12 @@
 </div>
 
 <!-- Jobs do scheduler -->
-<div class="sect-label">Jobs agendados</div>
+<div class="sect-label" id="scheduler">Jobs agendados</div>
+<div style="background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.18);border-radius:8px;
+            padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--warn)">
+  ⚠️ Alterações de horário, pause e remoção são <strong>em memória</strong> — não persistem após reinício do servidor.
+  Para mudanças permanentes, edite <code>app/services/scheduler.py</code> e faça redeploy.
+</div>
 <div class="card" style="padding:0">
   <div class="tbl-wrap">
     <table>
@@ -39,35 +44,102 @@
         <tr>
           <th>Job ID</th>
           <th>Nome</th>
-          <th>Próximo disparo (BRT)</th>
+          <th>Trigger (BRT)</th>
+          <th>Próximo</th>
           <th>Em</th>
+          <th style="text-align:right">Ações</th>
         </tr>
       </thead>
       <tbody>
         {% for j in jobs %}
-        <tr>
+        <tr id="hrow-{{ j.id }}"
+            data-jid="{{ j.id | e }}"
+            data-cron="{{ j.cron | e }}"
+            data-hour="{{ (j.fields or {}).get('hour','') | e }}"
+            data-minute="{{ (j.fields or {}).get('minute','') | e }}"
+            data-dow="{{ (j.fields or {}).get('day_of_week','') | e }}"
+            data-day="{{ (j.fields or {}).get('day','') | e }}"
+            data-month="{{ (j.fields or {}).get('month','') | e }}">
           <td style="font-family:monospace;font-size:12px;color:var(--t2)">{{ j.id }}</td>
-          <td style="color:var(--t1)">{{ j.name }}</td>
-          <td style="font-variant-numeric:tabular-nums;font-size:12px">{{ j.next }}</td>
-          <td style="font-size:12px;color:var(--t3)">
-            {% if j.in_min is not none %}
-              {% if j.in_min < 60 %}
-                {{ j.in_min }}min
-              {% else %}
-                {{ (j.in_min / 60) | round(1) }}h
-              {% endif %}
+          <td style="color:var(--t1);font-size:13px">{{ j.name }}</td>
+          <td style="font-family:monospace;font-size:11px;color:var(--t3)">{{ j.cron }}</td>
+          <td style="font-variant-numeric:tabular-nums;font-size:12px">
+            {% if j.paused %}
+            <span class="pill pill-deleted" style="font-size:10px">pausado</span>
+            {% else %}
+            {{ j.next }}
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--t3);white-space:nowrap">
+            {% if j.in_min is not none and not j.paused %}
+              {% if j.in_min < 60 %}{{ j.in_min }}min
+              {% else %}{{ (j.in_min / 60) | round(1) }}h{% endif %}
             {% else %}—{% endif %}
+          </td>
+          <td style="text-align:right">
+            <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:nowrap">
+              <button class="btn btn-warn btn-sm" onclick="hTrigger('{{ j.id | e }}',this)" title="Acionar agora">▶ Acionar</button>
+              {% if j.paused %}
+              <button class="btn btn-secondary btn-sm" onclick="hAction('{{ j.id | e }}','resume',this)" title="Retomar">▶▶ Retomar</button>
+              {% else %}
+              <button class="btn btn-secondary btn-sm" onclick="hAction('{{ j.id | e }}','pause',this)" title="Pausar">⏸ Pausar</button>
+              {% endif %}
+              <button class="btn btn-secondary btn-sm" onclick="hOpenEdit('{{ j.id | e }}')" title="Editar horário">🕐 Editar</button>
+              <button class="btn btn-danger btn-sm" onclick="hDelete('{{ j.id | e }}',this)" title="Remover">🗑</button>
+            </div>
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="4" style="text-align:center;color:var(--t3);padding:20px">
+          <td colspan="6" style="text-align:center;color:var(--t3);padding:20px">
             Nenhum job registrado.
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+  </div>
+</div>
+
+<!-- Modal editar job (health page) -->
+<div id="hJobModal" hidden
+     style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.65);
+            display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;
+              padding:26px;width:100%;max-width:500px;box-shadow:0 20px 60px rgba(0,0,0,.6)">
+    <div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:4px">🕐 Reprogramar job</div>
+    <div id="hJobId" style="font-family:monospace;font-size:12px;color:var(--t3);margin-bottom:4px"></div>
+    <div id="hJobCron" style="font-size:12px;color:var(--t2);margin-bottom:14px;padding:6px 10px;
+                              background:var(--surface);border-radius:6px;font-family:monospace"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <label>Hora (0–23)</label>
+        <input type="text" id="hJeHour" placeholder="ex: 9">
+      </div>
+      <div>
+        <label>Minuto (0–59)</label>
+        <input type="text" id="hJeMinute" placeholder="ex: 30">
+      </div>
+      <div>
+        <label>Dia semana</label>
+        <input type="text" id="hJeDow" placeholder="mon / 0,2">
+      </div>
+      <div>
+        <label>Dia mês (1–31)</label>
+        <input type="text" id="hJeDay" placeholder="ex: 1">
+      </div>
+      <div>
+        <label>Mês (1–12)</label>
+        <input type="text" id="hJeMonth" placeholder="1,4,7,10">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px">
+      Deixe em branco para manter o campo atual. Exemplos: <code>*/2</code> (a cada 2h), <code>mon,wed,fri</code>, <code>1,15</code> (dia 1 e 15 do mês).
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary btn-sm" onclick="hCloseEdit()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="hSubmitEdit()">Salvar horário</button>
+    </div>
   </div>
 </div>
 
@@ -138,4 +210,88 @@
   </div>
 </div>
 
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ── Helpers scheduler (health page) ──
+async function hTrigger(jobId, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/scheduler/trigger/' + jobId);
+    if (r.ok) showToast('✅ Job "' + jobId + '" acionado!', 'ok');
+    else showToast('❌ ' + (r.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+  btn.disabled = false; btn.textContent = orig;
+}
+
+async function hAction(jobId, action, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/scheduler/' + jobId + '/' + action);
+    if (r.ok) {
+      showToast('✅ Job ' + (action === 'pause' ? 'pausado' : 'retomado') + '.', 'ok');
+      setTimeout(() => location.reload(), 800);
+    } else showToast('❌ ' + (r.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+  btn.disabled = false; btn.textContent = orig;
+}
+
+async function hDelete(jobId, btn) {
+  if (!confirm('Remover job "' + jobId + '"?\n\nO job voltará ao reiniciar o servidor.')) return;
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const r = await fetch('/admin/api/scheduler/' + jobId, { method: 'DELETE' });
+    const j = await r.json();
+    if (j.ok) {
+      showToast('✅ Job removido.', 'ok');
+      const row = document.getElementById('hrow-' + jobId);
+      if (row) row.remove();
+    } else showToast('❌ ' + (j.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+  btn.textContent = '🗑';
+}
+
+let _hJobId = null;
+function hOpenEdit(jobId) {
+  _hJobId = jobId;
+  const row = document.getElementById('hrow-' + jobId);
+  document.getElementById('hJobId').textContent  = jobId;
+  document.getElementById('hJobCron').textContent = row ? row.dataset.cron : '';
+  document.getElementById('hJeHour').value   = row ? row.dataset.hour   : '';
+  document.getElementById('hJeMinute').value = row ? row.dataset.minute : '';
+  document.getElementById('hJeDow').value    = row ? row.dataset.dow    : '';
+  document.getElementById('hJeDay').value    = row ? row.dataset.day    : '';
+  document.getElementById('hJeMonth').value  = row ? row.dataset.month  : '';
+  document.getElementById('hJobModal').hidden = false;
+}
+function hCloseEdit() {
+  document.getElementById('hJobModal').hidden = true;
+  _hJobId = null;
+}
+async function hSubmitEdit() {
+  if (!_hJobId) return;
+  const fd = new FormData();
+  fd.append('hour',        document.getElementById('hJeHour').value.trim());
+  fd.append('minute',      document.getElementById('hJeMinute').value.trim());
+  fd.append('day_of_week', document.getElementById('hJeDow').value.trim());
+  fd.append('day',         document.getElementById('hJeDay').value.trim());
+  fd.append('month',       document.getElementById('hJeMonth').value.trim());
+  try {
+    const r = await fetch('/admin/api/scheduler/' + _hJobId + '/reschedule',
+                          { method: 'POST', body: fd });
+    const j = await r.json();
+    if (j.ok) {
+      showToast('✅ Reprogramado. Próximo: ' + j.next, 'ok');
+      hCloseEdit();
+      setTimeout(() => location.reload(), 1200);
+    } else showToast('❌ ' + (j.detail || 'Trigger inválido'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+}
+document.getElementById('hJobModal').addEventListener('click', function(e) {
+  if (e.target === this) hCloseEdit();
+});
+</script>
 {% endblock %}

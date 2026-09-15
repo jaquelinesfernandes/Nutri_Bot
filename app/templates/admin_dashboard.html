@@ -97,8 +97,8 @@
 </div>
 {% endif %}
 
-<!-- ③ Funil de onboarding + B2B -->
-<div class="grid-2" style="margin-bottom:20px">
+<!-- ③ Funil de onboarding + B2C + B2B -->
+<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:20px">
 
   <!-- Funil de onboarding -->
   <div class="card">
@@ -144,6 +144,43 @@
       {% endfor %}
     </div>
     {% endif %}
+  </div>
+
+  <!-- B2C Individual -->
+  <div class="card">
+    <div class="card-title">
+      Usuários B2C
+      <a href="/admin/b2c" style="font-size:11px;color:#A5B4FC;margin-left:8px;font-weight:400">ver painel →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px">
+      <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--t1)">{{ dash_b2c_total }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Total B2C</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--success)">{{ dash_b2c_engaged }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Ativos (7d)</div>
+      </div>
+    </div>
+    {% if dash_b2c_at_risk > 0 %}
+    <div style="background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.15);border-radius:8px;padding:9px 12px;margin-bottom:8px">
+      <div style="font-size:12px;color:var(--danger);font-weight:600">
+        ⚠️ {{ dash_b2c_at_risk }} em risco de churn
+      </div>
+      <a href="/admin/b2c?seg=at_risk" style="font-size:11px;color:var(--danger);opacity:.8">Ver lista →</a>
+    </div>
+    {% endif %}
+    {% if dash_b2c_eligible > 0 %}
+    <div style="background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.15);border-radius:8px;padding:9px 12px;margin-bottom:8px">
+      <div style="font-size:12px;color:#A5B4FC;font-weight:600">
+        💎 {{ dash_b2c_eligible }} prontos p/ upgrade
+      </div>
+      <a href="/admin/b2c?seg=eligible" style="font-size:11px;color:#A5B4FC;opacity:.8">Ver oportunidades →</a>
+    </div>
+    {% endif %}
+    <a href="/admin/b2c" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center">
+      📱 Gerenciar B2C →
+    </a>
   </div>
 
   <!-- B2B Nutricionistas -->
@@ -217,28 +254,48 @@
 
   <!-- Scheduler -->
   <div class="card" id="scheduler">
-    <div class="card-title">
-      Scheduler
-      <span style="margin-left:8px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
-        background:{{ 'rgba(16,185,129,.12)' if scheduler_running else 'rgba(239,68,68,.1)' }};
-        color:{{ '#10B981' if scheduler_running else '#EF4444' }}">
-        {{ '● Rodando' if scheduler_running else '● Parado' }}
+    <div class="card-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>
+        Scheduler
+        <span style="margin-left:8px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;
+          background:{{ 'rgba(16,185,129,.12)' if scheduler_running else 'rgba(239,68,68,.1)' }};
+          color:{{ '#10B981' if scheduler_running else '#EF4444' }}">
+          {{ '● Rodando' if scheduler_running else '● Parado' }}
+        </span>
       </span>
+      <a href="/admin/health#scheduler" style="font-size:11px;color:#A5B4FC;font-weight:400">detalhe →</a>
     </div>
     {% if jobs %}
     <div class="tbl-wrap">
       <table>
         <thead>
-          <tr><th>Job</th><th>Próximo disparo</th><th></th></tr>
+          <tr><th>Job</th><th>Próximo</th><th style="text-align:right">Ações</th></tr>
         </thead>
         <tbody>
           {% for j in jobs %}
-          <tr>
-            <td style="font-family:monospace;font-size:12px;color:var(--t2)">{{ j.id }}</td>
-            <td style="font-size:12px;font-variant-numeric:tabular-nums">{{ j.next }}</td>
+          <tr id="job-row-{{ j.id }}">
             <td>
-              <button class="btn btn-warn btn-sm"
-                      onclick="triggerJob('{{ j.id }}', this)">▶ Acionar</button>
+              <div style="font-family:monospace;font-size:12px;color:var(--t2)">{{ j.id }}</div>
+              <div style="font-size:11px;color:var(--t3)">{{ j.cron }}</div>
+            </td>
+            <td style="font-size:12px;font-variant-numeric:tabular-nums">
+              {% if j.paused %}
+              <span class="pill pill-deleted" style="font-size:10px">pausado</span>
+              {% else %}
+              {{ j.next }}
+              {% endif %}
+            </td>
+            <td style="text-align:right">
+              <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:nowrap">
+                <button class="btn btn-warn btn-sm" onclick="triggerJob('{{ j.id }}', this)" title="Acionar agora">▶</button>
+                {% if j.paused %}
+                <button class="btn btn-secondary btn-sm" onclick="jobAction('{{ j.id }}','resume',this)" title="Retomar">▶▶</button>
+                {% else %}
+                <button class="btn btn-secondary btn-sm" onclick="jobAction('{{ j.id }}','pause',this)" title="Pausar">⏸</button>
+                {% endif %}
+                <button class="btn btn-secondary btn-sm" onclick="openJobEdit('{{ j.id }}','{{ j.cron | e }}')" title="Editar horário">🕐</button>
+                <button class="btn btn-danger btn-sm" onclick="deleteJob('{{ j.id }}',this)" title="Remover job">🗑</button>
+              </div>
             </td>
           </tr>
           {% endfor %}
@@ -250,6 +307,49 @@
     {% endif %}
   </div>
 
+</div>
+
+<!-- Modal: editar horário do job -->
+<div id="jobEditModal" hidden
+     style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);
+            display:flex;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;
+              padding:24px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(0,0,0,.5)">
+    <div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:4px">🕐 Reprogramar job</div>
+    <div id="jobEditId" style="font-family:monospace;font-size:12px;color:var(--t3);margin-bottom:4px"></div>
+    <div id="jobEditCron" style="font-size:11px;color:var(--t2);margin-bottom:16px"></div>
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;
+                padding:9px 12px;margin-bottom:16px;font-size:12px;color:var(--warn)">
+      ⚠️ Alteração em memória — não persiste após reinício do servidor.
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div>
+        <label>Hora (0–23 ou *)</label>
+        <input type="text" id="jeHour" placeholder="ex: 9 ou */2">
+      </div>
+      <div>
+        <label>Minuto (0–59 ou *)</label>
+        <input type="text" id="jeMinute" placeholder="ex: 30">
+      </div>
+      <div>
+        <label>Dia da semana (0=seg ou *)</label>
+        <input type="text" id="jeDow" placeholder="ex: mon ou 0,2">
+      </div>
+      <div>
+        <label>Dia do mês (1–31 ou *)</label>
+        <input type="text" id="jeDay" placeholder="ex: 1">
+      </div>
+      <div>
+        <label>Mês (1–12 ou *)</label>
+        <input type="text" id="jeMonth" placeholder="ex: 1,4,7,10">
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Deixe em branco para manter o valor atual do campo.</div>
+    <div style="display:flex;gap:8px;justify-content:flex-end">
+      <button class="btn btn-secondary btn-sm" onclick="closeJobEdit()">Cancelar</button>
+      <button class="btn btn-primary btn-sm" onclick="submitJobEdit()">Salvar horário</button>
+    </div>
+  </div>
 </div>
 
 <!-- Audit log recente -->
@@ -398,18 +498,81 @@
 })();
 
 async function triggerJob(jobId, btn) {
-  btn.disabled = true;
-  btn.textContent = '⏳';
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳';
   try {
     const r = await adminPost('/admin/api/scheduler/trigger/' + jobId);
     if (r.ok) showToast('✅ Job "' + jobId + '" acionado!', 'ok');
     else showToast('❌ ' + (r.detail || 'Erro'), 'err');
-  } catch(e) {
-    showToast('❌ Erro de rede', 'err');
-  }
-  btn.disabled = false;
-  btn.textContent = '▶ Acionar';
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+  btn.disabled = false; btn.textContent = orig;
 }
+
+async function jobAction(jobId, action, btn) {
+  const orig = btn.textContent;
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/scheduler/' + jobId + '/' + action);
+    if (r.ok) {
+      showToast('✅ Job "' + jobId + '" ' + (action === 'pause' ? 'pausado' : 'retomado') + '.', 'ok');
+      setTimeout(() => location.reload(), 900);
+    } else showToast('❌ ' + (r.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+  btn.disabled = false; btn.textContent = orig;
+}
+
+async function deleteJob(jobId, btn) {
+  if (!confirm('Remover job "' + jobId + '"?\n\nAtenção: o job voltará ao reiniciar o servidor.')) return;
+  btn.disabled = true; btn.textContent = '⏳';
+  try {
+    const r = await fetch('/admin/api/scheduler/' + jobId, { method: 'DELETE' });
+    const j = await r.json();
+    if (j.ok) {
+      showToast('✅ Job removido (voltará no reinício).', 'ok');
+      const row = document.getElementById('job-row-' + jobId);
+      if (row) row.remove();
+    } else showToast('❌ ' + (j.detail || 'Erro'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+  btn.disabled = false; btn.textContent = '🗑';
+}
+
+let _editJobId = null;
+function openJobEdit(jobId, cronStr) {
+  _editJobId = jobId;
+  document.getElementById('jobEditId').textContent = jobId;
+  document.getElementById('jobEditCron').textContent = 'Trigger atual: ' + cronStr;
+  // Limpa campos
+  ['jeHour','jeMinute','jeDow','jeDay','jeMonth'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  document.getElementById('jobEditModal').hidden = false;
+}
+function closeJobEdit() {
+  document.getElementById('jobEditModal').hidden = true;
+  _editJobId = null;
+}
+async function submitJobEdit() {
+  if (!_editJobId) return;
+  const fd = new FormData();
+  fd.append('hour',        document.getElementById('jeHour').value.trim());
+  fd.append('minute',      document.getElementById('jeMinute').value.trim());
+  fd.append('day_of_week', document.getElementById('jeDow').value.trim());
+  fd.append('day',         document.getElementById('jeDay').value.trim());
+  fd.append('month',       document.getElementById('jeMonth').value.trim());
+  try {
+    const r = await fetch('/admin/api/scheduler/' + _editJobId + '/reschedule',
+                          { method: 'POST', body: fd });
+    const j = await r.json();
+    if (j.ok) {
+      showToast('✅ Job reprogramado. Próximo: ' + j.next, 'ok');
+      closeJobEdit();
+      setTimeout(() => location.reload(), 1200);
+    } else showToast('❌ ' + (j.detail || 'Trigger inválido'), 'err');
+  } catch(e) { showToast('❌ Erro de rede', 'err'); }
+}
+document.getElementById('jobEditModal').addEventListener('click', function(e) {
+  if (e.target === this) closeJobEdit();
+});
 
 // ⑤ Bulk-fix planos expirados
 async function bulkFixPlans(btn) {
