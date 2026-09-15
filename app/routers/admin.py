@@ -587,6 +587,242 @@ async def admin_usuario_detalhe(
     )
 
 
+# ── Painel B2C ────────────────────────────────────────────────────────────────
+
+@router.get("/b2c", response_class=HTMLResponse)
+async def admin_b2c(
+    request: Request,
+    seg: str = "",        # new | engaged | dormant | at_risk | expiring | eligible
+    q: str = "",
+    plan_f: str = "",
+    page: int = 1,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Painel de usuários B2C: plano free/premium sem vínculo ativo com nutricionista."""
+    if not _verify_admin_token(admin_session):
+        return RedirectResponse("/admin/login", 302)
+
+    now_utc     = datetime.now(timezone.utc)
+    seven_ago   = now_utc - timedelta(days=7)
+    fourteen_ago = now_utc - timedelta(days=14)
+    thirty_ago  = now_utc - timedelta(days=30)
+    per_page    = 50
+    offset      = (page - 1) * per_page
+
+    # ── Subqueries auxiliares ─────────────────────────────────────────────────
+
+    # Pacientes ativos de nutricionistas (excluídos da visão B2C)
+    active_patient_sq = (
+        select(NutritionistPatient.patient_id)
+        .where(NutritionistPatient.status == "active",
+               NutritionistPatient.patient_id.isnot(None))
+    )
+
+    # Filtro base B2C
+    b2c_where = [
+        User.deleted_at.is_(None),
+        User.plan.in_(["free", "premium"]),
+        User.id.not_in(active_patient_sq),
+    ]
+
+    # Usuários com pelo menos uma refeição
+    has_meal_sq = select(MealLog.user_id.distinct())
+    # Usuários com refeição nos últimos 7 dias
+    meal_7d_sq  = select(MealLog.user_id.distinct()).where(MealLog.logged_at > seven_ago)
+    # Usuários com refeição nos últimos 14 dias
+    meal_14d_sq = select(MealLog.user_id.distinct()).where(MealLog.logged_at > fourteen_ago)
+
+    # Stats de refeições por usuário (para a tabela)
+    meal_stats_sq = (
+        select(
+            MealLog.user_id,
+            func.count().label("meal_count"),
+            func.max(MealLog.logged_at).label("last_meal"),
+        )
+        .group_by(MealLog.user_id)
+        .subquery("ms")
+    )
+
+    # ── Tiles ─────────────────────────────────────────────────────────────────
+    total_b2c = (await db.execute(
+        select(func.count()).select_from(User).where(*b2c_where)
+    )).scalar() or 0
+
+    total_free = (await db.execute(
+        select(func.count()).select_from(User).where(*b2c_where, User.plan == "free")
+    )).scalar() or 0
+
+    total_premium = (await db.execute(
+        select(func.count()).select_from(User).where(*b2c_where, User.plan == "premium")
+    )).scalar() or 0
+
+    expiring_7d = (await db.execute(
+        select(func.count()).select_from(User).where(
+            *b2c_where,
+            User.plan == "premium",
+            User.plan_expires_at.isnot(None),
+            User.plan_expires_at > now_utc,
+            User.plan_expires_at < now_utc + timedelta(days=7),
+        )
+    )).scalar() or 0
+
+    # ── Segmentos ─────────────────────────────────────────────────────────────
+    seg_new = (await db.execute(
+        select(func.count()).select_from(User).where(*b2c_where,
+                                                     User.created_at > seven_ago)
+    )).scalar() or 0
+
+    seg_engaged = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(*b2c_where, User.id.in_(meal_7d_sq))
+    )).scalar() or 0
+
+    seg_dormant = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(*b2c_where, User.id.not_in(has_meal_sq))
+    )).scalar() or 0
+
+    seg_at_risk = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(*b2c_where,
+               User.id.in_(has_meal_sq),
+               User.id.not_in(meal_14d_sq))
+    )).scalar() or 0
+
+    # Elegíveis para upgrade: free, onboarding completo, cadastro > 7d, nunca premium
+    seg_eligible = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(*b2c_where,
+               User.plan == "free",
+               User.onboarding_complete.is_(True),
+               User.created_at < seven_ago)
+    )).scalar() or 0
+
+    # ── Engajamento ──────────────────────────────────────────────────────────
+    new_7d = seg_new
+
+    # Média de refeições/semana dos usuários engajados (últimos 7d)
+    avg_meals_row = (await db.execute(
+        text(
+            "SELECT ROUND(AVG(cnt),1) FROM ("
+            "  SELECT COUNT(*) AS cnt FROM meal_logs ml"
+            "  JOIN users u ON u.id = ml.user_id"
+            "  WHERE ml.logged_at > :since AND u.plan IN ('free','premium')"
+            "    AND u.deleted_at IS NULL"
+            "  GROUP BY ml.user_id"
+            ") sub"
+        ),
+        {"since": seven_ago},
+    )).scalar()
+    avg_meals_week = float(avg_meals_row or 0)
+
+    onboarding_complete_b2c = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(*b2c_where, User.onboarding_complete.is_(True))
+    )).scalar() or 0
+
+    # ── Conversão free → premium ──────────────────────────────────────────────
+    upgrades_30d = (await db.execute(
+        text(
+            "SELECT COUNT(*) FROM admin_logs "
+            "WHERE action='change_plan' AND created_at > :since "
+            "AND (detail->>'new')='premium'"
+        ),
+        {"since": thirty_ago},
+    )).scalar() or 0
+
+    conversion_rate = (
+        round(total_premium / (total_free + total_premium) * 100, 1)
+        if (total_free + total_premium) > 0 else 0.0
+    )
+
+    # ── Lista paginada com filtro de segmento ─────────────────────────────────
+    list_q = (
+        select(User, meal_stats_sq.c.meal_count, meal_stats_sq.c.last_meal)
+        .outerjoin(meal_stats_sq, meal_stats_sq.c.user_id == User.id)
+        .where(*b2c_where)
+    )
+
+    if q:
+        like = f"%{q}%"
+        list_q = list_q.where(
+            User.first_name.ilike(like) |
+            User.channel_id.ilike(like) |
+            User.email.ilike(like)
+        )
+    if plan_f:
+        list_q = list_q.where(User.plan == plan_f)
+
+    if seg == "new":
+        list_q = list_q.where(User.created_at > seven_ago)
+    elif seg == "engaged":
+        list_q = list_q.where(User.id.in_(meal_7d_sq))
+    elif seg == "dormant":
+        list_q = list_q.where(User.id.not_in(has_meal_sq))
+    elif seg == "at_risk":
+        list_q = list_q.where(User.id.in_(has_meal_sq), User.id.not_in(meal_14d_sq))
+    elif seg == "expiring":
+        list_q = list_q.where(
+            User.plan == "premium",
+            User.plan_expires_at.isnot(None),
+            User.plan_expires_at > now_utc,
+            User.plan_expires_at < now_utc + timedelta(days=7),
+        )
+    elif seg == "eligible":
+        list_q = list_q.where(
+            User.plan == "free",
+            User.onboarding_complete.is_(True),
+            User.created_at < seven_ago,
+        )
+
+    total_filtered = (await db.execute(
+        select(func.count()).select_from(list_q.subquery())
+    )).scalar() or 0
+
+    rows = (await db.execute(
+        list_q.order_by(User.last_active_at.desc().nullslast())
+        .offset(offset).limit(per_page)
+    )).all()
+
+    total_pages = max(1, (total_filtered + per_page - 1) // per_page)
+
+    return templates.TemplateResponse(
+        request=request, name="admin_b2c.html",
+        context={
+            # tiles
+            "total_b2c": total_b2c,
+            "total_free": total_free,
+            "total_premium": total_premium,
+            "expiring_7d": expiring_7d,
+            # segmentos
+            "seg_new": seg_new,
+            "seg_engaged": seg_engaged,
+            "seg_dormant": seg_dormant,
+            "seg_at_risk": seg_at_risk,
+            "seg_eligible": seg_eligible,
+            # engajamento
+            "new_7d": new_7d,
+            "avg_meals_week": avg_meals_week,
+            "onboarding_complete_b2c": onboarding_complete_b2c,
+            # conversão
+            "upgrades_30d": upgrades_30d,
+            "conversion_rate": conversion_rate,
+            "seg_eligible": seg_eligible,
+            # lista
+            "rows": rows,
+            "total_filtered": total_filtered,
+            "total_pages": total_pages,
+            "page": page,
+            "per_page": per_page,
+            "seg": seg,
+            "q": q,
+            "plan_f": plan_f,
+            "now_utc": now_utc,
+        },
+    )
+
+
 # ── Lista de Assinaturas ──────────────────────────────────────────────────────
 
 @router.get("/assinaturas", response_class=HTMLResponse)

@@ -1,0 +1,311 @@
+{% extends "admin_base.html" %}
+{% block title %}Usuários B2C{% endblock %}
+{% block page_title %}📱 Usuários B2C{% endblock %}
+
+{% block content %}
+
+<!-- ── Tiles principais ── -->
+<div class="stats-row" style="margin-bottom:18px">
+  <div class="stat-tile accent">
+    <div class="stat-val">{{ total_b2c }}</div>
+    <div class="stat-lbl">Total B2C</div>
+  </div>
+  <div class="stat-tile">
+    <div class="stat-val" style="color:var(--t2)">{{ total_free }}</div>
+    <div class="stat-lbl">
+      <a href="?plan_f=free" style="color:inherit;text-decoration:none">Plano free →</a>
+    </div>
+  </div>
+  <div class="stat-tile success">
+    <div class="stat-val">{{ total_premium }}</div>
+    <div class="stat-lbl">
+      <a href="?plan_f=premium" style="color:inherit;text-decoration:none">Plano premium →</a>
+    </div>
+  </div>
+  <div class="stat-tile {{ 'warn' if expiring_7d > 0 else '' }}">
+    <div class="stat-val">{{ expiring_7d }}</div>
+    <div class="stat-lbl">
+      <a href="?seg=expiring" style="color:inherit;text-decoration:none">Expiram em 7d →</a>
+    </div>
+  </div>
+</div>
+
+<!-- ── Alertas acionáveis ── -->
+{% set alerts = [] %}
+{% if seg_at_risk > 0 %}{% if alerts.append(1) %}{% endif %}{% endif %}
+{% if expiring_7d > 0 %}{% if alerts.append(1) %}{% endif %}{% endif %}
+{% if seg_eligible > 10 %}{% if alerts.append(1) %}{% endif %}{% endif %}
+
+{% if seg_at_risk > 0 or expiring_7d > 0 or seg_eligible > 10 %}
+<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:18px">
+  {% if seg_at_risk > 0 %}
+  <div class="alert alert-danger" style="display:flex;align-items:center;justify-content:space-between">
+    <span>⚠️ <strong>{{ seg_at_risk }} usuário{{ 's' if seg_at_risk != 1 else '' }}</strong>
+    em risco de churn — tiveram refeições mas sumiram há 14d+</span>
+    <a href="?seg=at_risk" style="color:inherit;text-decoration:underline;font-size:12px;white-space:nowrap">Ver lista →</a>
+  </div>
+  {% endif %}
+  {% if expiring_7d > 0 %}
+  <div class="alert alert-danger" style="display:flex;align-items:center;justify-content:space-between">
+    <span>⏰ <strong>{{ expiring_7d }} premium</strong> expiram nos próximos 7 dias — risco de perda de receita</span>
+    <a href="?seg=expiring" style="color:inherit;text-decoration:underline;font-size:12px;white-space:nowrap">Ver lista →</a>
+  </div>
+  {% endif %}
+  {% if seg_eligible > 10 %}
+  <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:13px;color:#A5B4FC">
+      💡 <strong>{{ seg_eligible }} usuários free</strong> usam o app há 7d+ e completaram o onboarding
+      — oportunidade de conversão
+    </span>
+    <a href="?seg=eligible" style="color:#A5B4FC;text-decoration:underline;font-size:12px;white-space:nowrap">Ver lista →</a>
+  </div>
+  {% endif %}
+</div>
+{% endif %}
+
+<!-- ── Segmentos ── -->
+<div class="sect-label">Segmentos de usuários</div>
+<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:20px">
+
+  <a href="?seg=new" class="stat-tile" style="text-decoration:none;cursor:pointer;{{ 'border:2px solid var(--accent)' if seg=='new' else '' }}">
+    <div style="font-size:24px;margin-bottom:6px">🌱</div>
+    <div class="stat-val" style="font-size:22px">{{ seg_new }}</div>
+    <div class="stat-lbl">Recém-chegados<br><span style="font-size:10px">(cadastro &lt; 7d)</span></div>
+  </a>
+
+  <a href="?seg=engaged" class="stat-tile" style="text-decoration:none;cursor:pointer;{{ 'border:2px solid var(--success)' if seg=='engaged' else '' }}">
+    <div style="font-size:24px;margin-bottom:6px">🔥</div>
+    <div class="stat-val" style="font-size:22px;color:var(--success)">{{ seg_engaged }}</div>
+    <div class="stat-lbl">Engajados<br><span style="font-size:10px">(refeição nos 7d)</span></div>
+  </a>
+
+  <a href="?seg=dormant" class="stat-tile" style="text-decoration:none;cursor:pointer;{{ 'border:2px solid var(--t3)' if seg=='dormant' else '' }}">
+    <div style="font-size:24px;margin-bottom:6px">😴</div>
+    <div class="stat-val" style="font-size:22px;color:var(--t3)">{{ seg_dormant }}</div>
+    <div class="stat-lbl">Dormentes<br><span style="font-size:10px">(nunca registrou)</span></div>
+  </a>
+
+  <a href="?seg=at_risk" class="stat-tile" style="text-decoration:none;cursor:pointer;{{ 'border:2px solid var(--danger)' if seg=='at_risk' else '' }}">
+    <div style="font-size:24px;margin-bottom:6px">⚠️</div>
+    <div class="stat-val" style="font-size:22px;color:{{ 'var(--danger)' if seg_at_risk > 0 else 'var(--t3)' }}">{{ seg_at_risk }}</div>
+    <div class="stat-lbl">Em risco de churn<br><span style="font-size:10px">(sem atividade 14d+)</span></div>
+  </a>
+
+  <a href="?seg=eligible" class="stat-tile" style="text-decoration:none;cursor:pointer;{{ 'border:2px solid #A5B4FC' if seg=='eligible' else '' }}">
+    <div style="font-size:24px;margin-bottom:6px">💎</div>
+    <div class="stat-val" style="font-size:22px;color:#A5B4FC">{{ seg_eligible }}</div>
+    <div class="stat-lbl">Prontos p/ upgrade<br><span style="font-size:10px">(free, ativo 7d+)</span></div>
+  </a>
+
+</div>
+
+<!-- ── Engajamento + Conversão ── -->
+<div class="grid-2" style="margin-bottom:20px">
+
+  <!-- Engajamento -->
+  <div class="card">
+    <div class="card-title">Engajamento</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:22px;font-weight:800;color:var(--t1)">{{ new_7d }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Novos esta semana</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:22px;font-weight:800;color:var(--success)">{{ seg_engaged }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Ativos (7d)</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:22px;font-weight:800;color:var(--t1)">{{ onboarding_complete_b2c }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Onboarding completo</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:22px;font-weight:800;color:var(--warn)">{{ avg_meals_week }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Média refeições/semana</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Conversão free → premium -->
+  <div class="card">
+    <div class="card-title">Conversão free → premium</div>
+    {% set pct_engaged = ((seg_engaged / total_b2c * 100) | round(0) | int) if total_b2c > 0 else 0 %}
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:22px;font-weight:800;color:#A5B4FC">{{ conversion_rate }}%</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Taxa free→premium</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:22px;font-weight:800;color:var(--success)">{{ upgrades_30d }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Upgrades (30d)</div>
+      </div>
+    </div>
+    <!-- Funil simplificado -->
+    <div style="font-size:11px;color:var(--t3);font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">Funil</div>
+    {% set funnel = [
+      ("Cadastrados", total_b2c, "var(--t2)"),
+      ("Onboarding completo", onboarding_complete_b2c, "var(--accent)"),
+      ("Ativos 7d+", seg_engaged, "var(--success)"),
+      ("Prontos p/ upgrade", seg_eligible, "#A5B4FC"),
+    ] %}
+    {% for label, val, color in funnel %}
+    {% set pct = ((val / total_b2c * 100) | int) if total_b2c > 0 else 0 %}
+    <div style="margin-bottom:7px">
+      <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+        <span style="font-size:12px;color:var(--t2)">{{ label }}</span>
+        <span style="font-size:12px;font-weight:700;color:{{ color }}">{{ val }} <span style="color:var(--t3);font-weight:400">({{ pct }}%)</span></span>
+      </div>
+      <div style="background:var(--surface);border-radius:4px;height:5px;border:1px solid var(--border)">
+        <div style="background:{{ color }};border-radius:4px;height:100%;width:{{ [pct, 2] | max }}%;opacity:.85"></div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+</div>
+
+<!-- ── Filtros e tabela ── -->
+<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
+  <form method="get" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input type="hidden" name="seg" value="{{ seg }}">
+    <input type="search" name="q" value="{{ q }}" placeholder="Buscar nome, e-mail, ID…" style="width:200px">
+    <select name="plan_f" style="width:140px">
+      <option value="" {% if not plan_f %}selected{% endif %}>Todos os planos</option>
+      <option value="free"    {% if plan_f == 'free' %}selected{% endif %}>free</option>
+      <option value="premium" {% if plan_f == 'premium' %}selected{% endif %}>premium</option>
+    </select>
+    <button class="btn btn-primary btn-sm" type="submit">Filtrar</button>
+    {% if q or plan_f %}
+    <a href="?seg={{ seg }}" class="btn btn-secondary btn-sm">Limpar</a>
+    {% endif %}
+  </form>
+  <div style="display:flex;align-items:center;gap:10px">
+    {% if seg %}
+    <span style="font-size:12px;color:var(--t3)">
+      Segmento:
+      <strong style="color:var(--t1)">
+        {% if seg == 'new' %}🌱 Recém-chegados
+        {% elif seg == 'engaged' %}🔥 Engajados
+        {% elif seg == 'dormant' %}😴 Dormentes
+        {% elif seg == 'at_risk' %}⚠️ Em risco
+        {% elif seg == 'expiring' %}⏰ Expiram 7d
+        {% elif seg == 'eligible' %}💎 Prontos p/ upgrade
+        {% endif %}
+      </strong>
+      <a href="?q={{ q }}&plan_f={{ plan_f }}" style="color:var(--t3);margin-left:4px;text-decoration:none">✕</a>
+    </span>
+    {% endif %}
+    <span style="font-size:12px;color:var(--t3)">{{ total_filtered }} usuário{{ 's' if total_filtered != 1 else '' }}</span>
+    <a href="/admin/usuarios/export.csv" class="btn btn-secondary btn-sm">⬇ CSV</a>
+  </div>
+</div>
+
+<!-- Tabela -->
+<div class="card" style="padding:0">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Usuário</th>
+          <th>Canal</th>
+          <th>Plano</th>
+          <th>Onboarding</th>
+          <th>Última refeição</th>
+          <th>Total ref.</th>
+          <th>Cadastro</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for user, meal_count, last_meal in rows %}
+        {% set days_inactive = ((now_utc - last_meal).days) if last_meal else none %}
+        <tr>
+          <td>
+            <a href="/admin/usuarios/{{ user.id }}" class="tbl-link">
+              {{ user.first_name or '(sem nome)' }}
+            </a>
+            {% if user.email %}<div style="font-size:11px;color:var(--t3)">{{ user.email }}</div>{% endif %}
+          </td>
+          <td>
+            <span style="font-size:11px;color:var(--t3);text-transform:uppercase">{{ user.channel_type }}</span>
+            <div style="font-family:monospace;font-size:11px;color:var(--t2)">{{ user.channel_id[:20] }}</div>
+          </td>
+          <td>
+            <span class="pill pill-{{ user.plan }}">{{ user.plan }}</span>
+            {% if user.plan_expires_at %}
+            {% set exp_days = ((user.plan_expires_at - now_utc).days) %}
+            <div style="font-size:11px;margin-top:3px;color:{{ 'var(--danger)' if exp_days <= 0 else ('var(--warn)' if exp_days <= 7 else 'var(--t3)') }}">
+              {% if exp_days <= 0 %}expirou{% elif exp_days == 1 %}amanhã{% else %}{{ exp_days }}d{% endif %}
+            </div>
+            {% endif %}
+          </td>
+          <td>
+            {% if user.onboarding_complete %}
+            <span class="pill pill-ok">✓ completo</span>
+            {% elif user.onboarding_step > 0 %}
+            <span class="pill pill-warn">passo {{ user.onboarding_step }}</span>
+            {% else %}
+            <span class="pill pill-free">não iniciou</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;font-variant-numeric:tabular-nums">
+            {% if last_meal %}
+            <span style="color:{{ 'var(--danger)' if days_inactive and days_inactive > 14 else ('var(--warn)' if days_inactive and days_inactive > 7 else 'var(--t2)') }}">
+              {{ last_meal.strftime('%d/%m/%y') }}
+            </span>
+            <div style="font-size:11px;color:var(--t3)">
+              {% if days_inactive == 0 %}hoje
+              {% elif days_inactive == 1 %}ontem
+              {% elif days_inactive %}{{ days_inactive }}d atrás
+              {% endif %}
+            </div>
+            {% else %}
+            <span style="color:var(--t3)">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;font-variant-numeric:tabular-nums">
+            {% if meal_count %}
+            <span style="font-size:14px;font-weight:700;color:var(--t1)">{{ meal_count }}</span>
+            {% else %}
+            <span style="color:var(--t3)">0</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums;white-space:nowrap">
+            {{ user.created_at.strftime('%d/%m/%Y') if user.created_at else '—' }}
+          </td>
+          <td>
+            <a href="/admin/usuarios/{{ user.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="8" style="text-align:center;color:var(--t3);padding:28px">
+            Nenhum usuário neste segmento.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Paginação -->
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a class="pg-btn" href="?seg={{ seg }}&q={{ q }}&plan_f={{ plan_f }}&page={{ page - 1 }}">← Anterior</a>
+  {% endif %}
+
+  {% for p in range([1, page - 2]|max, [total_pages + 1, page + 3]|min) %}
+  <a class="pg-btn {% if p == page %}current{% endif %}"
+     href="?seg={{ seg }}&q={{ q }}&plan_f={{ plan_f }}&page={{ p }}">{{ p }}</a>
+  {% endfor %}
+
+  {% if page < total_pages %}
+  <a class="pg-btn" href="?seg={{ seg }}&q={{ q }}&plan_f={{ plan_f }}&page={{ page + 1 }}">Próxima →</a>
+  {% endif %}
+
+  <span class="pg-info">Página {{ page }} de {{ total_pages }}</span>
+</div>
+{% endif %}
+
+{% endblock %}
