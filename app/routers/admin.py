@@ -104,10 +104,10 @@ async def admin_login_page(
 ):
     if _verify_admin_token(admin_session):
         return RedirectResponse("/admin", 302)
-    return templates.TemplateResponse("admin_login.html", {
-        "request": request,
-        "error": None,
-    })
+    return templates.TemplateResponse(
+        request=request, name="admin_login.html",
+        context={"error": None},
+    )
 
 
 @router.post("/login")
@@ -118,17 +118,19 @@ async def admin_login(
     # Valida senha
     expected = settings.admin_password
     if not expected:
-        return templates.TemplateResponse("admin_login.html", {
-            "request": request,
-            "error": "ADMIN_PASSWORD não configurado no servidor.",
-        }, status_code=500)
+        return templates.TemplateResponse(
+            request=request, name="admin_login.html",
+            context={"error": "ADMIN_PASSWORD não configurado no servidor."},
+            status_code=500,
+        )
 
     if password != expected:
         logger.warning("[Admin] tentativa de login com senha inválida (IP: %s)", request.client.host if request.client else "?")
-        return templates.TemplateResponse("admin_login.html", {
-            "request": request,
-            "error": "Senha incorreta.",
-        }, status_code=401)
+        return templates.TemplateResponse(
+            request=request, name="admin_login.html",
+            context={"error": "Senha incorreta."},
+            status_code=401,
+        )
 
     token = _issue_admin_token()
     response = RedirectResponse("/admin", status_code=302)
@@ -218,20 +220,22 @@ async def admin_dashboard(
         .order_by(User.created_at.desc()).limit(5)
     )).scalars().all()
 
-    return templates.TemplateResponse("admin_dashboard.html", {
-        "request": request,
-        "total_users": total_users,
-        "by_plan": by_plan,
-        "by_channel": by_channel,
-        "new_7d": new_7d,
-        "active_7d": active_7d,
-        "total_meals": total_meals,
-        "total_water": total_water,
-        "scheduler_running": scheduler_running,
-        "jobs": jobs,
-        "recent_users": recent_users,
-        "now": datetime.now(timezone.utc),
-    })
+    return templates.TemplateResponse(
+        request=request, name="admin_dashboard.html",
+        context={
+            "total_users": total_users,
+            "by_plan": by_plan,
+            "by_channel": by_channel,
+            "new_7d": new_7d,
+            "active_7d": active_7d,
+            "total_meals": total_meals,
+            "total_water": total_water,
+            "scheduler_running": scheduler_running,
+            "jobs": jobs,
+            "recent_users": recent_users,
+            "now": datetime.now(timezone.utc),
+        },
+    )
 
 
 # ── Lista de Usuários ──────────────────────────────────────────────────────────
@@ -272,16 +276,18 @@ async def admin_usuarios(
 
     total_pages = max(1, (total + per_page - 1) // per_page)
 
-    return templates.TemplateResponse("admin_usuarios.html", {
-        "request": request,
-        "users": users,
-        "total": total,
-        "q": q,
-        "plan_filter": plan,
-        "page": page,
-        "total_pages": total_pages,
-        "per_page": per_page,
-    })
+    return templates.TemplateResponse(
+        request=request, name="admin_usuarios.html",
+        context={
+            "users": users,
+            "total": total,
+            "q": q,
+            "plan_filter": plan,
+            "page": page,
+            "total_pages": total_pages,
+            "per_page": per_page,
+        },
+    )
 
 
 # ── Detalhe do Usuário ────────────────────────────────────────────────────────
@@ -320,13 +326,15 @@ async def admin_usuario_detalhe(
         .order_by(MealLog.logged_at.desc()).limit(1)
     )).scalar()
 
-    return templates.TemplateResponse("admin_usuario.html", {
-        "request": request,
-        "u": user,
-        "meal_count": meal_count,
-        "water_count": water_count,
-        "last_meal": last_meal,
-    })
+    return templates.TemplateResponse(
+        request=request, name="admin_usuario.html",
+        context={
+            "u": user,
+            "meal_count": meal_count,
+            "water_count": water_count,
+            "last_meal": last_meal,
+        },
+    )
 
 
 # ── API JSON: ações sobre usuários ───────────────────────────────────────────
