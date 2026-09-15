@@ -58,14 +58,107 @@
 </div>
 
 {% if plans_expired_stale > 0 %}
-<div class="alert alert-danger" style="margin-bottom:16px">
-  ⚠️ <strong>{{ plans_expired_stale }} usuário{{ 's' if plans_expired_stale != 1 else '' }}</strong>
-  com plano expirado mas ainda registrado como não-free. Possível falha no webhook do MercadoPago.
-  <a href="/admin/usuarios?expires_in=0&plan=premium" style="color:inherit;margin-left:8px;text-decoration:underline">
-    Verificar →
-  </a>
+<div class="alert alert-danger" style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+  <span>
+    ⚠️ <strong>{{ plans_expired_stale }} usuário{{ 's' if plans_expired_stale != 1 else '' }}</strong>
+    com plano expirado mas ainda registrado como não-free. Possível falha no webhook do MercadoPago.
+  </span>
+  <div style="display:flex;gap:8px">
+    <a href="/admin/usuarios?plan=premium" style="color:inherit;font-size:12px;text-decoration:underline">
+      Verificar →
+    </a>
+    <button class="btn btn-danger btn-sm" onclick="bulkFixPlans(this)">
+      ⚡ Corrigir todos
+    </button>
+  </div>
 </div>
 {% endif %}
+
+<!-- ③ Funil de onboarding + B2B -->
+<div class="grid-2" style="margin-bottom:20px">
+
+  <!-- Funil de onboarding -->
+  <div class="card">
+    <div class="card-title">Funil de onboarding</div>
+    {% set pct_complete = ((onboarding_complete / onboarding_total * 100) | round(0) | int) if onboarding_total > 0 else 0 %}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <span style="font-size:13px;color:var(--t2)">Taxa de conclusão</span>
+      <span style="font-size:22px;font-weight:800;color:{{ 'var(--success)' if pct_complete >= 70 else ('var(--warn)' if pct_complete >= 40 else 'var(--danger)') }}">
+        {{ pct_complete }}%
+      </span>
+    </div>
+    <!-- Barra de progresso -->
+    <div style="background:var(--surface);border-radius:6px;height:8px;margin-bottom:16px;border:1px solid var(--border)">
+      <div style="background:var(--success);border-radius:6px;height:100%;width:{{ pct_complete }}%;transition:width .3s"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;text-align:center">
+      <div style="background:var(--surface);border-radius:10px;padding:12px 8px;border:1px solid var(--border)">
+        <div style="font-size:20px;font-weight:800;color:var(--success)">{{ onboarding_complete }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Concluíram</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px 8px;border:1px solid var(--border)">
+        <div style="font-size:20px;font-weight:800;color:var(--warn)">{{ onboarding_in_progress }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Em progresso</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px 8px;border:1px solid var(--border)">
+        <div style="font-size:20px;font-weight:800;color:var(--t3)">{{ onboarding_not_started }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Não iniciaram</div>
+      </div>
+    </div>
+    {% if onboarding_by_step %}
+    <div style="margin-top:14px;border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:11px;color:var(--t3);margin-bottom:8px;font-weight:600;letter-spacing:.05em;text-transform:uppercase">Travados por passo</div>
+      {% for step, n in onboarding_by_step.items() | sort %}
+      {% if step > 0 %}
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+        <span style="font-size:11px;color:var(--t3);width:50px">Passo {{ step }}</span>
+        <div style="flex:1;background:var(--surface);border-radius:4px;height:6px;border:1px solid var(--border)">
+          <div style="background:var(--accent);border-radius:4px;height:100%;width:{{ [((n / onboarding_total * 100) | int), 4] | max }}%"></div>
+        </div>
+        <span style="font-size:11px;font-weight:600;color:var(--t2);width:24px;text-align:right">{{ n }}</span>
+      </div>
+      {% endif %}
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- B2B Nutricionistas -->
+  <div class="card">
+    <div class="card-title">
+      Nutricionistas B2B
+      <a href="/admin/nutricionistas" style="font-size:11px;color:#A5B4FC;margin-left:8px;font-weight:400">ver todas →</a>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--t1)">{{ nutri_total }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Total cadastradas</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px 14px;border:1px solid var(--border);text-align:center">
+        <div style="font-size:22px;font-weight:800;color:var(--success)">{{ nutri_patients_active }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Pacientes ativos</div>
+      </div>
+    </div>
+    {% if nutri_trial_expiring > 0 %}
+    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--warn);font-weight:600">
+        ⏰ {{ nutri_trial_expiring }} trial{{ 's' if nutri_trial_expiring != 1 else '' }} expira{{ 'm' if nutri_trial_expiring != 1 else '' }} em 7 dias
+      </div>
+      <a href="/admin/nutricionistas?status_filter=expiring" style="font-size:11px;color:var(--warn);opacity:.8">
+        Verificar →
+      </a>
+    </div>
+    {% else %}
+    <div style="background:rgba(16,185,129,.06);border:1px solid rgba(16,185,129,.15);border-radius:8px;padding:10px 12px;margin-bottom:10px">
+      <div style="font-size:12px;color:var(--success)">✓ Nenhum trial expirando nos próximos 7 dias</div>
+    </div>
+    {% endif %}
+    <a href="/admin/nutricionistas" class="btn btn-secondary btn-sm" style="width:100%;justify-content:center">
+      🥗 Gerenciar nutricionistas →
+    </a>
+  </div>
+
+</div>
 
 <!-- Distribuições + Scheduler -->
 <div class="grid-2">
@@ -196,6 +289,28 @@ async function triggerJob(jobId, btn) {
   }
   btn.disabled = false;
   btn.textContent = '▶ Acionar';
+}
+
+// ⑤ Bulk-fix planos expirados
+async function bulkFixPlans(btn) {
+  if (!confirm('Reverter TODOS os planos expirados para free? Esta ação é registrada no audit log.')) return;
+  btn.disabled = true;
+  btn.textContent = '⏳';
+  try {
+    const r = await adminPost('/admin/api/bulk-fix-planos');
+    if (r.ok) {
+      showToast('✅ ' + r.message, 'ok');
+      setTimeout(() => location.reload(), 1800);
+    } else {
+      showToast('❌ ' + (r.detail || 'Erro'), 'err');
+      btn.disabled = false;
+      btn.textContent = '⚡ Corrigir todos';
+    }
+  } catch(e) {
+    showToast('❌ Erro de rede', 'err');
+    btn.disabled = false;
+    btn.textContent = '⚡ Corrigir todos';
+  }
 }
 </script>
 {% endblock %}

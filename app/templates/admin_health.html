@@ -100,4 +100,42 @@
   </div>
 </div>
 
+<!-- ④ Feature flags -->
+<div class="sect-label">Feature flags (leitura ao vivo)</div>
+<div class="card">
+  <div class="kv-list">
+    {% for key, value in feature_flags.items() %}
+    <div class="kv-key" style="font-family:monospace;font-size:12px">{{ key }}</div>
+    <div class="kv-val">
+      {% if value is sameas true %}
+        <span class="pill pill-ok">true</span>
+      {% elif value is sameas false %}
+        <span class="pill pill-warn">false</span>
+      {% else %}
+        <code style="background:var(--surface);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:12px;color:var(--t1)">{{ value }}</code>
+      {% endif %}
+
+      {# Notas contextuais para flags importantes #}
+      {% if key == 'maintenance_mode' and value is sameas true %}
+        <span class="pill pill-deleted" style="margin-left:6px">⚠️ Bot pausado</span>
+      {% endif %}
+      {% if key == 'reports_open_beta' and value is sameas true %}
+        <span style="font-size:11px;color:var(--t3);margin-left:6px">todos os usuários acessam relatórios</span>
+      {% elif key == 'reports_open_beta' and value is sameas false %}
+        <span style="font-size:11px;color:var(--t3);margin-left:6px">apenas premium — paywall ativo</span>
+      {% endif %}
+      {% if key == 'free_tier_max_logs_per_day' and value >= 999 %}
+        <span style="font-size:11px;color:var(--t3);margin-left:6px">sem restrição efetiva</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+  <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border)">
+    <p style="font-size:12px;color:var(--t3)">
+      💡 Para alterar flags: edite variáveis de ambiente no Render e faça redeploy.
+      Em produção não há hot-reload de configuração.
+    </p>
+  </div>
+</div>
+
 {% endblock %}

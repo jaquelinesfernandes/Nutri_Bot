@@ -1,0 +1,175 @@
+{% extends "admin_base.html" %}
+{% block title %}Nutricionistas{% endblock %}
+{% block page_title %}🥗 Nutricionistas B2B{% endblock %}
+
+{% block content %}
+
+<!-- Tiles -->
+<div class="stats-row" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px">
+  <div class="stat-tile accent">
+    <div class="stat-val">{{ tiles.total }}</div>
+    <div class="stat-lbl">
+      <a href="?status_filter=" style="color:inherit;text-decoration:none">Total →</a>
+    </div>
+  </div>
+  <div class="stat-tile warn">
+    <div class="stat-val">{{ tiles.trial }}</div>
+    <div class="stat-lbl">
+      <a href="?status_filter=trial" style="color:inherit;text-decoration:none">Em trial →</a>
+    </div>
+  </div>
+  <div class="stat-tile {{ 'danger' if tiles.expiring > 0 else '' }}">
+    <div class="stat-val">{{ tiles.expiring }}</div>
+    <div class="stat-lbl">
+      <a href="?status_filter=expiring" style="color:inherit;text-decoration:none">Trial expira em 7d →</a>
+    </div>
+  </div>
+  <div class="stat-tile success">
+    <div class="stat-val">{{ tiles.patients_active }}</div>
+    <div class="stat-lbl">Pacientes ativos (total)</div>
+  </div>
+</div>
+
+{% if tiles.expiring > 0 %}
+<div class="alert alert-danger" style="margin-bottom:16px">
+  ⚠️ <strong>{{ tiles.expiring }} nutricionista{{ 's' if tiles.expiring != 1 else '' }}</strong>
+  com trial expirando nos próximos 7 dias. Considere enviar uma mensagem de renovação.
+  <a href="?status_filter=expiring" style="color:inherit;margin-left:8px;text-decoration:underline">Ver →</a>
+</div>
+{% endif %}
+
+<!-- Filtro de status -->
+<form method="get" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+  <div style="width:220px">
+    <select name="status_filter">
+      <option value=""         {% if not status_filter %}selected{% endif %}>Todos os status</option>
+      <option value="trial"    {% if status_filter == 'trial' %}selected{% endif %}>Em trial</option>
+      <option value="active"   {% if status_filter == 'active' %}selected{% endif %}>Ativos (pós-trial)</option>
+      <option value="expiring" {% if status_filter == 'expiring' %}selected{% endif %}>Trial expirando (7d)</option>
+      <option value="expired"  {% if status_filter == 'expired' %}selected{% endif %}>Expirados</option>
+    </select>
+  </div>
+  <button class="btn btn-primary" type="submit">Filtrar</button>
+  {% if status_filter %}
+  <a href="/admin/nutricionistas" class="btn btn-secondary">Limpar</a>
+  {% endif %}
+</form>
+
+<div style="font-size:12px;color:var(--t3);margin-bottom:10px">
+  {{ total }} nutricionista{{ 's' if total != 1 else '' }}
+  {% if status_filter %} · filtro: <strong style="color:var(--t2)">{{ status_filter }}</strong>{% endif %}
+</div>
+
+<!-- Tabela -->
+<div class="card" style="padding:0">
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Nome</th>
+          <th>Canal</th>
+          <th>Status</th>
+          <th>Trial / Expira</th>
+          <th>Pacientes ativos</th>
+          <th>Pendentes</th>
+          <th>Total vínculos</th>
+          <th>Cadastro</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for n in nutris %}
+        {% set pc = patient_counts.get(n.id | string, {}) %}
+        {% set in_trial = n.trial_ends_at and n.trial_ends_at > now_utc %}
+        {% set trial_expired = n.trial_ends_at and n.trial_ends_at < now_utc %}
+        {% set plan_expired = n.plan_expires_at and n.plan_expires_at < now_utc %}
+        {% set days_left = ((n.trial_ends_at - now_utc).days) if in_trial else none %}
+        <tr>
+          <td>
+            <a href="/admin/usuarios/{{ n.id }}" class="tbl-link">
+              {{ n.first_name or '(sem nome)' }}
+            </a>
+            {% if n.email %}<div style="font-size:11px;color:var(--t3)">{{ n.email }}</div>{% endif %}
+          </td>
+          <td>
+            <span style="font-size:11px;color:var(--t3);text-transform:uppercase">{{ n.channel_type }}</span>
+            <div style="font-family:monospace;font-size:11px;color:var(--t2)">{{ n.channel_id[:22] }}</div>
+          </td>
+          <td>
+            {% if in_trial %}
+              <span class="pill pill-warn">trial</span>
+            {% elif trial_expired or plan_expired %}
+              <span class="pill pill-deleted">expirado</span>
+            {% else %}
+              <span class="pill pill-ok">ativo</span>
+            {% endif %}
+          </td>
+          <td style="font-size:12px;font-variant-numeric:tabular-nums">
+            {% if n.trial_ends_at %}
+              <span style="color:{{ 'var(--danger)' if trial_expired else ('var(--warn)' if days_left is not none and days_left <= 7 else 'var(--t3)') }}">
+                {{ n.trial_ends_at.strftime('%d/%m/%Y') }}
+              </span>
+              {% if in_trial and days_left is not none %}
+              <div style="font-size:11px;color:var(--t3)">{{ days_left }}d restantes</div>
+              {% endif %}
+            {% elif n.plan_expires_at %}
+              <span style="color:var(--t3)">{{ n.plan_expires_at.strftime('%d/%m/%Y') }}</span>
+            {% else %}
+              <span style="color:var(--t3)">sem expiração</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center">
+            <span style="font-size:18px;font-weight:800;color:{{ 'var(--success)' if pc.get('active',0) > 0 else 'var(--t3)' }}">
+              {{ pc.get('active', 0) }}
+            </span>
+          </td>
+          <td style="text-align:center">
+            {% if pc.get('pending', 0) > 0 %}
+            <span class="pill pill-warn">{{ pc.get('pending', 0) }}</span>
+            {% else %}
+            <span style="color:var(--t3);font-size:12px">—</span>
+            {% endif %}
+          </td>
+          <td style="text-align:center;font-size:12px;color:var(--t3)">
+            {{ pc.get('total', 0) }}
+          </td>
+          <td style="font-size:12px;color:var(--t3);font-variant-numeric:tabular-nums">
+            {{ n.created_at.strftime('%d/%m/%Y') if n.created_at else '—' }}
+          </td>
+          <td>
+            <a href="/admin/usuarios/{{ n.id }}" class="btn btn-secondary btn-sm">Ver →</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr>
+          <td colspan="9" style="text-align:center;color:var(--t3);padding:28px">
+            Nenhuma nutricionista encontrada.
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Paginação -->
+{% if total_pages > 1 %}
+<div class="pagination">
+  {% if page > 1 %}
+  <a class="pg-btn" href="?status_filter={{ status_filter }}&page={{ page - 1 }}">← Anterior</a>
+  {% endif %}
+
+  {% for p in range([1, page - 2]|max, [total_pages + 1, page + 3]|min) %}
+  <a class="pg-btn {% if p == page %}current{% endif %}"
+     href="?status_filter={{ status_filter }}&page={{ p }}">{{ p }}</a>
+  {% endfor %}
+
+  {% if page < total_pages %}
+  <a class="pg-btn" href="?status_filter={{ status_filter }}&page={{ page + 1 }}">Próxima →</a>
+  {% endif %}
+
+  <span class="pg-info">Página {{ page }} de {{ total_pages }}</span>
+</div>
+{% endif %}
+
+{% endblock %}

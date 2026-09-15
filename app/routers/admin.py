@@ -26,6 +26,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db.session import get_db
 from app.models.meal_log import MealLog
+from app.models.nutritionist_patient import NutritionistPatient
 from app.models.payment_subscription import PaymentSubscription
 from app.models.user import User
 from app.models.water_log import WaterLog
@@ -148,12 +149,16 @@ async def admin_login_page(
 async def admin_login(
     request: Request,
     password: str = Form(...),
+    db: AsyncSession = Depends(get_db),
 ):
     ip = _client_ip(request)
 
     # ── Rate limit ──
     allowed, wait = _check_rate_limit(ip)
     if not allowed:
+        # ① Loga tentativas bloqueadas por rate-limit
+        await _log_action(db, "login_blocked_rate_limit", None,
+                          {"ip": ip, "wait_s": wait})
         return templates.TemplateResponse(
             request=request, name="admin_login.html",
             context={"error": f"Muitas tentativas. Aguarde {wait}s."},
@@ -170,6 +175,8 @@ async def admin_login(
         )
 
     if password != expected:
+        # ① Loga senha incorreta em admin_logs
+        await _log_action(db, "login_failed", None, {"ip": ip})
         logger.warning("[Admin] login inválido — IP: %s", ip)
         return templates.TemplateResponse(
             request=request, name="admin_login.html",
@@ -177,11 +184,12 @@ async def admin_login(
             status_code=401,
         )
 
+    # ① Loga login bem-sucedido
+    await _log_action(db, "login_success", None, {"ip": ip})
     token = _issue_admin_token()
     response = RedirectResponse("/admin", status_code=302)
     _set_admin_cookie(response, token)
     logger.info("[Admin] login bem-sucedido — IP: %s", ip)
-    # Log assíncrono (sem db aqui — POST /login não injeta db por design)
     return response
 
 
@@ -287,6 +295,54 @@ async def admin_dashboard(
         )
     )).scalar() or 0
 
+    # ③ Funil de onboarding
+    onboarding_total = total_users
+    onboarding_complete = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.deleted_at.is_(None), User.onboarding_complete.is_(True))
+    )).scalar() or 0
+    onboarding_in_progress = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.deleted_at.is_(None), User.onboarding_complete.is_(False),
+               User.onboarding_step > 0)
+    )).scalar() or 0
+    onboarding_not_started = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.deleted_at.is_(None), User.onboarding_complete.is_(False),
+               User.onboarding_step == 0)
+    )).scalar() or 0
+
+    # Passos por etapa (para funil detalhado)
+    step_rows = (await db.execute(
+        select(User.onboarding_step, func.count().label("n"))
+        .where(User.deleted_at.is_(None), User.onboarding_complete.is_(False))
+        .group_by(User.onboarding_step)
+        .order_by(User.onboarding_step)
+    )).all()
+    onboarding_by_step = {r.onboarding_step: r.n for r in step_rows}
+
+    # ── B2B: Nutricionistas ──
+    nutri_total = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.deleted_at.is_(None), User.plan == "nutritionist")
+    )).scalar() or 0
+
+    nutri_trial_expiring = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan == "nutritionist",
+            User.trial_ends_at.isnot(None),
+            User.trial_ends_at > now_utc,
+            User.trial_ends_at < now_utc + timedelta(days=7),
+        )
+    )).scalar() or 0
+
+    nutri_patients_active = (await db.execute(
+        select(func.count()).select_from(NutritionistPatient)
+        .where(NutritionistPatient.status == "active")
+    )).scalar() or 0
+
     # ── Scheduler ──
     scheduler = getattr(request.app.state, "scheduler", None)
     scheduler_running = bool(scheduler and scheduler.running)
@@ -319,6 +375,17 @@ async def admin_dashboard(
             "subs_canceled_30d": subs_canceled_30d,
             "plans_expired_stale": plans_expired_stale,
             "expires_7d": expires_7d,
+            # ③ onboarding
+            "onboarding_complete": onboarding_complete,
+            "onboarding_in_progress": onboarding_in_progress,
+            "onboarding_not_started": onboarding_not_started,
+            "onboarding_total": onboarding_total,
+            "onboarding_by_step": onboarding_by_step,
+            # B2B
+            "nutri_total": nutri_total,
+            "nutri_trial_expiring": nutri_trial_expiring,
+            "nutri_patients_active": nutri_patients_active,
+            # outros
             "scheduler_running": scheduler_running,
             "jobs": jobs,
             "recent_users": recent_users,
@@ -564,6 +631,126 @@ async def admin_assinaturas(
     )
 
 
+# ── ② Painel de Nutricionistas ────────────────────────────────────────────────
+
+@router.get("/nutricionistas", response_class=HTMLResponse)
+async def admin_nutricionistas(
+    request: Request,
+    status_filter: str = "",   # "" | "trial" | "active" | "expired"
+    page: int = 1,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    if not _verify_admin_token(admin_session):
+        return RedirectResponse("/admin/login", 302)
+
+    now_utc = datetime.now(timezone.utc)
+    per_page = 50
+    offset = (page - 1) * per_page
+
+    # Base: todos os usuários com plano nutritionist
+    base_q = select(User).where(
+        User.deleted_at.is_(None),
+        User.plan == "nutritionist",
+    )
+
+    if status_filter == "trial":
+        base_q = base_q.where(User.trial_ends_at.isnot(None), User.trial_ends_at > now_utc)
+    elif status_filter == "active":
+        base_q = base_q.where(
+            User.trial_ends_at.is_(None) |
+            (User.trial_ends_at < now_utc),
+        )
+    elif status_filter == "expired":
+        base_q = base_q.where(
+            User.plan_expires_at.isnot(None),
+            User.plan_expires_at < now_utc,
+        )
+    elif status_filter == "expiring":
+        base_q = base_q.where(
+            User.trial_ends_at.isnot(None),
+            User.trial_ends_at > now_utc,
+            User.trial_ends_at < now_utc + timedelta(days=7),
+        )
+
+    total = (await db.execute(
+        select(func.count()).select_from(base_q.subquery())
+    )).scalar() or 0
+
+    nutris = (await db.execute(
+        base_q.order_by(User.created_at.desc()).offset(offset).limit(per_page)
+    )).scalars().all()
+
+    # Para cada nutricionista, contar pacientes ativos e totais
+    nutri_ids = [n.id for n in nutris]
+    patient_counts: dict = {}
+    if nutri_ids:
+        counts_rows = (await db.execute(
+            select(
+                NutritionistPatient.nutritionist_id,
+                NutritionistPatient.status,
+                func.count().label("n"),
+            )
+            .where(NutritionistPatient.nutritionist_id.in_(nutri_ids))
+            .group_by(NutritionistPatient.nutritionist_id, NutritionistPatient.status)
+        )).all()
+        for r in counts_rows:
+            nid = str(r.nutritionist_id)
+            if nid not in patient_counts:
+                patient_counts[nid] = {"active": 0, "total": 0, "pending": 0}
+            patient_counts[nid]["total"] += r.n
+            if r.status == "active":
+                patient_counts[nid]["active"] += r.n
+            elif r.status == "pending":
+                patient_counts[nid]["pending"] += r.n
+
+    # Tiles / totais gerais
+    tile_total = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.deleted_at.is_(None), User.plan == "nutritionist")
+    )).scalar() or 0
+
+    tile_trial = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.deleted_at.is_(None), User.plan == "nutritionist",
+               User.trial_ends_at.isnot(None), User.trial_ends_at > now_utc)
+    )).scalar() or 0
+
+    tile_expiring = (await db.execute(
+        select(func.count()).select_from(User)
+        .where(User.deleted_at.is_(None), User.plan == "nutritionist",
+               User.trial_ends_at.isnot(None), User.trial_ends_at > now_utc,
+               User.trial_ends_at < now_utc + timedelta(days=7))
+    )).scalar() or 0
+
+    tile_patients_active = (await db.execute(
+        select(func.count()).select_from(NutritionistPatient)
+        .where(NutritionistPatient.status == "active")
+    )).scalar() or 0
+
+    total_pages = max(1, (total + per_page - 1) // per_page)
+
+    return templates.TemplateResponse(
+        request=request, name="admin_nutricionistas.html",
+        context={
+            "nutris": nutris,
+            "patient_counts": patient_counts,
+            "total": total,
+            "status_filter": status_filter,
+            "page": page,
+            "total_pages": total_pages,
+            "per_page": per_page,
+            "now_utc": now_utc,
+            "tiles": {
+                "total": tile_total,
+                "trial": tile_trial,
+                "expiring": tile_expiring,
+                "patients_active": tile_patients_active,
+            },
+        },
+    )
+
+
 # ── API JSON: ações sobre usuários ───────────────────────────────────────────
 
 @router.post("/api/usuarios/{user_id}/plano")
@@ -685,6 +872,49 @@ async def admin_delete_user(
     return JSONResponse({"ok": True, "message": "Usuário anonimizado com sucesso."})
 
 
+# ── ⑤ Bulk-fix planos expirados ───────────────────────────────────────────────
+
+@router.post("/api/bulk-fix-planos")
+async def admin_bulk_fix_plans(
+    request: Request,
+    admin_session: str | None = Cookie(default=None),
+    db: AsyncSession = Depends(get_db),
+):
+    """Reverte para free todos os usuários com plan != free e plan_expires_at < now."""
+    if not _verify_admin_token(admin_session):
+        raise HTTPException(403, "Não autorizado")
+
+    now_utc = datetime.now(timezone.utc)
+
+    # Busca os afetados primeiro para logar
+    stale_users = (await db.execute(
+        select(User)
+        .where(
+            User.deleted_at.is_(None),
+            User.plan != "free",
+            User.plan_expires_at.isnot(None),
+            User.plan_expires_at < now_utc,
+        )
+    )).scalars().all()
+
+    count = len(stale_users)
+    if count == 0:
+        return JSONResponse({"ok": True, "fixed": 0, "message": "Nenhum plano a corrigir."})
+
+    for user in stale_users:
+        old_plan = user.plan
+        user.plan = "free"
+        user.plan_expires_at = None
+        await _log_action(db, "bulk_fix_plan", user.id,
+                          {"old": old_plan, "reason": "expired"},
+                          ip=_client_ip(request))
+
+    await db.commit()
+    logger.info("[Admin] bulk-fix: %d planos expirados revertidos para free", count)
+    return JSONResponse({"ok": True, "fixed": count,
+                         "message": f"{count} plano(s) revertido(s) para free."})
+
+
 # ── API JSON: Scheduler ────────────────────────────────────────────────────────
 
 @router.post("/api/scheduler/trigger/{job_id}")
@@ -756,6 +986,19 @@ async def admin_health_page(
     except Exception:
         log_count = "—"
 
+    # ④ Feature flags (leitura ao vivo do config)
+    feature_flags = {
+        "maintenance_mode": settings.maintenance_mode,
+        "reports_open_beta": settings.reports_open_beta,
+        "free_tier_max_logs_per_day": settings.free_tier_max_logs_per_day,
+        "free_tier_history_days": settings.free_tier_history_days,
+        "rate_limit_messages_per_minute": settings.rate_limit_messages_per_minute,
+        "rate_limit_photos_per_hour": settings.rate_limit_photos_per_hour,
+        "audio_provider": settings.audio_provider,
+        "whisper_model_size": settings.whisper_model_size,
+        "app_env": settings.app_env,
+    }
+
     return templates.TemplateResponse(
         request=request, name="admin_health.html",
         context={
@@ -766,6 +1009,7 @@ async def admin_health_page(
             "git_branch": git_branch,
             "log_count": log_count,
             "now": datetime.now(SP),
+            "feature_flags": feature_flags,
         },
     )
 
@@ -776,6 +1020,7 @@ async def admin_health_page(
 async def admin_logs_page(
     request: Request,
     page: int = 1,
+    action_filter: str = "",
     admin_session: str | None = Cookie(default=None),
     db: AsyncSession = Depends(get_db),
 ):
@@ -785,15 +1030,33 @@ async def admin_logs_page(
     per_page = 50
     offset = (page - 1) * per_page
 
-    total = (await db.execute(text("SELECT COUNT(*) FROM admin_logs"))).scalar() or 0
+    if action_filter:
+        total = (await db.execute(
+            text("SELECT COUNT(*) FROM admin_logs WHERE action = :a"),
+            {"a": action_filter},
+        )).scalar() or 0
+        rows = (await db.execute(
+            text(
+                "SELECT id, created_at, action, target_user_id, detail "
+                "FROM admin_logs WHERE action = :a "
+                "ORDER BY created_at DESC LIMIT :lim OFFSET :off"
+            ),
+            {"a": action_filter, "lim": per_page, "off": offset},
+        )).mappings().all()
+    else:
+        total = (await db.execute(text("SELECT COUNT(*) FROM admin_logs"))).scalar() or 0
+        rows = (await db.execute(
+            text(
+                "SELECT id, created_at, action, target_user_id, detail "
+                "FROM admin_logs ORDER BY created_at DESC LIMIT :lim OFFSET :off"
+            ),
+            {"lim": per_page, "off": offset},
+        )).mappings().all()
 
-    rows = (await db.execute(
-        text(
-            "SELECT id, created_at, action, target_user_id, detail "
-            "FROM admin_logs ORDER BY created_at DESC LIMIT :lim OFFSET :off"
-        ),
-        {"lim": per_page, "off": offset},
-    )).mappings().all()
+    # Tipos de ação distintos para o filtro
+    action_types = (await db.execute(
+        text("SELECT DISTINCT action FROM admin_logs ORDER BY action")
+    )).scalars().all()
 
     total_pages = max(1, (total + per_page - 1) // per_page)
 
@@ -805,5 +1068,7 @@ async def admin_logs_page(
             "page": page,
             "total_pages": total_pages,
             "per_page": per_page,
+            "action_filter": action_filter,
+            "action_types": action_types,
         },
     )

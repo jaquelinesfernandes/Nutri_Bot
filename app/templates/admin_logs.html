@@ -4,8 +4,25 @@
 
 {% block content %}
 
+<!-- Filtro por tipo de ação -->
+<form method="get" style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+  <div style="width:260px">
+    <select name="action_filter">
+      <option value="" {% if not action_filter %}selected{% endif %}>Todas as ações</option>
+      {% for at in action_types %}
+      <option value="{{ at }}" {% if action_filter == at %}selected{% endif %}>{{ at }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn btn-primary" type="submit">Filtrar</button>
+  {% if action_filter %}
+  <a href="/admin/logs" class="btn btn-secondary">Limpar</a>
+  {% endif %}
+</form>
+
 <div style="font-size:12px;color:var(--t3);margin-bottom:14px">
   {{ total }} registro{{ 's' if total != 1 else '' }} · mostrando página {{ page }} de {{ total_pages }}
+  {% if action_filter %} · ação: <strong style="color:var(--t2)">{{ action_filter }}</strong>{% endif %}
 </div>
 
 <div class="card" style="padding:0">
@@ -15,6 +32,7 @@
         <tr>
           <th>Data/hora</th>
           <th>Ação</th>
+          <th>IP</th>
           <th>Usuário alvo</th>
           <th>Detalhe</th>
         </tr>
@@ -27,12 +45,19 @@
           </td>
           <td>
             <span class="pill
-              {% if 'delete' in r.action %}pill-deleted
-              {% elif 'plan' in r.action %}pill-premium
+              {% if 'delete' in r.action or 'lgpd' in r.action %}pill-deleted
+              {% elif 'failed' in r.action or 'blocked' in r.action %}pill-deleted
+              {% elif 'plan' in r.action or 'fix' in r.action %}pill-premium
               {% elif 'trigger' in r.action %}pill-warn
-              {% else %}pill-ok{% endif %}">
+              {% elif 'login_success' in r.action %}pill-ok
+              {% else %}pill-free{% endif %}">
               {{ r.action }}
             </span>
+          </td>
+          <td style="font-family:monospace;font-size:11px;color:var(--t3)">
+            {% if r.detail and r.detail.get('ip') %}
+              {{ r.detail.get('ip') }}
+            {% else %}—{% endif %}
           </td>
           <td style="font-family:monospace;font-size:11px;color:var(--t2)">
             {% if r.target_user_id %}
@@ -41,13 +66,20 @@
             </a>
             {% else %}—{% endif %}
           </td>
-          <td style="font-family:monospace;font-size:11px;color:var(--t3);max-width:280px;word-break:break-all">
-            {{ r.detail }}
+          <td style="font-family:monospace;font-size:11px;color:var(--t3);max-width:260px;word-break:break-all">
+            {% set d = r.detail %}
+            {% if d %}
+              {% set parts = [] %}
+              {% for k, v in d.items() if k != 'ip' %}
+                {% if parts.append(k ~ '=' ~ v) %}{% endif %}
+              {% endfor %}
+              {{ parts | join(' · ') }}
+            {% else %}—{% endif %}
           </td>
         </tr>
         {% else %}
         <tr>
-          <td colspan="4" style="text-align:center;color:var(--t3);padding:28px">
+          <td colspan="5" style="text-align:center;color:var(--t3);padding:28px">
             Nenhum log registrado ainda.
           </td>
         </tr>
@@ -60,15 +92,16 @@
 {% if total_pages > 1 %}
 <div class="pagination">
   {% if page > 1 %}
-  <a class="pg-btn" href="?page={{ page - 1 }}">← Anterior</a>
+  <a class="pg-btn" href="?action_filter={{ action_filter }}&page={{ page - 1 }}">← Anterior</a>
   {% endif %}
 
   {% for p in range([1, page - 2]|max, [total_pages + 1, page + 3]|min) %}
-  <a class="pg-btn {% if p == page %}current{% endif %}" href="?page={{ p }}">{{ p }}</a>
+  <a class="pg-btn {% if p == page %}current{% endif %}"
+     href="?action_filter={{ action_filter }}&page={{ p }}">{{ p }}</a>
   {% endfor %}
 
   {% if page < total_pages %}
-  <a class="pg-btn" href="?page={{ page + 1 }}">Próxima →</a>
+  <a class="pg-btn" href="?action_filter={{ action_filter }}&page={{ page + 1 }}">Próxima →</a>
   {% endif %}
 
   <span class="pg-info">Página {{ page }} de {{ total_pages }}</span>
