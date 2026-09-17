@@ -61,16 +61,21 @@ async def _download_telegram_photo(file_id: str) -> bytes:
 async def _get_or_create_user(db, channel_id: str, first_name: str | None) -> User:
     result = await db.execute(select(User).where(User.channel_id == channel_id))
     user = result.scalar_one_or_none()
+    tg_name = first_name.strip() if first_name else None  # "" → None
     if not user:
         user = User(
             channel_id=channel_id,
             channel_type="telegram",
-            first_name=first_name,
+            first_name=tg_name,
             conversation_state="IDLE",
         )
         db.add(user)
         await db.flush()
-        logger.info(f"[TG] Novo usuário criado: {channel_id}")
+        logger.info(f"[TG] Novo usuário criado: {channel_id} nome={tg_name!r}")
+    elif tg_name and not user.first_name:
+        # Usuário já existe mas ainda não tem nome → preenche do Telegram
+        user.first_name = tg_name
+        logger.info(f"[TG] Nome atualizado do Telegram: {channel_id} → {tg_name!r}")
     return user
 
 

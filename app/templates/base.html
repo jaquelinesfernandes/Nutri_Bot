@@ -259,7 +259,6 @@
     gap: 10px;
   }
   .macro-row .macro-card { padding: 12px 14px; }
-  .macro-row .macro-spark { display: none; }
 
   /* Dark cards — Calorias + Macros */
   .ring-card, .macro-card {
@@ -343,6 +342,7 @@
   .macro-lbl {
     font-size: 10.5px; font-weight: 600; letter-spacing: .06em;
     text-transform: uppercase; color: rgba(255,255,255,.4); margin-bottom: 2px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .macro-num {
     font-family: 'DM Serif Display', Georgia, serif;
@@ -438,8 +438,10 @@
 
   .mprog-compare {
     flex: 1; display: flex; flex-direction: column;
-    justify-content: space-between; gap: 0;
+    justify-content: flex-start; gap: 0;
   }
+  .mprog-item { padding: 14px 0; }
+  .mprog-item:not(:last-child) { border-bottom: 1px solid var(--card-b); }
   .mprog-head {
     display: flex; justify-content: space-between; align-items: center;
     font-size: 12.5px; margin-bottom: 10px;
@@ -510,6 +512,9 @@
     .insights-grid { grid-template-columns: 1fr; }
     .stat-box { padding: 12px 8px 10px; }
     .stat-val { font-size: 21px; }
+    /* macro-row: 4 colunas ficam estreitas (~105-140px) quando sidebar está visível */
+    .macro-row { grid-template-columns: repeat(2, 1fr); }
+    .macro-row .macro-card { padding: 14px 16px; }
   }
   @media (max-width: 720px) {
     .hero-row { grid-template-columns: 1fr; }
@@ -520,19 +525,9 @@
     .ring-wrap { width: 120px; height: 120px; flex-shrink: 0; margin-bottom: 0; overflow: hidden; }
     .ring-big { font-size: 24px; }
     .ring-remain { flex-direction: column; align-items: flex-start; gap: 4px; }
-    .water-hero-card { padding: 20px 16px 18px; }
+    /* water-hero-card: overrides ring-card row-direction para manter layout vertical */
+    .water-hero-card { padding: 20px 16px 18px; flex-direction: column; align-items: center; }
     .water-big-num { font-size: 36px; }
-  }
-  @media (max-width: 420px) {
-    .ring-card { gap: 14px; padding: 14px; }
-    .ring-wrap { width: 96px; height: 96px; }
-    .ring-big { font-size: 20px; }
-    .ring-of { font-size: 10px; }
-    .ring-pct { font-size: 11px; }
-    .ring-tip { font-size: 10.5px; }
-    .remain-chip { font-size: 11px; padding: 2px 8px; }
-    .macro-row { grid-template-columns: repeat(2, 1fr); }
-    .water-big-num { font-size: 28px; }
   }
   @media (max-width: 640px) {
     .sidebar { display: none; }
@@ -550,6 +545,18 @@
     .stat-val { font-size: 20px; }
     .stat-trend { display: none; }
     .week-pct-canvas { height: 160px; }
+    .macro-row .macro-spark { display: none; }
+  }
+  @media (max-width: 420px) {
+    .ring-card { gap: 14px; padding: 14px; }
+    .ring-wrap { width: 96px; height: 96px; }
+    .ring-big { font-size: 20px; }
+    .ring-of { font-size: 10px; }
+    .ring-pct { font-size: 11px; }
+    .ring-tip { font-size: 10.5px; }
+    .remain-chip { font-size: 11px; padding: 2px 8px; }
+    .macro-row { grid-template-columns: repeat(2, 1fr); }
+    .water-big-num { font-size: 28px; }
   }
   </style>
 

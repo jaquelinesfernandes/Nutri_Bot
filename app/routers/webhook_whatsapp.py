@@ -40,16 +40,21 @@ async def _send_whatsapp_message(phone: str, text: str) -> None:
 async def _get_or_create_user(db, channel_id: str, first_name: str | None) -> User:
     result = await db.execute(select(User).where(User.channel_id == channel_id))
     user = result.scalar_one_or_none()
+    wa_name = first_name.strip() if first_name else None  # "" → None
     if not user:
         user = User(
             channel_id=channel_id,
             channel_type="whatsapp",
-            first_name=first_name,
+            first_name=wa_name,
             conversation_state="IDLE",
         )
         db.add(user)
         await db.flush()
-        logger.info(f"[WA] Novo usuário criado: {channel_id}")
+        logger.info(f"[WA] Novo usuário criado: {channel_id} nome={wa_name!r}")
+    elif wa_name and not user.first_name:
+        # Usuário já existe mas ainda não tem nome → preenche do WhatsApp pushName
+        user.first_name = wa_name
+        logger.info(f"[WA] Nome atualizado do WhatsApp: {channel_id} → {wa_name!r}")
     return user
 
 

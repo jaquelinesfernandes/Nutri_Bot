@@ -263,93 +263,45 @@
           {{ '● Rodando' if scheduler_running else '● Parado' }}
         </span>
       </span>
-      <a href="/admin/health#scheduler" style="font-size:11px;color:#A5B4FC;font-weight:400">detalhe →</a>
+      <a href="/admin/health#scheduler" class="btn btn-secondary btn-sm">⚙️ Gerenciar →</a>
     </div>
-    {% if jobs %}
-    <div class="tbl-wrap">
-      <table>
-        <thead>
-          <tr><th>Job</th><th>Próximo</th><th style="text-align:right">Ações</th></tr>
-        </thead>
-        <tbody>
-          {% for j in jobs %}
-          <tr id="job-row-{{ j.id }}">
-            <td>
-              <div style="font-family:monospace;font-size:12px;color:var(--t2)">{{ j.id }}</div>
-              <div style="font-size:11px;color:var(--t3)">{{ j.cron }}</div>
-            </td>
-            <td style="font-size:12px;font-variant-numeric:tabular-nums">
-              {% if j.paused %}
-              <span class="pill pill-deleted" style="font-size:10px">pausado</span>
-              {% else %}
-              {{ j.next }}
-              {% endif %}
-            </td>
-            <td style="text-align:right">
-              <div style="display:flex;gap:5px;justify-content:flex-end;flex-wrap:nowrap">
-                <button class="btn btn-warn btn-sm" onclick="triggerJob('{{ j.id }}', this)" title="Acionar agora">▶</button>
-                {% if j.paused %}
-                <button class="btn btn-secondary btn-sm" onclick="jobAction('{{ j.id }}','resume',this)" title="Retomar">▶▶</button>
-                {% else %}
-                <button class="btn btn-secondary btn-sm" onclick="jobAction('{{ j.id }}','pause',this)" title="Pausar">⏸</button>
-                {% endif %}
-                <button class="btn btn-secondary btn-sm" onclick="openJobEdit('{{ j.id }}','{{ j.cron | e }}')" title="Editar horário">🕐</button>
-                <button class="btn btn-danger btn-sm" onclick="deleteJob('{{ j.id }}',this)" title="Remover job">🗑</button>
-              </div>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+
+    {% set active_jobs = jobs | selectattr('paused', 'equalto', false) | list %}
+    {% set paused_jobs = jobs | selectattr('paused', 'equalto', true) | list %}
+
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+      <div style="background:var(--surface);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:20px;font-weight:800;color:var(--t1)">{{ jobs | length }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Jobs totais</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:20px;font-weight:800;color:var(--success)">{{ active_jobs | length }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Ativos</div>
+      </div>
+      <div style="background:var(--surface);border-radius:10px;padding:12px;text-align:center;border:1px solid var(--border)">
+        <div style="font-size:20px;font-weight:800;color:{{ 'var(--warn)' if paused_jobs else 'var(--t3)' }}">{{ paused_jobs | length }}</div>
+        <div style="font-size:11px;color:var(--t3);margin-top:3px">Pausados</div>
+      </div>
     </div>
-    {% else %}
-    <div style="color:var(--t3);font-size:13px;padding:12px 0">Nenhum job registrado.</div>
+
+    {% if active_jobs %}
+    <div style="border-top:1px solid var(--border);padding-top:12px">
+      <div style="font-size:11px;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Próximos disparos</div>
+      {% for j in active_jobs[:3] %}
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <span style="font-size:12px;color:var(--t2);font-family:monospace">{{ j.id }}</span>
+        <span style="font-size:12px;font-weight:600;color:var(--t1);font-variant-numeric:tabular-nums">{{ j.next }}</span>
+      </div>
+      {% endfor %}
+      {% if active_jobs | length > 3 %}
+      <div style="font-size:11px;color:var(--t3);margin-top:4px">+ {{ (active_jobs | length) - 3 }} outros jobs…</div>
+      {% endif %}
+    </div>
+    {% elif not scheduler_running %}
+    <div style="color:var(--danger);font-size:13px;padding:8px 0">⚠️ Scheduler parado — alertas não serão enviados.</div>
     {% endif %}
   </div>
 
-</div>
-
-<!-- Modal: editar horário do job -->
-<div id="jobEditModal" hidden
-     style="position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.6);
-            display:flex;align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;
-              padding:24px;width:100%;max-width:460px;box-shadow:0 16px 48px rgba(0,0,0,.5)">
-    <div style="font-size:15px;font-weight:700;color:var(--t1);margin-bottom:4px">🕐 Reprogramar job</div>
-    <div id="jobEditId" style="font-family:monospace;font-size:12px;color:var(--t3);margin-bottom:4px"></div>
-    <div id="jobEditCron" style="font-size:11px;color:var(--t2);margin-bottom:16px"></div>
-    <div style="background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);border-radius:8px;
-                padding:9px 12px;margin-bottom:16px;font-size:12px;color:var(--warn)">
-      ⚠️ Alteração em memória — não persiste após reinício do servidor.
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-      <div>
-        <label>Hora (0–23 ou *)</label>
-        <input type="text" id="jeHour" placeholder="ex: 9 ou */2">
-      </div>
-      <div>
-        <label>Minuto (0–59 ou *)</label>
-        <input type="text" id="jeMinute" placeholder="ex: 30">
-      </div>
-      <div>
-        <label>Dia da semana (0=seg ou *)</label>
-        <input type="text" id="jeDow" placeholder="ex: mon ou 0,2">
-      </div>
-      <div>
-        <label>Dia do mês (1–31 ou *)</label>
-        <input type="text" id="jeDay" placeholder="ex: 1">
-      </div>
-      <div>
-        <label>Mês (1–12 ou *)</label>
-        <input type="text" id="jeMonth" placeholder="ex: 1,4,7,10">
-      </div>
-    </div>
-    <div style="font-size:11px;color:var(--t3);margin-bottom:14px">Deixe em branco para manter o valor atual do campo.</div>
-    <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button class="btn btn-secondary btn-sm" onclick="closeJobEdit()">Cancelar</button>
-      <button class="btn btn-primary btn-sm" onclick="submitJobEdit()">Salvar horário</button>
-    </div>
-  </div>
 </div>
 
 <!-- Audit log recente -->
@@ -497,82 +449,6 @@
   ctx.fillStyle = '#6366F1'; ctx.fill();
 })();
 
-async function triggerJob(jobId, btn) {
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = '⏳';
-  try {
-    const r = await adminPost('/admin/api/scheduler/trigger/' + jobId);
-    if (r.ok) showToast('✅ Job "' + jobId + '" acionado!', 'ok');
-    else showToast('❌ ' + (r.detail || 'Erro'), 'err');
-  } catch(e) { showToast('❌ Erro de rede', 'err'); }
-  btn.disabled = false; btn.textContent = orig;
-}
-
-async function jobAction(jobId, action, btn) {
-  const orig = btn.textContent;
-  btn.disabled = true; btn.textContent = '⏳';
-  try {
-    const r = await adminPost('/admin/api/scheduler/' + jobId + '/' + action);
-    if (r.ok) {
-      showToast('✅ Job "' + jobId + '" ' + (action === 'pause' ? 'pausado' : 'retomado') + '.', 'ok');
-      setTimeout(() => location.reload(), 900);
-    } else showToast('❌ ' + (r.detail || 'Erro'), 'err');
-  } catch(e) { showToast('❌ Erro de rede', 'err'); }
-  btn.disabled = false; btn.textContent = orig;
-}
-
-async function deleteJob(jobId, btn) {
-  if (!confirm('Remover job "' + jobId + '"?\n\nAtenção: o job voltará ao reiniciar o servidor.')) return;
-  btn.disabled = true; btn.textContent = '⏳';
-  try {
-    const r = await fetch('/admin/api/scheduler/' + jobId, { method: 'DELETE' });
-    const j = await r.json();
-    if (j.ok) {
-      showToast('✅ Job removido (voltará no reinício).', 'ok');
-      const row = document.getElementById('job-row-' + jobId);
-      if (row) row.remove();
-    } else showToast('❌ ' + (j.detail || 'Erro'), 'err');
-  } catch(e) { showToast('❌ Erro de rede', 'err'); }
-  btn.disabled = false; btn.textContent = '🗑';
-}
-
-let _editJobId = null;
-function openJobEdit(jobId, cronStr) {
-  _editJobId = jobId;
-  document.getElementById('jobEditId').textContent = jobId;
-  document.getElementById('jobEditCron').textContent = 'Trigger atual: ' + cronStr;
-  // Limpa campos
-  ['jeHour','jeMinute','jeDow','jeDay','jeMonth'].forEach(id => {
-    document.getElementById(id).value = '';
-  });
-  document.getElementById('jobEditModal').hidden = false;
-}
-function closeJobEdit() {
-  document.getElementById('jobEditModal').hidden = true;
-  _editJobId = null;
-}
-async function submitJobEdit() {
-  if (!_editJobId) return;
-  const fd = new FormData();
-  fd.append('hour',        document.getElementById('jeHour').value.trim());
-  fd.append('minute',      document.getElementById('jeMinute').value.trim());
-  fd.append('day_of_week', document.getElementById('jeDow').value.trim());
-  fd.append('day',         document.getElementById('jeDay').value.trim());
-  fd.append('month',       document.getElementById('jeMonth').value.trim());
-  try {
-    const r = await fetch('/admin/api/scheduler/' + _editJobId + '/reschedule',
-                          { method: 'POST', body: fd });
-    const j = await r.json();
-    if (j.ok) {
-      showToast('✅ Job reprogramado. Próximo: ' + j.next, 'ok');
-      closeJobEdit();
-      setTimeout(() => location.reload(), 1200);
-    } else showToast('❌ ' + (j.detail || 'Trigger inválido'), 'err');
-  } catch(e) { showToast('❌ Erro de rede', 'err'); }
-}
-document.getElementById('jobEditModal').addEventListener('click', function(e) {
-  if (e.target === this) closeJobEdit();
-});
 
 // ⑤ Bulk-fix planos expirados
 async function bulkFixPlans(btn) {
