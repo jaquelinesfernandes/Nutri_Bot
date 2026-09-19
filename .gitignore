@@ -21,8 +21,7 @@ htmlcov/
 .pytest_cache/
 
 # Alembic
-migrations/versions/*.py
-!migrations/versions/.gitkeep
+migrations/versions/__pycache__/
 
 # WeasyPrint cache
 .weasyprint/
