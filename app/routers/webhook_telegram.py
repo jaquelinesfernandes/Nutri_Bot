@@ -1,4 +1,5 @@
 import logging
+import re
 from collections import deque
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -23,19 +24,28 @@ _SEEN_UPDATE_IDS: deque[int] = deque(maxlen=200)
 _TG_BASE = "https://api.telegram.org/bot{token}"
 
 
-async def _send_message(chat_id: int, text: str) -> None:
+# Detecta [texto](url) onde a url aponta para /auth/magic — extrai como botão inline
+_MAGIC_LINK_RE = re.compile(r'\[([^\]]+)\]\((https?://[^)]+/auth/magic\?t=[^)]+)\)')
+
+
+async def _send_message(chat_id: int, text: str, reply_markup: dict | None = None) -> None:
     if not settings.telegram_bot_token:
         logger.debug(f"[TG] Bot token não configurado — mensagem não enviada: {text[:60]}")
         return
     url = _TG_BASE.format(token=settings.telegram_bot_token) + "/sendMessage"
+    payload: dict = {
+        "chat_id": chat_id,
+        "text": text,
+        "parse_mode": "Markdown",
+        "disable_web_page_preview": True,
+    }
+    if reply_markup:
+        payload["reply_markup"] = reply_markup
     async with httpx.AsyncClient(timeout=10) as client:
         try:
-            await client.post(url, json={
-                "chat_id": chat_id,
-                "text": text,
-                "parse_mode": "Markdown",
-                "disable_web_page_preview": True,
-            })
+            r = await client.post(url, json=payload)
+            if r.status_code != 200:
+                logger.warning(f"[TG] sendMessage {r.status_code}: {r.text[:200]}")
         except Exception as e:
             logger.warning(f"[TG] Falha ao enviar mensagem para {chat_id}: {e}")
 
@@ -163,7 +173,14 @@ async def _process_update(update: TelegramUpdate) -> None:
             await db.commit()
 
         if response:
-            await _send_message(chat_id, response)
+            match = _MAGIC_LINK_RE.search(response)
+            if match:
+                btn_label, btn_url = match.group(1), match.group(2)
+                clean = _MAGIC_LINK_RE.sub(btn_label, response).strip()
+                markup = {"inline_keyboard": [[{"text": f"🌐 {btn_label}", "url": btn_url}]]}
+                await _send_message(chat_id, clean, reply_markup=markup)
+            else:
+                await _send_message(chat_id, response)
 
     except Exception:
         logger.exception(f"[TG] Erro ao processar update {update.update_id}")

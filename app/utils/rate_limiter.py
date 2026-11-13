@@ -1,6 +1,6 @@
 import asyncio
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 
 class RateLimiter:
@@ -12,7 +12,7 @@ class RateLimiter:
 
     async def is_allowed(self, key: str, max_requests: int, window_seconds: int) -> bool:
         async with self._lock:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             cutoff = now - timedelta(seconds=window_seconds)
             self._counts[key] = [t for t in self._counts[key] if t > cutoff]
             if len(self._counts[key]) >= max_requests:
@@ -23,7 +23,7 @@ class RateLimiter:
     async def get_wait_seconds(self, key: str, window_seconds: int) -> int:
         """Segundos até que esta chave possa fazer uma nova requisição (0 se não bloqueada)."""
         async with self._lock:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             cutoff = now - timedelta(seconds=window_seconds)
             active = [t for t in self._counts.get(key, []) if t > cutoff]
             if not active:

@@ -52,12 +52,12 @@
   </div>
   {% endif %}
   {% if seg_eligible > 10 %}
-  <div style="background:rgba(99,102,241,.08);border:1px solid rgba(99,102,241,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
-    <span style="font-size:13px;color:#A5B4FC">
+  <div style="background:rgba(10,87,56,.08);border:1px solid rgba(10,87,56,.2);border-radius:8px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+    <span style="font-size:13px;color:#25C97A">
       💡 <strong>{{ seg_eligible }} usuários free</strong> usam o app há 7d+ e completaram o onboarding
       — oportunidade de conversão
     </span>
-    <a href="?seg=eligible" style="color:#A5B4FC;text-decoration:underline;font-size:12px;white-space:nowrap">Ver lista →</a>
+    <a href="?seg=eligible" style="color:#25C97A;text-decoration:underline;font-size:12px;white-space:nowrap">Ver lista →</a>
   </div>
   {% endif %}
 </div>
@@ -91,9 +91,9 @@
     <div class="stat-lbl">Em risco de churn<br><span style="font-size:10px">(sem atividade 14d+)</span></div>
   </a>
 
-  <a href="?seg=eligible" class="stat-tile" style="text-decoration:none;cursor:pointer;{{ 'border:2px solid #A5B4FC' if seg=='eligible' else '' }}">
+  <a href="?seg=eligible" class="stat-tile" style="text-decoration:none;cursor:pointer;{{ 'border:2px solid #25C97A' if seg=='eligible' else '' }}">
     <div style="font-size:24px;margin-bottom:6px">💎</div>
-    <div class="stat-val" style="font-size:22px;color:#A5B4FC">{{ seg_eligible }}</div>
+    <div class="stat-val" style="font-size:22px;color:#25C97A">{{ seg_eligible }}</div>
     <div class="stat-lbl">Prontos p/ upgrade<br><span style="font-size:10px">(free, ativo 7d+)</span></div>
   </a>
 
@@ -147,7 +147,7 @@
     {% set pct_engaged = ((seg_engaged / total_b2c * 100) | round(0) | int) if total_b2c > 0 else 0 %}
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
       <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
-        <div style="font-size:22px;font-weight:800;color:#A5B4FC">{{ conversion_rate }}%</div>
+        <div style="font-size:22px;font-weight:800;color:#25C97A">{{ conversion_rate }}%</div>
         <div style="font-size:11px;color:var(--t3);margin-top:3px">Taxa free→premium</div>
       </div>
       <div style="background:var(--surface);border-radius:10px;padding:14px;text-align:center;border:1px solid var(--border)">
@@ -161,7 +161,7 @@
       ("Cadastrados", total_b2c, "var(--t2)"),
       ("Onboarding completo", onboarding_complete_b2c, "var(--accent)"),
       ("Ativos 7d+", seg_engaged, "var(--success)"),
-      ("Prontos p/ upgrade", seg_eligible, "#A5B4FC"),
+      ("Prontos p/ upgrade", seg_eligible, "#25C97A"),
     ] %}
     {% for label, val, color in funnel %}
     {% set pct = ((val / total_b2c * 100) | int) if total_b2c > 0 else 0 %}
@@ -422,7 +422,7 @@
   });
 
   drawSeries(dataActive, '#10B981');
-  drawSeries(dataNew,    '#6366F1');
+  drawSeries(dataNew,    '#0A5738');
 
   // x-axis labels (every 5th day)
   ctx.fillStyle = '#475569'; ctx.font = '10px system-ui, sans-serif'; ctx.textAlign = 'center';
@@ -511,3 +511,4 @@ document.getElementById('notifModal').addEventListener('click', function(e) {
 });
 </script>
 {% endblock %}
+

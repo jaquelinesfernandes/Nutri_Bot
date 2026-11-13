@@ -138,12 +138,10 @@ class TestRateLimiter:
     @pytest.mark.asyncio
     async def test_janela_curta_expira_requisicoes_antigas(self):
         """Entradas fora da janela de 1 segundo devem ser ignoradas."""
+        from datetime import datetime, timedelta, timezone
         key = "user:6"
-        # Adiciona diretamente uma entrada antiga (há 2 segundos)
-        import datetime as dt
-        from unittest.mock import patch
-
-        old_time = dt.datetime.utcnow() - dt.timedelta(seconds=2)
+        # Adiciona diretamente uma entrada antiga (há 2 segundos), timezone-aware
+        old_time = datetime.now(timezone.utc) - timedelta(seconds=2)
         self.limiter._counts[key] = [old_time]
 
         # Com janela de 1 segundo, a entrada antiga deve ter expirado
@@ -156,6 +154,53 @@ class TestRateLimiter:
         key = "user:7"
         assert await self.limiter.is_allowed(key, max_requests=1, window_seconds=60) is True
         assert await self.limiter.is_allowed(key, max_requests=1, window_seconds=60) is False
+
+    # ── get_wait_seconds ──────────────────────────────────────────────────────
+
+    @pytest.mark.asyncio
+    async def test_get_wait_seconds_zero_para_chave_nova(self):
+        """Chave sem histórico deve retornar 0."""
+        result = await self.limiter.get_wait_seconds("nova_chave", 60)
+        assert result == 0
+
+    @pytest.mark.asyncio
+    async def test_get_wait_seconds_positivo_com_entradas_na_janela(self):
+        """Com requests na janela, retorna o tempo até o mais antigo expirar."""
+        key = "wait:1"
+        await self.limiter.is_allowed(key, max_requests=5, window_seconds=60)
+        result = await self.limiter.get_wait_seconds(key, 60)
+        # Deve ser ≈ 60 — o request acabou de entrar na janela de 60s
+        assert 55 <= result <= 61
+
+    @pytest.mark.asyncio
+    async def test_get_wait_seconds_positivo_apos_bloqueio(self):
+        """Depois de atingir o limite, get_wait_seconds deve retornar valor > 0."""
+        key = "wait:2"
+        for _ in range(3):
+            await self.limiter.is_allowed(key, max_requests=3, window_seconds=60)
+        # Agora bloqueado — get_wait_seconds deve indicar quanto esperar
+        wait = await self.limiter.get_wait_seconds(key, 60)
+        assert wait > 0
+        assert wait <= 61  # nunca maior que a janela + 1 segundo
+
+    @pytest.mark.asyncio
+    async def test_get_wait_seconds_reflete_janela_correta(self):
+        """Janela de 10s → tempo de espera nunca excede 11s."""
+        key = "wait:3"
+        for _ in range(2):
+            await self.limiter.is_allowed(key, max_requests=2, window_seconds=10)
+        wait = await self.limiter.get_wait_seconds(key, 10)
+        assert 0 < wait <= 11
+
+    @pytest.mark.asyncio
+    async def test_get_wait_seconds_zero_apos_reset(self):
+        """Após reset, chave bloqueada volta a retornar 0."""
+        key = "wait:4"
+        for _ in range(2):
+            await self.limiter.is_allowed(key, max_requests=2, window_seconds=60)
+        await self.limiter.reset(key)
+        wait = await self.limiter.get_wait_seconds(key, 60)
+        assert wait == 0
 
     @pytest.mark.asyncio
     async def test_requisicoes_concorrentes_nao_excedem_limite(self):
@@ -315,3 +360,200 @@ class TestPaymentService:
         svc = PaymentService()
         with pytest.raises(NotImplementedError):
             await svc.handle_webhook({})
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# jwt.py
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestJWT:
+    """Testes para create_access_token, create_magic_token, decode_magic_token, decode_token."""
+
+    def test_create_access_token_retorna_string(self):
+        import uuid
+        from app.utils.jwt import create_access_token
+        token = create_access_token(uuid.uuid4())
+        assert isinstance(token, str)
+        assert len(token) > 20
+
+    def test_decode_token_roundtrip(self):
+        import uuid
+        from app.utils.jwt import create_access_token, decode_token
+        uid = uuid.uuid4()
+        token = create_access_token(uid)
+        decoded = decode_token(token)
+        assert decoded == uid
+
+    def test_decode_token_invalido_retorna_none(self):
+        from app.utils.jwt import decode_token
+        assert decode_token("token.invalido.qualquer") is None
+
+    def test_decode_token_vazio_retorna_none(self):
+        from app.utils.jwt import decode_token
+        assert decode_token("") is None
+
+    def test_decode_token_sem_sub_retorna_none(self):
+        """JWT sem campo 'sub' deve retornar None."""
+        from jose import jwt as jose_jwt
+        from app.config import settings
+        from app.utils.jwt import ALGORITHM, decode_token
+        from datetime import datetime, timedelta, timezone
+        payload = {"exp": datetime.now(timezone.utc) + timedelta(hours=1)}
+        token = jose_jwt.encode(payload, settings.jwt_secret, algorithm=ALGORITHM)
+        assert decode_token(token) is None
+
+    def test_create_magic_token_retorna_string(self):
+        import uuid
+        from app.utils.jwt import create_magic_token
+        token = create_magic_token(uuid.uuid4(), minutes=10)
+        assert isinstance(token, str)
+        assert len(token) > 20
+
+    def test_decode_magic_token_roundtrip(self):
+        import uuid
+        from app.utils.jwt import create_magic_token, decode_magic_token
+        uid = uuid.uuid4()
+        token = create_magic_token(uid, minutes=10)
+        decoded = decode_magic_token(token)
+        assert decoded == uid
+
+    def test_decode_magic_token_invalido_retorna_none(self):
+        from app.utils.jwt import decode_magic_token
+        assert decode_magic_token("lixo.invalido.aqui") is None
+
+    def test_decode_magic_token_rejeita_token_de_sessao(self):
+        """Token de sessão normal (sem type='magic') não deve funcionar como magic link."""
+        import uuid
+        from app.utils.jwt import create_access_token, decode_magic_token
+        session_token = create_access_token(uuid.uuid4())
+        assert decode_magic_token(session_token) is None
+
+    def test_decode_magic_token_tokens_diferentes(self):
+        """Dois magic tokens criados em sequência devem ser diferentes (jti único)."""
+        import uuid
+        from app.utils.jwt import create_magic_token
+        uid = uuid.uuid4()
+        t1 = create_magic_token(uid)
+        t2 = create_magic_token(uid)
+        assert t1 != t2  # jti aleatório garante unicidade
+
+    def test_access_token_e_magic_token_diferentes(self):
+        """create_access_token e create_magic_token devem gerar tokens distintos para o mesmo user_id."""
+        import uuid
+        from app.utils.jwt import create_access_token, create_magic_token
+        uid = uuid.uuid4()
+        assert create_access_token(uid) != create_magic_token(uid)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# models/user.py — propriedades calculadas
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestUserModel:
+    """Testa as propriedades @property do modelo User diretamente (sem DB)."""
+
+    # Chama o getter diretamente sobre um namespace simples, evitando SQLAlchemy.
+    @staticmethod
+    def _prop(prop_name, **attrs):
+        from app.models.user import User
+        from types import SimpleNamespace
+        return getattr(User, prop_name).fget(SimpleNamespace(**attrs))
+
+    # ── is_premium ────────────────────────────────────────────────────────────
+
+    def test_is_premium_false_para_plano_free(self):
+        assert self._prop("is_premium", plan="free", plan_expires_at=None) is False
+
+    def test_is_premium_true_sem_data_de_expiracao(self):
+        assert self._prop("is_premium", plan="premium", plan_expires_at=None) is True
+
+    def test_is_premium_true_com_expiracao_futura(self):
+        from datetime import datetime, timedelta, timezone
+        future = datetime.now(timezone.utc) + timedelta(days=30)
+        assert self._prop("is_premium", plan="premium", plan_expires_at=future) is True
+
+    def test_is_premium_false_com_expiracao_passada(self):
+        from datetime import datetime, timedelta, timezone
+        past = datetime.now(timezone.utc) - timedelta(days=1)
+        assert self._prop("is_premium", plan="premium", plan_expires_at=past) is False
+
+    # ── is_nutritionist ───────────────────────────────────────────────────────
+
+    def test_is_nutritionist_false_plano_diferente(self):
+        assert self._prop(
+            "is_nutritionist", plan="premium", trial_ends_at=None, plan_expires_at=None
+        ) is False
+
+    def test_is_nutritionist_true_trial_ativo(self):
+        from datetime import datetime, timedelta, timezone
+        future = datetime.now(timezone.utc) + timedelta(days=5)
+        assert self._prop(
+            "is_nutritionist", plan="nutritionist", trial_ends_at=future, plan_expires_at=None
+        ) is True
+
+    def test_is_nutritionist_false_trial_expirado(self):
+        from datetime import datetime, timedelta, timezone
+        past = datetime.now(timezone.utc) - timedelta(days=1)
+        assert self._prop(
+            "is_nutritionist", plan="nutritionist", trial_ends_at=past, plan_expires_at=None
+        ) is False
+
+    def test_is_nutritionist_true_sem_expiracao(self):
+        assert self._prop(
+            "is_nutritionist", plan="nutritionist", trial_ends_at=None, plan_expires_at=None
+        ) is True
+
+    def test_is_nutritionist_true_com_plano_ativo(self):
+        from datetime import datetime, timedelta, timezone
+        future = datetime.now(timezone.utc) + timedelta(days=30)
+        assert self._prop(
+            "is_nutritionist", plan="nutritionist", trial_ends_at=None, plan_expires_at=future
+        ) is True
+
+    def test_is_nutritionist_false_plano_expirado(self):
+        from datetime import datetime, timedelta, timezone
+        past = datetime.now(timezone.utc) - timedelta(days=1)
+        assert self._prop(
+            "is_nutritionist", plan="nutritionist", trial_ends_at=None, plan_expires_at=past
+        ) is False
+
+    # ── can_access_reports ────────────────────────────────────────────────────
+
+    def test_can_access_reports_true_para_premium(self):
+        from datetime import datetime, timezone
+        from types import SimpleNamespace
+        from app.models.user import User
+        # is_premium pré-computado; created_at não é verificado nesse ramo
+        u = SimpleNamespace(
+            plan="premium", plan_expires_at=None, is_premium=True,
+            created_at=datetime.now(timezone.utc)
+        )
+        assert User.can_access_reports.fget(u) is True
+
+    def test_can_access_reports_true_sete_ou_mais_dias(self):
+        from datetime import datetime, timedelta, timezone
+        from types import SimpleNamespace
+        from app.models.user import User
+        u = SimpleNamespace(
+            plan="free", plan_expires_at=None, is_premium=False,
+            created_at=datetime.now(timezone.utc) - timedelta(days=7)
+        )
+        assert User.can_access_reports.fget(u) is True
+
+    def test_can_access_reports_false_menos_de_sete_dias(self):
+        from datetime import datetime, timedelta, timezone
+        from types import SimpleNamespace
+        from app.models.user import User
+        u = SimpleNamespace(
+            plan="free", plan_expires_at=None, is_premium=False,
+            created_at=datetime.now(timezone.utc) - timedelta(days=6)
+        )
+        assert User.can_access_reports.fget(u) is False
+
+    def test_repr_contem_channel_id_e_plan(self):
+        from types import SimpleNamespace
+        from app.models.user import User
+        u = SimpleNamespace(channel_id="tg:12345", plan="premium")
+        r = User.__repr__(u)
+        assert "tg:12345" in r
+        assert "premium" in r

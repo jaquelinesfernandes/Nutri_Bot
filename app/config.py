@@ -10,9 +10,9 @@ class Settings(BaseSettings):
 
     # Anthropic (Claude) — NLP + Vision
     anthropic_api_key: str = ""
-    anthropic_model: str = "claude-haiku-4-5-20251001"
+    anthropic_model: str = "claude-haiku-4-5"
     # Fase 2: Haiku como primário (↓85% custo); Sonnet como fallback se confiança < threshold
-    anthropic_vision_model: str = "claude-haiku-4-5-20251001"
+    anthropic_vision_model: str = "claude-haiku-4-5"
     anthropic_vision_fallback_model: str = "claude-sonnet-4-6"
     vision_confidence_threshold: float = 0.70  # abaixo disso → fallback para Sonnet
 
@@ -56,7 +56,8 @@ class Settings(BaseSettings):
                 params.setdefault("ssl", "require")
             elif sslmode == "prefer":
                 params.setdefault("ssl", "prefer")
-            # sslmode=disable → não adiciona ssl
+            elif sslmode == "disable":
+                params.setdefault("ssl", "disable")
 
         # channel_binding é parâmetro libpq — asyncpg não reconhece
         params.pop("channel_binding", None)
@@ -69,11 +70,11 @@ class Settings(BaseSettings):
     telegram_bot_username: str = ""   # ex: "NutriBotOficialBot" (sem @) — OBRIGATÓRIO para links de convite
     telegram_webhook_secret: str = ""
 
-    # WhatsApp (Evolution API)
-    evolution_api_url: str = ""        # ex: https://evolution-api.onrender.com
-    evolution_api_instance: str = ""   # nome da instância criada no Evolution
-    evolution_api_key: str = ""        # API key global configurada no Evolution
-    evolution_webhook_secret: str = "" # secret para validar webhooks recebidos
+    # WhatsApp Business (Meta Cloud API)
+    whatsapp_phone_number_id: str = ""   # Phone Number ID do Meta App
+    whatsapp_access_token: str = ""      # System User access token (permanente)
+    whatsapp_app_secret: str = ""        # App Secret — validação HMAC do webhook
+    whatsapp_verify_token: str = ""      # Token de verificação do webhook (você define)
 
     # Mercado Pago
     mercadopago_access_token: str = ""
@@ -110,8 +111,7 @@ class Settings(BaseSettings):
 
     # Aplicação
     app_env: str = "development"
-    app_url: str = ""          # APP_URL no Render (opcional — bot usa fallback hardcoded se vazio)
-    webhook_base_url: str = ""  # WEBHOOK_BASE_URL (legado)
+    app_url: str = ""          # URL pública (opcional — bot usa fallback hardcoded se vazio)
     log_level: str = "INFO"
     maintenance_mode: bool = False
     default_timezone: str = "America/Sao_Paulo"
@@ -142,6 +142,8 @@ class Settings(BaseSettings):
             errors.append("TELEGRAM_BOT_TOKEN obrigatório em produção")
         if not self.telegram_webhook_secret:
             errors.append("TELEGRAM_WEBHOOK_SECRET obrigatório em produção (evita webhooks falsos)")
+        if self.whatsapp_access_token and not self.whatsapp_app_secret:
+            errors.append("WHATSAPP_APP_SECRET obrigatório em produção quando WhatsApp estiver habilitado (evita injeção de webhooks)")
         if errors:
             raise ValueError(
                 "Configuração insegura detectada em produção:\n  - "

@@ -23,6 +23,16 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
         response.headers.setdefault("X-Frame-Options", "DENY")
         response.headers.setdefault("Referrer-Policy", "strict-origin-when-cross-origin")
         response.headers.setdefault("Permissions-Policy", "camera=(), microphone=(), geolocation=()")
+        response.headers.setdefault(
+            "Content-Security-Policy",
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline'; "
+            "style-src 'self' 'unsafe-inline'; "
+            "img-src 'self' data: https:; "
+            "font-src 'self'; "
+            "connect-src 'self'; "
+            "frame-ancestors 'none'",
+        )
         if settings.app_env == "production":
             response.headers.setdefault(
                 "Strict-Transport-Security", "max-age=31536000; includeSubDomains"
@@ -97,52 +107,6 @@ class SlidingSessionMiddleware(BaseHTTPMiddleware):
         return response
 
 
-async def _apply_pending_ddl() -> None:
-    """Aplica DDL pendente diretamente no banco — bypass do Alembic.
-
-    Garante que colunas adicionadas após o deploy inicial existam no banco,
-    mesmo que 'alembic upgrade head' não tenha rodado (ex: falha no Procfile).
-    Cada op usa IF NOT EXISTS → totalmente idempotente.
-    """
-    from sqlalchemy.ext.asyncio import create_async_engine
-    from sqlalchemy import text
-
-    engine = create_async_engine(settings.database_url, echo=False)
-    ddl_ops = [
-        # RF-PAINEL-11: limiar de inatividade por paciente (migration f4a8b2c1d9e0)
-        "ALTER TABLE nutritionist_patients "
-        "ADD COLUMN IF NOT EXISTS inactivity_alert_days INTEGER NOT NULL DEFAULT 3",
-        # Metas de macronutrientes prescritas pela nutricionista (todas nullable)
-        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_protein_g INTEGER",
-        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_carb_g    INTEGER",
-        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_fat_g     INTEGER",
-        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_fiber_g   INTEGER",
-        "ALTER TABLE nutritionist_patients ADD COLUMN IF NOT EXISTS goal_water_ml  INTEGER",
-        # RF-AGUA-02: meta de água personalizada por usuário (nullable, default 2000 no código)
-        "ALTER TABLE users ADD COLUMN IF NOT EXISTS daily_water_goal_ml INTEGER",
-        # Painel Admin: tabela de auditoria das ações administrativas
-        """
-        CREATE TABLE IF NOT EXISTS admin_logs (
-            id          BIGSERIAL PRIMARY KEY,
-            created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-            action      TEXT NOT NULL,
-            target_user_id UUID,
-            detail      JSONB NOT NULL DEFAULT '{}'
-        )
-        """,
-    ]
-    try:
-        async with engine.begin() as conn:
-            for sql in ddl_ops:
-                await conn.execute(text(sql))
-                logger.info("[DDL] aplicado: %s", sql[:80])
-        logger.info("[DDL] todas as colunas pendentes verificadas/aplicadas")
-    except Exception as exc:
-        logger.error("[DDL] falha ao aplicar DDL pendente: %s", exc)
-    finally:
-        await engine.dispose()
-
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────
@@ -152,9 +116,6 @@ async def lifespan(app: FastAPI):
             logger.info("Sentry inicializado")
         except Exception as e:
             logger.warning(f"Sentry DSN inválido, monitoramento desabilitado: {e}")
-
-    # Aplica DDL pendente antes de iniciar o serviço
-    await _apply_pending_ddl()
 
     from app.services.nutrition import nutrition_service
     nutrition_service.load_data()

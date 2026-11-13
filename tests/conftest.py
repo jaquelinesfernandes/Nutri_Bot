@@ -46,6 +46,8 @@ def _make_mock_db() -> AsyncMock:
     mock_result.scalars.return_value.all.return_value = []
     mock_result.scalars.return_value.unique.return_value.all.return_value = []
     mock_result.scalar_one_or_none.return_value = None
+    mock_result.scalar_one.return_value = 0
+    mock_result.all.return_value = []
     mock_result.rowcount = 0
 
     mock_db = AsyncMock()
@@ -67,9 +69,11 @@ def _make_mock_user(email: str = "ana@nutribot.test", plan: str = "free") -> Mag
     u.channel_type = "web"
     u.channel_id = f"web:{email}"
     u.is_premium = plan != "free"
+    u.can_access_reports = plan != "free"
     u.plan = plan
     u.deleted_at = None
     u.daily_calorie_goal = 2000
+    u.daily_water_goal_ml = 2000
     u.timezone = "America/Sao_Paulo"
     u.onboarding_complete = True
     u.premium_until = None

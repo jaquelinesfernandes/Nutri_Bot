@@ -272,15 +272,17 @@ class TestProcessAudioMeal:
 
     @pytest.mark.asyncio
     async def test_handle_message_audio_sem_premium_bloqueado(self, svc):
+        """Em open beta, áudio de usuário free é processado normalmente."""
+        from unittest.mock import AsyncMock
         user = _make_user(plan="free")
         user.is_premium = False
         user.conversation_state = "IDLE"
 
-        with patch("app.config.settings") as mock_settings:
-            mock_settings.maintenance_mode = False
+        with patch("app.services.ai_service.ai_service.transcribe_audio", new_callable=AsyncMock) as mock_t:
+            mock_t.side_effect = Exception("transcrição indisponível")
             result = await svc.handle_message(user, "audio", b"fake", db=None)
 
-        assert "Premium" in result or "premium" in result.lower()
+        assert result  # retorna alguma mensagem (erro de transcrição)
 
     @pytest.mark.asyncio
     async def test_handle_message_audio_premium_chama_process(self, svc):

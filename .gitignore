@@ -8,6 +8,10 @@ build/
 
 # Env
 .env
+.env.local
+.env.docker
+.env.backup
+.env.prod
 !.env.example
 
 # IDE

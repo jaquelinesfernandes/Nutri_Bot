@@ -502,21 +502,13 @@ class TestNotificationService:
         assert result is False
 
     @pytest.mark.asyncio
-    async def test_send_text_whatsapp_success(self):
+    async def test_send_text_whatsapp_unsupported(self):
+        """WhatsApp não implementado — send_text retorna False para canal whatsapp."""
         from app.services.notification import NotificationService
         svc = NotificationService()
         user = _svc_user(channel_type="whatsapp", channel_id="wa:5511999999999")
-
-        mock_cls, _ = self._httpx_mock(200)
-        with (
-            patch("app.config.settings") as mock_settings,
-            patch("httpx.AsyncClient", mock_cls),
-        ):
-            mock_settings.zapi_instance_id = "inst123"
-            mock_settings.zapi_token = "tok456"
-            result = await svc.send_text(user, "Olá pelo WhatsApp!")
-
-        assert result is True
+        result = await svc.send_text(user, "Olá!")
+        assert result is False
 
     @pytest.mark.asyncio
     async def test_send_text_whatsapp_no_credentials_returns_false(self):
@@ -911,8 +903,8 @@ class TestSchedulerJobs:
         mock_sched.start.assert_called_once()
         # 5 alertas (café/lanche-manhã/almoço/lanche-tarde/jantar)
         # + 3 relatórios (weekly/monthly/quarterly) + 1 re-engajamento
-        # + 1 expiração de convites B2B = 10
-        assert mock_sched.add_job.call_count == 10
+        # + 2 água (manhã/tarde) + 1 expiração de convites B2B = 12
+        assert mock_sched.add_job.call_count == 12
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -1117,7 +1109,7 @@ class TestAnalytics:
         mock_ph_module.host = None
 
         with (
-            patch("app.config.settings") as mock_settings,
+            patch("app.services.analytics.settings") as mock_settings,
             patch.dict("sys.modules", {"posthog": mock_ph_module}),
         ):
             mock_settings.posthog_api_key = "ph_test_key"

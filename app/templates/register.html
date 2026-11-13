@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Criar conta — NutriBot{% endblock %}
+{% block title %}Criar conta — Nouri{% endblock %}
 {% block body %}
 <style>
   .auth-wrap {
@@ -64,19 +64,19 @@
     display: flex; align-items: center; gap: 8px;
     width: 100%; padding: 11px 14px;
     background: var(--primary-lt); color: var(--primary);
-    border: 1px dashed rgba(99,102,241,.35);
+    border: 1px dashed rgba(10,87,56,.35);
     border-radius: 10px; font-size: .85rem; font-weight: 500;
     cursor: pointer; font-family: 'DM Sans', sans-serif;
     transition: background .15s; margin-bottom: 14px;
     text-align: left;
   }
-  .tdee-toggle:hover { background: rgba(99,102,241,.12); }
+  .tdee-toggle:hover { background: rgba(10,87,56,.12); }
   .tdee-toggle .arrow { margin-left: auto; transition: transform .2s; font-size: 1rem; }
   .tdee-toggle.open .arrow { transform: rotate(180deg); }
 
   .tdee-panel {
     display: none; margin-bottom: 14px;
-    background: var(--primary-lt); border: 1px solid rgba(99,102,241,.15);
+    background: var(--primary-lt); border: 1px solid rgba(10,87,56,.15);
     border-radius: 12px; padding: 18px 16px;
   }
   .tdee-panel.open { display: block; }
@@ -124,7 +124,7 @@
 
     <div class="auth-logo">
       <span class="icon">🌿</span>
-      <h1>NutriBot</h1>
+      <h1>Nouri</h1>
       <p>Crie sua conta gratuitamente</p>
     </div>
 
@@ -313,3 +313,5 @@
   });
 </script>
 {% endblock %}
+
+

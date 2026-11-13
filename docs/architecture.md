@@ -1,428 +1,349 @@
-# NutriBot — Architecture Document
+# Nouri — Documento de Arquitetura
 
-**Versão:** 1.0 | **Data:** Junho 2026
+**Versão:** 2.1 | **Data:** Outubro 2026
 
 ---
 
 ## 1. Visão Geral do Sistema
 
-O NutriBot MVP é um **monolito Python** que expõe webhooks HTTP, processa mensagens de chatbot, persiste dados em PostgreSQL e executa jobs agendados. A escolha de monolito é intencional para o MVP: menor complexidade operacional, deploy único, e refatoração para microsserviços quando a escala justificar.
+O NutriBot é um **monolito Python** que expõe webhooks HTTP, processa mensagens via Telegram, persiste dados em PostgreSQL e executa jobs agendados. A escolha de monolito é intencional: menor complexidade operacional, deploy único, e extração para microsserviços quando a escala justificar.
+
+Canal implementado: **Telegram** (WhatsApp não implementado).
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    USUÁRIO FINAL                         │
-└────────────────┬──────────────────────────┬─────────────┘
-                 │ Telegram                  │ WhatsApp
-                 ▼                           ▼
-        ┌────────────────┐         ┌─────────────────┐
-        │  Telegram API  │         │   Z-API (WA)    │
-        └───────┬────────┘         └────────┬────────┘
-                │ webhook POST               │ webhook POST
-                └────────────┬──────────────┘
-                             ▼
-              ┌──────────────────────────────┐
-              │     FastAPI Application      │
-              │   (Railway — sempre ligado)  │
-              │                              │
-              │  ┌────────────────────────┐  │
-              │  │    WebhookRouter       │  │
-              │  │  /webhook/telegram     │  │
-              │  │  /webhook/whatsapp     │  │
-              │  │  /webhook/payment      │  │
-              │  │  /health               │  │
-              │  └──────────┬─────────────┘  │
-              │             │                │
-              │  ┌──────────▼─────────────┐  │
-              │  │   ConversationService  │  │
-              │  │  (state machine core)  │  │
-              │  └──────────┬─────────────┘  │
-              │             │                │
-              │  ┌──────────▼─────────────┐  │
-              │  │     AIService          │  │
-              │  │  GPT-4o / Vision /     │  │
-              │  │  Whisper               │  │
-              │  └──────────┬─────────────┘  │
-              │             │                │
-              │  ┌──────────▼─────────────┐  │
-              │  │   NutritionService     │  │
-              │  │  TACO + USDA lookup    │  │
-              │  │  + FoodCache           │  │
-              │  └──────────┬─────────────┘  │
-              │             │                │
-              │  ┌──────────▼─────────────┐  │
-              │  │   NotificationService  │  │
-              │  │  Telegram + WhatsApp   │  │
-              │  └────────────────────────┘  │
-              │                              │
-              │  ┌────────────────────────┐  │
-              │  │   APScheduler Jobs     │  │
-              │  │  - Alert checker       │  │
-              │  │  - Report generator    │  │
-              │  │  - Re-engagement       │  │
-              │  └──────────┬─────────────┘  │
-              └─────────────┼────────────────┘
-                            │
-              ┌─────────────▼────────────────┐
-              │      PostgreSQL (Supabase)   │
-              │  Users, MealLogs, FoodItems  │
-              │  WeeklyReports, Payments...  │
-              └──────────────────────────────┘
+└─────────────────────────┬───────────────────────────────┘
+                          │ Telegram
+                          ▼
+               ┌──────────────────────┐
+               │    Telegram API      │
+               └──────────┬───────────┘
+                          │ webhook POST (produção)
+                          │ polling (dev local)
+                          ▼
+               ┌──────────────────────────────────────────┐
+               │              Nginx                        │
+               │  (reverse proxy + SSL termination)        │
+               │  app.seudominio.com → :8000               │
+               │  seudominio.com     → /website (static)   │
+               └──────────────┬───────────────────────────┘
+                              │
+               ┌──────────────▼───────────────────────────┐
+               │          FastAPI Application              │
+               │                                           │
+               │  ┌─────────────────────────────────────┐  │
+               │  │           Routers                   │  │
+               │  │  POST /webhook/telegram             │  │
+               │  │  POST /webhook/payment              │  │
+               │  │  GET  /health  GET /ping            │  │
+               │  │  /api/auth/*  /api/meals/*          │  │
+               │  │  /dashboard/* /admin/*              │  │
+               │  └────────────────┬────────────────────┘  │
+               │                   │                        │
+               │  ┌────────────────▼────────────────────┐  │
+               │  │       ConversationService            │  │
+               │  │  (pacote — 7 módulos / mixins)       │  │
+               │  │  _constants · _helpers               │  │
+               │  │  _handlers_meal · _handlers_commands │  │
+               │  │  _handlers_b2b · service             │  │
+               │  └────────────────┬────────────────────┘  │
+               │                   │                        │
+               │  ┌────────────────▼────────────────────┐  │
+               │  │           AIService                  │  │
+               │  │  Claude Haiku 4.5 (texto)            │  │
+               │  │  Claude Sonnet 4.6 (visão)           │  │
+               │  │  OpenAI Whisper (áudio)              │  │
+               │  └────────────────┬────────────────────┘  │
+               │                   │                        │
+               │  ┌────────────────▼────────────────────┐  │
+               │  │        NutritionService              │  │
+               │  │  5 camadas: cache → TACO → TBCA      │  │
+               │  │           → USDA → estimativa IA     │  │
+               │  └────────────────────────────────────┘  │
+               │                                           │
+               │  ┌─────────────────────────────────────┐  │
+               │  │         APScheduler (12 jobs)        │  │
+               │  │  5 alertas · relatório · re-engage   │  │
+               │  │  expiração convites · água           │  │
+               │  └─────────────────────────────────────┘  │
+               └──────────────────┬───────────────────────┘
+                                  │
+               ┌──────────────────▼───────────────────────┐
+               │          PostgreSQL 16                    │
+               │  (Docker — interno, sem porta exposta)    │
+               │  Users, MealLogs, FoodItems               │
+               │  WeeklyReports, Payments, AuditLogs...   │
+               └──────────────────────────────────────────┘
 
-              ┌──────────────────────────────┐
-              │   APIs Externas              │
-              │  - OpenAI (GPT-4o, Whisper)  │
-              │  - Mercado Pago Subscriptions│
-              │  - Sentry (error tracking)   │
-              │  - PostHog (analytics)       │
-              └──────────────────────────────┘
+               Serviços externos
+               ├─ Anthropic API (Claude — NLP primário)
+               ├─ OpenAI API    (Whisper — transcrição)
+               ├─ Mercado Pago  (assinaturas)
+               ├─ PostHog       (analytics)
+               └─ Sentry        (error tracking)
 ```
 
 ---
 
-## 2. Diagramas de Sequência
-
-### 2.1 Registro de Refeição por Texto
+## 2. Ambiente de desenvolvimento (pré-prod local)
 
 ```
-Usuário       Telegram      FastAPI       ConvService    AIService     NutritionSvc    DB
-   │              │             │               │              │              │          │
-   │─ "almocei ──▶│             │               │              │              │          │
-   │   arroz..."  │─ webhook ──▶│               │              │              │          │
-   │              │             │─ get_user ───────────────────────────────────────────▶│
-   │              │             │◀─ user (IDLE)────────────────────────────────────────│
-   │              │             │─ process_msg ▶│               │              │          │
-   │              │             │               │─ parse_text ─▶│              │          │
-   │              │             │               │               │─ GPT-4o ────▶│          │
-   │              │             │               │               │◀─ foods[] ───│          │
-   │              │             │               │◀─ foods[]    ─│              │          │
-   │              │             │               │─ lookup ──────────────────────▶│         │
-   │              │             │               │               │              │─ TACO ──▶│
-   │              │             │               │               │              │◀─ macros─│
-   │              │             │               │◀─ enriched_foods──────────────│          │
-   │              │             │               │─ set_state(CONFIRMING)        │          │
-   │              │             │               │─ save_pending ──────────────────────────▶│
-   │              │             │◀─ reply_text ─│               │              │          │
-   │              │◀─ sendMsg ──│               │               │              │          │
-   │◀─ "Anotei! ──│             │               │               │              │          │
-   │   Total:463" │             │               │               │              │          │
-   │              │             │               │               │              │          │
-   │─ "Sim ✅" ──▶│             │               │               │              │          │
-   │              │─ webhook ──▶│               │               │              │          │
-   │              │             │─ process_msg ▶│               │              │          │
-   │              │             │               │─ confirm() ───────────────────────────▶│
-   │              │             │               │─ set_state(IDLE)              │          │
-   │              │             │◀─ "Salvo ✅" ─│               │              │          │
-   │              │◀─ sendMsg ──│               │               │              │          │
-   │◀─ "Salvo ✅"─│             │               │               │              │          │
+docker-compose.yml
+  ├── db       — PostgreSQL 16-alpine (porta 5432 exposta ao host)
+  ├── pgadmin  — pgAdmin 4 (porta 5050, senha dev)
+  └── app      — FastAPI com live reload (porta 8000)
+                 Bot roda em polling mode (scripts/run_bot_polling.py)
 ```
 
-### 2.2 Registro de Refeição por Foto
+Comandos:
+```powershell
+# Subir tudo
+./scripts/dev-start.ps1
 
-```
-Usuário       Telegram      FastAPI       ConvService    AIService        DB
-   │              │             │               │              │            │
-   │─ [foto] ────▶│             │               │              │            │
-   │              │─ webhook ──▶│               │              │            │
-   │              │             │─ download_file─────────────────────────────
-   │              │             │               │─ process_photo▶│            │
-   │              │             │               │               │─ GPT-4 ───▶
-   │              │             │               │               │  Vision    │
-   │              │             │               │               │◀─ foods[]──│
-   │              │             │               │◀─ foods[]    ─│            │
-   │              │             │               │ [mesmo fluxo do texto acima]
+# Aplicar migrations em Docker
+./scripts/dev-migrate.ps1
+
+# Rodar testes (fora do Docker, no venv local)
+pytest --cov=app
 ```
 
-### 2.3 Fluxo de Alerta (APScheduler)
+Regra: **nunca dois processos de polling simultâneos** — matar o anterior antes de iniciar.
 
-Jobs de alerta — horários fixos em BRT (America/Sao_Paulo):
+---
 
-| Job | Horário BRT | meal_type |
-|-----|-------------|-----------|
-| `job_alert_breakfast` | 09:30 | `breakfast` |
-| `job_alert_morning_snack` | 10:30 | `morning_snack` |
-| `job_alert_lunch` | 12:30 | `lunch` |
-| `job_alert_afternoon_snack` | 16:00 | `afternoon_snack` |
-| `job_alert_dinner` | 19:30 | `dinner` |
-
-Cada job verifica se o usuário já registrou aquela refeição no dia e, se não, envia o alerta:
+## 3. Ambiente de produção (VPS + Docker)
 
 ```
-APScheduler     DB              NotificationSvc    Telegram/WA
-     │            │                    │                │
-     │─ (horário fixo BRT)             │                │
-     │─ busca users (onboarding OK,    │                │
-     │   alertas ativos, não deletados)│                │
-     │◀─ users[]              ─────────│                │
-     │                                 │                │
-     │ para cada user:                 │                │
-     │─ verifica se já registrou       │                │
-     │  meal_type do job hoje ────────▶│                │
-     │◀─ não_registrou ────────────────│                │
-     │─ send_alert(user) ─────────────▶│                │
-     │                                 │─ send_msg() ──▶│
-     │                                 │◀─ ok ──────────│
+docker-compose.prod.yml
+  ├── db       — PostgreSQL 16-alpine (sem porta exposta, rede interna)
+  ├── app      — FastAPI 2 workers (uvicorn), healthcheck em /ping
+  ├── nginx    — Nginx 1.27-alpine (portas 80/443), proxy + static site
+  └── certbot  — Let's Encrypt, perfil ssl (cron no host para renovação)
 ```
 
-### 2.4 Geração do Relatório Semanal
-
+Fluxo de deploy:
 ```
-APScheduler    DB           ReportService    WeasyPrint    Notif.Svc    Telegram
-     │           │                │               │              │           │
-     │─ domingo 20h               │               │              │           │
-     │─ get_eligible_users() ────▶│               │              │           │
-     │◀─ users[] ────────────────│               │              │           │
-     │                            │               │              │           │
-     │ processa em lotes de 25:   │               │              │           │
-     │─ get_week_data(user) ─────▶│               │              │           │
-     │◀─ meals, totals, streak ──│               │              │           │
-     │─ generate_suggestions()   │               │              │           │
-     │  (GPT-4o summary prompt)  │               │              │           │
-     │─ render_pdf() ────────────────────────────▶│              │           │
-     │◀─ pdf_bytes ───────────────────────────────│              │           │
-     │─ save_report() ───────────▶│               │              │           │
-     │─ send_report(user, pdf) ──────────────────────────────────▶│           │
-     │                            │               │              │─ sendDoc()▶│
-     │─ sleep(40ms) ─ (rate limit)│               │              │           │
-     │ [próximo usuário do lote]  │               │              │           │
+git push origin main
+ssh vps "cd /opt/nutribot && ./scripts/deploy.sh --build"
 ```
 
-### 2.5 Webhook de Pagamento (Mercado Pago)
+Scripts de setup:
+- `scripts/init-ssl.sh <domínio> <email>` — emite certificados na 1ª vez
+- `scripts/deploy.sh [--build]` — atualiza a stack em produção
+
+### Domínios
+
+| Subdomínio | Serve |
+|------------|-------|
+| `seudominio.com` | Site de marketing (static `/website`) |
+| `app.seudominio.com` | FastAPI (bot + dashboard + API) |
+
+### Telegram Webhook (produção)
 
 ```
-MercadoPago    FastAPI        DB              NotificationSvc
-     │             │            │                    │
-     │─ POST ─────▶│            │                    │
-     │  /webhook/  │            │                    │
-     │  payment    │─ validate_signature()           │
-     │             │─ 200 OK ──▶│ (responde imediato)│
-     │             │            │                    │
-     │             │ (async):   │                    │
-     │             │─ get_subscription_status()─────▶│
-     │             │            │                    │
-     │             │ se approved:                    │
-     │             │─ update_user_plan(premium) ────▶│
-     │             │─ notify_user() ─────────────────▶│
-     │             │            │                    │─ "Bem-vindo ao Premium!"
-     │             │            │                    │
-     │             │ se canceled/failed:             │
-     │             │─ downgrade_user(free) ─────────▶│
-     │             │─ notify_user() ─────────────────▶│
+python scripts/register_telegram_webhook.py https://app.seudominio.com
+```
+
+O webhook aponta para `POST /webhook/telegram` e valida o header
+`X-Telegram-Bot-Api-Secret-Token` configurado em `TELEGRAM_WEBHOOK_SECRET`.
+
+---
+
+## 4. Diagramas de Sequência
+
+### 4.1 Registro de Refeição por Texto
+
+```
+Usuário    Telegram    FastAPI    ConvService    AIService    NutritionSvc    DB
+   │           │           │           │              │              │         │
+   │─ "arroz" ▶│           │           │              │              │         │
+   │           │─ webhook ▶│           │              │              │         │
+   │           │           │─ get_user ──────────────────────────────────────▶│
+   │           │           │◀─ user (IDLE) ──────────────────────────────────│
+   │           │           │─ process_msg ▶│           │              │         │
+   │           │           │               │─ parse ──▶│              │         │
+   │           │           │               │           │─ Claude ────▶│         │
+   │           │           │               │           │◀─ foods[] ──│         │
+   │           │           │               │◀─ foods[] │              │         │
+   │           │           │               │─ lookup ─────────────────▶│        │
+   │           │           │               │           │              │─ TACO ─▶│
+   │           │           │               │           │              │◀─ macros│
+   │           │           │               │◀─ enriched ──────────────│         │
+   │           │           │               │─ state→CONFIRMING        │         │
+   │           │           │◀─ reply ──────│           │              │         │
+   │           │◀─ sendMsg │               │           │              │         │
+   │◀─ "463kcal"│           │               │           │              │         │
+   │─ "Sim" ───▶│           │               │           │              │         │
+   │           │─ webhook ─▶│               │           │              │         │
+   │           │           │─ confirm() ────────────────────────────────────── ▶│
+   │           │           │               │─ state→IDLE               │         │
+   │           │◀─ "Salvo!" │               │           │              │         │
+```
+
+### 4.2 Fluxo de Alerta (APScheduler)
+
+```
+APScheduler    DB                  NotificationSvc    Telegram
+     │            │                      │                │
+     │─ horário BRT (12 jobs)            │                │
+     │─ busca users com alertas ativos ─▶│                │
+     │◀─ users[] ─────────────────────── │                │
+     │                                   │                │
+     │  para cada user:                  │                │
+     │─ verificou hoje? ─────────────────▶│                │
+     │◀─ não_registrou ──────────────────│                │
+     │─ send_alert(user) ────────────────▶│                │
+     │                                   │─ send_msg() ──▶│
+```
+
+### 4.3 Geração do Relatório Semanal
+
+```
+APScheduler    DB      ReportService    WeasyPrint    Notif.Svc    Telegram
+     │           │           │               │              │           │
+     │─ dom 20h  │           │               │              │           │
+     │─ get_eligible_users() ▶│              │              │           │
+     │◀─ users[] ─────────── │               │              │           │
+     │                        │               │              │           │
+     │  lotes de 25:          │               │              │           │
+     │─ get_week_data() ─────▶│               │              │           │
+     │─ generate_suggestions()│ (Claude)      │              │           │
+     │─ render_pdf() ─────────────────────── ▶│              │           │
+     │◀─ pdf_bytes ───────────────────────── │              │           │
+     │─ save_report() ───────▶│               │              │           │
+     │─ send_report() ─────────────────────── ────────────── ▶│           │
+     │                        │               │              │─ sendDoc()▶│
+     │─ sleep(40ms) (rate limit)              │              │           │
+```
+
+### 4.4 Webhook de Pagamento
+
+```
+MercadoPago    FastAPI         DB              NotificationSvc
+     │              │             │                   │
+     │─ POST /webhook/payment ──▶│                   │
+     │              │─ validate_hmac()                │
+     │              │─ 200 OK (imediato)              │
+     │              │                                  │
+     │              │  (async):                        │
+     │              │─ get_subscription_status()──────▶│
+     │              │─ update_user_plan() ─────────────▶│
+     │              │─ notify_user() ───────────────────▶│
 ```
 
 ---
 
-## 3. Architecture Decision Records (ADRs)
+## 5. Architecture Decision Records (ADRs)
 
 ### ADR-001: Monolito para o MVP
-
 **Decisão:** Monolito Python único em vez de microsserviços.  
-**Motivo:** Microsserviços adicionam complexidade operacional (service discovery, comunicação entre serviços, deploys independentes) que não se justifica com equipe de 2 engenheiros e < 1.000 usuários.  
-**Consequência:** Refatoração para microsserviços planejada na Fase 3 (> 50k usuários). O código deve ser organizado em módulos/services coesos desde o início para facilitar essa extração futura.
+**Motivo:** Complexidade desnecessária com equipe pequena e < 1.000 usuários.  
+**Path:** Extração para microsserviços na Fase 3 (> 50k usuários).
 
-### ADR-002: PostgreSQL (Supabase) em vez de MongoDB
+### ADR-002: PostgreSQL (Docker) em vez de Neon/Supabase
+**Decisão:** PostgreSQL 16 em container Docker (pré-prod local e produção VPS).  
+**Motivo:** Custo zero, sem limites de conexões, dados sob controle. Neon foi descartado após usar em produção — free tier limitado.  
+**Consequência:** Migrations obrigatórias via Alembic; `_apply_pending_ddl()` foi removido.
 
-**Decisão:** PostgreSQL relacional.  
-**Motivo:** Dados nutricionais têm schema bem definido e relações claras (User → MealLog → FoodItem). PostgreSQL com `jsonb` cobre casos de schema flexível (state_data da máquina de estados). Supabase oferece Row Level Security nativo, relevante para LGPD.  
-**Consequência:** Migrations versionadas com Alembic são obrigatórias — nenhuma alteração de schema sem migration.
+### ADR-003: VPS + Docker + Nginx em vez de Render/Railway
+**Decisão:** VPS própria com docker-compose.prod.yml e Nginx.  
+**Motivo:** Custo operacional; Render adormecia o free tier; Railway descontinuado.  
+**Consequência:** Ops manual de deploy via `scripts/deploy.sh`; SSL via Let's Encrypt/Certbot.
 
-### ADR-003: APScheduler em vez de Celery+Redis
+### ADR-004: Anthropic Claude como IA primária (não OpenAI)
+**Decisão:** `claude-haiku-4-5` para NLP, `claude-sonnet-4-6` para Vision.  
+**Motivo:** Melhor performance em português, custo competitivo, output estruturado confiável.  
+**OpenAI:** Mantido apenas para Whisper (transcrição de áudio).
 
-**Decisão:** APScheduler (AsyncIOScheduler) embutido no processo FastAPI.  
-**Motivo:** Celery exige Redis como broker — adiciona um componente de infra, custo e complexidade. Para o MVP com cron jobs simples (alertas, relatório semanal, re-engajamento), APScheduler in-process é suficiente.  
-**Consequência:** Se o servidor reiniciar, jobs em execução são perdidos. Mitigação: jobs são idempotentes (verificam no DB se já foram executados antes de agir). Migrar para Celery na Fase 2 se a carga de jobs crescer.
+### ADR-005: Telegram apenas (WhatsApp removido)
+**Decisão:** Somente Telegram implementado. WhatsApp via Evolution API foi planejado mas removido.  
+**Motivo:** Complexidade de setup da Evolution API vs. benefício no MVP.  
+**Consequência:** `webhook_whatsapp.py`, `schemas/whatsapp.py` e toda config Evolution foram deletados.
 
-### ADR-004: WeasyPrint em vez de Puppeteer
+### ADR-006: APScheduler in-process
+**Decisão:** APScheduler (AsyncIOScheduler) embutido no FastAPI.  
+**Motivo:** Celery exige Redis como broker. Para MVP com 12 jobs simples, in-process é suficiente.  
+**Mitigação:** Jobs são idempotentes; `misfire_grace_time=3600` + `coalesce=True`.
 
-**Decisão:** WeasyPrint (Python) para geração de PDF.  
-**Motivo:** Puppeteer exige Node.js no servidor — stack mista. WeasyPrint é Python puro, sem dependência adicional. Para PDFs estáticos (relatório nutricional), qualidade é equivalente.  
-**Consequência:** WeasyPrint tem limitações com JavaScript e layouts muito complexos. O template HTML do relatório deve usar CSS simples (sem JS, sem flexbox avançado, sem grid complexo).
+### ADR-007: conversation.py → pacote de 7 módulos
+**Decisão:** Refatorado de monolito (2.631 linhas) para `app/services/conversation/` com mixins.  
+**Motivo:** Arquivo monolítico com 2.631 linhas — difícil de manter e testar.  
+**Estrutura:** `_constants`, `_helpers`, `_handlers_meal`, `_handlers_commands`, `_handlers_b2b`, `service`.
 
-### ADR-005: Fuzzy Match com RapidFuzz para Lookup TACO
+### ADR-008: Base nutricional local (TACO + TBCA + USDA)
+**Decisão:** Bases carregadas em memória na startup, sem chamada externa em tempo real.  
+**Pipeline:** cache → TACO (306) → TBCA (1.994) → USDA (25) → estimativa Claude.  
+**Motivo:** Latência zero no lookup; dados nacionais (TACO/TBCA) têm prioridade sobre USDA.
 
-**Decisão:** RapidFuzz (Python) para busca aproximada na base TACO/USDA.  
-**Motivo:** `pg_trgm` (PostgreSQL) exige extensão e query SQL adicional por lookup. RapidFuzz em memória é mais rápido para base pequena (< 10.000 itens TACO), sem round-trip ao banco.  
-**Consequência:** A base TACO/USDA é carregada em memória na inicialização da aplicação (~5MB). Aceitável para o MVP.
+### ADR-009: WeasyPrint para PDF
+**Decisão:** WeasyPrint (Python puro) em vez de Puppeteer/Chrome headless.  
+**Motivo:** Sem dependência Node.js; stack Python uniforme.  
+**Limitação:** Template HTML deve usar CSS simples (sem JS, grid/flex básico).
 
-### ADR-006: Estado de Conversa no PostgreSQL (não Redis)
-
-**Decisão:** Campo `conversation_state` + `state_data` (jsonb) na tabela `users`.  
-**Motivo:** Redis adiciona componente de infra. Para o MVP, a latência de um SELECT por usuário (~1–5ms) é aceitável. O estado muda raramente (apenas durante fluxos de confirmação).  
-**Consequência:** Migrar para Redis quando latência de estado se tornar gargalo (estimado > 5.000 usuários simultâneos).
-
-### ADR-007: Autenticação por channel_id (sem JWT no MVP)
-
-**Decisão:** Identificação do usuário pelo `chat_id` (Telegram) ou número de telefone E.164 (WhatsApp).  
-**Motivo:** Exigir login com e-mail/senha no MVP aumentaria abandono no onboarding em 40–60%. O canal de mensagem já é o fator de autenticação — só o dono do número/chat consegue enviar mensagens para o bot.  
-**Consequência:** Sem suporte a múltiplos dispositivos ou transferência de conta no MVP. Usuário que troca de número perde o histórico.
-
----
-
-## 4. Estrutura de Diretórios
-
-```
-nutri_bot/
-├── app/
-│   ├── main.py                  # FastAPI factory, lifespan (startup/shutdown)
-│   ├── config.py                # Settings via pydantic-settings (lê .env)
-│   │
-│   ├── routers/
-│   │   ├── webhook_telegram.py  # POST /webhook/telegram
-│   │   ├── webhook_whatsapp.py  # POST /webhook/whatsapp
-│   │   ├── webhook_payment.py   # POST /webhook/payment
-│   │   └── health.py            # GET /health, GET /ping
-│   │
-│   ├── services/
-│   │   ├── conversation.py      # Máquina de estados; orquestra os outros services
-│   │   ├── ai_service.py        # GPT-4o text, vision, Whisper
-│   │   ├── nutrition.py         # Lookup TACO/USDA + enriquecimento nutricional
-│   │   ├── notification.py      # Envio de mensagens Telegram + WhatsApp
-│   │   ├── report.py            # Geração de PDF semanal
-│   │   ├── scheduler.py         # APScheduler setup + job definitions
-│   │   ├── payment.py           # Mercado Pago integration
-│   │   └── analytics.py         # PostHog event tracking
-│   │
-│   ├── models/                  # SQLAlchemy ORM models
-│   │   ├── user.py
-│   │   ├── meal_log.py
-│   │   ├── food_item.py
-│   │   ├── water_log.py
-│   │   ├── weekly_report.py
-│   │   ├── payment_subscription.py
-│   │   └── audit_log.py
-│   │
-│   ├── schemas/                 # Pydantic schemas (request/response)
-│   │   ├── telegram.py          # Telegram webhook payload
-│   │   ├── whatsapp.py          # Z-API webhook payload
-│   │   ├── payment.py           # Mercado Pago webhook payload
-│   │   ├── meal.py              # MealLog create/response
-│   │   └── ai_response.py       # Structured output do GPT-4o
-│   │
-│   ├── db/
-│   │   ├── session.py           # AsyncSession factory (asyncpg)
-│   │   └── base.py              # Base declarativa SQLAlchemy
-│   │
-│   └── utils/
-│       ├── rate_limiter.py      # Rate limiting por channel_id
-│       ├── crypto.py            # AES-256 para raw_input
-│       └── timezone.py          # Helpers de fuso horário (zoneinfo)
-│
-├── data/
-│   ├── taco.json                # Base TACO (UNICAMP) normalizada
-│   └── usda.json                # Subconjunto USDA relevante para BR
-│
-├── migrations/                  # Alembic migrations
-│   ├── env.py
-│   └── versions/
-│       └── 001_initial_schema.py
-│
-├── templates/
-│   └── weekly_report.html       # Template HTML para WeasyPrint
-│
-├── tests/
-│   ├── test_nutrition.py        # NutritionService unit tests
-│   ├── test_conversation.py     # State machine tests
-│   ├── test_ai_accuracy.py      # Golden dataset tests
-│   ├── test_webhooks.py         # Webhook endpoint integration tests
-│   └── fixtures/
-│       ├── golden_meals.json    # 200 casos de teste de IA
-│       └── taco_sample.json     # Subconjunto TACO para testes
-│
-├── .env.example                 # Template de variáveis de ambiente
-├── requirements.txt
-├── alembic.ini
-├── Procfile                     # Para Railway: web + worker
-└── pyproject.toml               # Configuração de ferramentas (ruff, pytest)
-```
+### ADR-010: Autenticação por channel_id (bot) + JWT httpOnly (dashboard)
+**Decisão:** Bot identifica usuário pelo `chat_id` do Telegram. Dashboard usa JWT em cookie httpOnly.  
+**Motivo:** Menor fricção no onboarding; `chat_id` é autenticado pelo Telegram.  
+**Segurança:** JWT nunca retorna no body (apenas cookie); sessão 365 dias com sliding renewal.
 
 ---
 
-## 5. Configuração de Ambiente
-
-Todas as configurações via variáveis de ambiente. Nunca hardcoded.
-
-```env
-# .env.example
-
-# OpenAI
-OPENAI_API_KEY=sk-...
-OPENAI_MODEL=gpt-4o
-OPENAI_VISION_MODEL=gpt-4o
-OPENAI_WHISPER_MODEL=whisper-1
-
-# Banco de dados
-DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/nutribot
-
-# Telegram
-TELEGRAM_BOT_TOKEN=123456:ABC...
-TELEGRAM_WEBHOOK_SECRET=random-secret-string
-
-# WhatsApp (Z-API)
-ZAPI_INSTANCE_ID=...
-ZAPI_TOKEN=...
-ZAPI_WEBHOOK_SECRET=...
-
-# Mercado Pago
-MERCADOPAGO_ACCESS_TOKEN=APP_USR-...
-MERCADOPAGO_WEBHOOK_SECRET=...
-MERCADOPAGO_MONTHLY_PLAN_ID=...
-MERCADOPAGO_ANNUAL_PLAN_ID=...
-
-# Segurança
-RAW_INPUT_ENCRYPTION_KEY=32-byte-hex-key
-JWT_SECRET=...  # reservado para Fase 2
-
-# Analytics
-POSTHOG_API_KEY=phc_...
-POSTHOG_HOST=https://app.posthog.com
-
-# Monitoramento
-SENTRY_DSN=https://...@sentry.io/...
-
-# Aplicação
-APP_ENV=production  # development | staging | production
-LOG_LEVEL=INFO
-MAINTENANCE_MODE=false
-DEFAULT_TIMEZONE=America/Sao_Paulo
-```
-
----
-
-## 6. Arquitetura de Deploy
+## 6. Estrutura de Diretórios Atual
 
 ```
-GitHub (repositório)
-       │
-       │ push para main
-       ▼
-GitHub Actions (CI)
-  ├─ ruff lint
-  ├─ pytest (incluindo golden dataset)
-  ├─ verificação de coverage > 80%
-  └─ se tudo ok → trigger deploy Railway
-       │
-       ▼
-Railway (produção)
-  ├─ Web service: uvicorn app.main:app --host 0.0.0.0 --port $PORT
-  └─ (APScheduler roda dentro do mesmo processo)
-
-Supabase
-  └─ PostgreSQL (conexão via DATABASE_URL)
-
-Serviços externos (SaaS)
-  ├─ OpenAI API
-  ├─ Z-API (WhatsApp)
-  ├─ Mercado Pago
-  ├─ PostHog
-  └─ Sentry
+app/
+  main.py                    # FastAPI factory, SecurityHeadersMiddleware (incl. CSP)
+  config.py                  # Pydantic-settings — valida segredos na startup
+  routers/
+    health.py                # /health, /ping, /scheduler/status*, /scheduler/trigger*
+    webhook_telegram.py      # POST /webhook/telegram (valida X-Telegram-Bot-Api-Secret-Token)
+    webhook_payment.py       # POST /webhook/payment (HMAC HMAC em produção)
+    auth.py                  # POST /api/auth/register|login|logout
+    dashboard.py             # Jinja2 server-rendered /login, /esqueci-senha, /auth/magic
+    meals.py  reports.py  users.py  admin.py
+  services/
+    conversation/            # Pacote — 7 módulos (refatorado de conversation.py)
+      __init__.py            # Re-exporta ConversationService
+      _constants.py          # Estados, timeouts, emojis
+      _helpers.py            # HelpersMixin — DB helpers, formatters
+      _handlers_meal.py      # MealMixin — confirmar, corrigir, foto, áudio
+      _handlers_commands.py  # CommandsMixin — /hoje, /relatorio, alertas...
+      _handlers_b2b.py       # B2BMixin — convites nutricionista, LGPD revogação
+      service.py             # ConversationService (herda todos os mixins)
+    ai_service.py  nutrition.py  scheduler.py  report.py
+    analytics.py  notification.py  payment.py
+  models/                    # SQLAlchemy ORM (9 tabelas)
+  schemas/
+  db/
+    session.py               # AsyncSession factory (pool_size=3)
+  utils/
+    crypto.py                # Fernet AES-256 (LGPD)
+    jwt.py                   # JWT create/decode + deps
+    rate_limiter.py
+    timezone.py
+data/
+  taco.json    tbca.json    tbca_raw.json    usda.json
+  report_template.html
+migrations/versions/
+docker-compose.yml           # Pré-prod local: db + pgadmin + app
+docker-compose.prod.yml      # Produção VPS: db + app + nginx + certbot
+nginx/
+  nginx.conf                 # Config global
+  conf.d/
+    app.conf                 # app.seudominio.com → FastAPI
+    website.conf             # seudominio.com → static site
+website/
+  index.html                 # Landing page de marketing
+scripts/
+  dev-start.ps1  dev-migrate.ps1
+  init-ssl.sh  deploy.sh
+  register_telegram_webhook.py  run_bot_polling.py
+tests/                       # 447 testes · 60% cobertura
+docs/
+  NutriBot_PRD_v2.1.md  architecture.md  api-spec.md
+  prompts.md  fuzzy-match.md  admin-panel.md
+  prd-historico-peso.md
 ```
-
-**Environments:**
-
-| Env | Branch | DB | Observações |
-|-----|--------|-----|-------------|
-| development | local | PostgreSQL local ou Supabase dev project | `.env` local |
-| staging | `staging` | Supabase staging project | Testes de integração pré-deploy |
-| production | `main` | Supabase produção | Deploy automático via Railway |
 
 ---
 
@@ -430,9 +351,25 @@ Serviços externos (SaaS)
 
 | Área | Estratégia |
 |------|-----------|
-| Lookup TACO | Base carregada em memória na startup (`@app.on_event("startup")`) |
-| Cache de alimentos comuns | Top 100 alimentos TACO com resultado pré-calculado em dict Python |
-| Conexões ao banco | Connection pool asyncpg (min=2, max=10 para MVP) |
-| OpenAI retries | Exponential backoff: 3s, 6s, 12s (3 tentativas máximas) |
-| Broadcast de relatórios | Lotes de 25 usuários com delay de 40ms entre mensagens |
-| Webhook response time | Responde 200 imediatamente, processa mensagem em background task |
+| Lookup TACO/TBCA/USDA | Bases carregadas em memória na startup (~8MB total) |
+| Cache de alimentos | Top 500 alimentos pré-calculados em dict Python |
+| Conexões ao banco | Pool asyncpg: pool_size=3 (Docker dev) |
+| Claude retries | Exponential backoff automático via SDK Anthropic |
+| Relatórios | Lotes de 25 usuários, 40ms entre mensagens (rate limit Telegram) |
+| Webhook response | Responde 200 imediatamente, processa em `BackgroundTask` |
+
+---
+
+## 8. Segurança (auditoria 2026-08-25)
+
+| Controle | Implementação |
+|----------|--------------|
+| Segredos em produção | `_check_production_secrets()` bloqueia startup com defaults inseguros |
+| JWT | Cookie httpOnly; nunca no body; 365 dias com sliding renewal |
+| Rate limiting | Auth: 5 tentativas/5min por IP; Register: 5/hora por IP |
+| Timing attack | `dummy_verify()` quando usuário não encontrado |
+| Dados sensíveis LGPD | Fernet AES-256 (`RAW_INPUT_ENCRYPTION_KEY`) para raw meal input |
+| Webhook Telegram | `X-Telegram-Bot-Api-Secret-Token` validado em todas as requisições |
+| Webhook Pagamento | HMAC obrigatório em produção |
+| Headers HTTP | CSP, HSTS, X-Frame-Options, X-Content-Type-Options via middleware |
+| SQL injection | SQLAlchemy ORM com parâmetros ligados — sem SQL raw |

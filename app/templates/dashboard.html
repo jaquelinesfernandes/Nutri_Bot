@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block title %}Dashboard — NutriBot{% endblock %}
+{% block title %}Dashboard — Nouri{% endblock %}
 {% block content %}
 
 {# ── Computed values ─────────────────────────────────── #}
@@ -38,16 +38,16 @@
 
 {# Meal bar colors #}
 {% set bar_colors = [
-  'linear-gradient(to bottom,#6366F1,#818CF8)',
-  'linear-gradient(to bottom,#0EA5E9,#38BDF8)',
-  'linear-gradient(to bottom,#A855F7,#C084FC)'
+  'linear-gradient(to bottom,#0A5738,#25C97A)',
+  'linear-gradient(to bottom,#25C97A,#25C97A)',
+  'linear-gradient(to bottom,#F0A318,#C084FC)'
 ] %}
 
 <!-- ── Header ─────────────────────────────────────────── -->
 <div class="pg-header">
   <div>
     <div class="greeting">
-      {% if now_hour < 12 %}☀️ Bom dia{% elif now_hour < 18 %}🌤️ Boa tarde{% else %}🌙 Boa noite{% endif %},
+      {% if now_hour < 12 %}<svg style="display:inline;width:22px;height:22px;vertical-align:-5px;margin-right:5px;color:#F0A318" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/><line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/><line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/></svg>Bom dia{% elif now_hour < 18 %}<svg style="display:inline;width:22px;height:22px;vertical-align:-5px;margin-right:5px;color:#F0A318" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><path d="M6 18H4a2 2 0 0 1-2-2v-1a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v1a2 2 0 0 1-2 2h-2" stroke="none" fill="none"/><path d="M4 16s0-4 8-4 8 4 8 4" stroke-width="1.5"/></svg>Boa tarde{% else %}<svg style="display:inline;width:20px;height:20px;vertical-align:-4px;margin-right:5px;color:#0A5738" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>Boa noite{% endif %},
       <em>{{ user.first_name or 'usuário' }}</em>!
     </div>
     <div class="today-date">
@@ -70,17 +70,19 @@
 <div id="tgBanner" style="
   display:flex; align-items:center; justify-content:space-between; gap:12px;
   flex-wrap:wrap;
-  background:linear-gradient(135deg,#1E1B4B 0%,#13113D 100%);
-  border:1px solid rgba(99,102,241,.3);
+  background:linear-gradient(135deg,#E8F5EE 0%,#F0F9F4 100%);
+  border:1px solid rgba(10,87,56,.2);
   border-radius:16px; padding:14px 18px; margin-bottom:20px;
 ">
   <div style="display:flex;align-items:flex-start;gap:12px;flex:1;min-width:0">
-    <span style="font-size:1.5rem;flex-shrink:0;line-height:1.3">🔗</span>
+    <span style="flex-shrink:0;line-height:1;color:#0A5738;margin-top:2px;">
+      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/></svg>
+    </span>
     <div>
-      <div style="font-size:.875rem;font-weight:600;color:#E0DEFF;margin-bottom:3px">
+      <div style="font-size:.875rem;font-weight:600;color:#0D2A1A;margin-bottom:3px">
         Vincule seu Telegram para aproveitar tudo
       </div>
-      <div style="font-size:.8rem;color:rgba(255,255,255,.5);line-height:1.4">
+      <div style="font-size:.8rem;color:#3D6B52;line-height:1.4">
         Receba alertas de refeição e relatórios direto no chat — sem abrir o painel.
       </div>
     </div>
@@ -88,7 +90,7 @@
   <div style="display:flex;align-items:center;gap:8px;flex-shrink:0">
     <a href="/vincular-telegram" style="
       display:inline-flex;align-items:center;gap:5px;
-      padding:8px 14px;background:linear-gradient(135deg,#6366F1,#4F46E5);
+      padding:8px 14px;background:#0A5738;
       color:#fff;font-size:.8rem;font-weight:600;
       border-radius:8px;text-decoration:none;
       transition:opacity .15s;white-space:nowrap;
@@ -97,11 +99,11 @@
     </a>
     <button onclick="dismissTgBanner()" style="
       background:none;border:none;cursor:pointer;
-      color:rgba(255,255,255,.35);font-size:1.2rem;line-height:1;
+      color:#7BA88A;font-size:1.2rem;line-height:1;
       padding:4px 6px;border-radius:6px;
       transition:color .15s;
-    " title="Fechar" onmouseover="this.style.color='rgba(255,255,255,.65)'"
-      onmouseout="this.style.color='rgba(255,255,255,.35)'">×</button>
+    " title="Fechar" onmouseover="this.style.color='#3D6B52'"
+      onmouseout="this.style.color='#7BA88A'">×</button>
   </div>
 </div>
 <script>
@@ -136,8 +138,8 @@
         <svg width="100%" height="100%" viewBox="0 0 156 156">
           <defs>
             <linearGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%"   stop-color="#6366F1"/>
-              <stop offset="100%" stop-color="#0EA5E9"/>
+              <stop offset="0%"   stop-color="#0A5738"/>
+              <stop offset="100%" stop-color="#25C97A"/>
             </linearGradient>
           </defs>
           <circle class="r-track" cx="78" cy="78" r="66"/>
@@ -160,27 +162,32 @@
             {% if remain_kcal > 0 %}
             Restam <span class="remain-chip">{{ remain_kcal }} kcal</span>
             {% else %}
-            <span class="remain-chip">Meta atingida 🎯</span>
+            <span class="remain-chip">Meta atingida</span>
             {% endif %}
           {% else %}
           <span class="remain-chip">Defina sua meta</span>
           {% endif %}
         </div>
         <p class="ring-tip">
-          {% if pct_kcal < 40 %}Bom começo! Registre mais refeições 📝
-          {% elif pct_kcal < 80 %}Ótimo ritmo! Continue assim 💪
-          {% elif pct_kcal <= 100 %}Quase lá! Atenção nas próximas 🎯
-          {% else %}Meta atingida! Cuidado com o excesso 🚦
+          {% if pct_kcal < 40 %}Bom começo — registre mais refeições
+          {% elif pct_kcal < 80 %}Ótimo ritmo, continue assim
+          {% elif pct_kcal <= 100 %}Quase lá, atenção nas próximas
+          {% else %}Meta atingida — cuidado com o excesso
           {% endif %}
         </p>
       </div>
+      {% if avg_pct_7 > 0 %}
+      <div class="ring-context">
+        Média 7 dias: <strong>{{ avg_pct_7 }}%</strong> da meta
+      </div>
+      {% endif %}
     </div>
 
     <!-- RF-AGUA-03: Card de hidratação (hero) -->
     {% set pct_water_clamp = [pct_water, 100] | min %}
-    {% set water_color = '#0EA5E9' if pct_water >= 80 else ('#F59E0B' if pct_water >= 40 else '#EF4444') %}
+    {% set water_color = '#25C97A' if pct_water >= 80 else ('#F59E0B' if pct_water >= 40 else '#EF4444') %}
     <div class="card ring-card water-hero-card water-card" style="border-top: 3px solid {{ water_color }};">
-      <div class="water-eyebrow-lbl">💧 Hidratação hoje</div>
+      <div class="water-eyebrow-lbl"><svg style="display:inline;width:12px;height:12px;vertical-align:-1px;margin-right:4px" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 9 4 13.5 4 16a8 8 0 0 0 16 0c0-2.5-2.48-7-8-14z"/></svg>Hidratação hoje</div>
 
       <div class="water-big-num" id="waterTotalNum" style="color: {{ water_color }};">
         {{ water_today_ml }}<small>ml</small>
@@ -195,26 +202,26 @@
       </div>
 
       <div class="water-status-label">
-        {% if pct_water >= 100 %}Meta atingida! 🎯
-        {% elif pct_water >= 80 %}Quase lá! 💪
-        {% elif pct_water >= 40 %}Bom ritmo 👍
-        {% else %}Beba mais água 💧{% endif %}
+        {% if pct_water >= 100 %}Meta atingida!
+        {% elif pct_water >= 80 %}Quase lá
+        {% elif pct_water >= 40 %}Bom ritmo
+        {% else %}Beba mais água{% endif %}
       </div>
 
       <!-- Botões de adição rápida -->
       <div class="water-btns" style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;">
-        <button class="water-add-btn" data-ml="250" title="1 copo (250ml)">🥤 copo</button>
-        <button class="water-add-btn" data-ml="500">500ml</button>
-        <button class="water-add-btn" data-ml="1000">1L</button>
-        <button class="water-add-btn water-custom-toggle">✏️ outro</button>
+        <button class="water-add-btn" data-ml="250" title="1 copo (250ml)"><svg style="display:inline;width:12px;height:12px;vertical-align:-1px;margin-right:3px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 8h14l-2 10H7L5 8z"/><line x1="3" y1="5" x2="21" y2="5"/></svg>copo</button>
+        <button class="water-add-btn" data-ml="500">500 ml</button>
+        <button class="water-add-btn" data-ml="1000">1 L</button>
+        <button class="water-add-btn water-custom-toggle"><svg style="display:inline;width:11px;height:11px;vertical-align:-1px;margin-right:3px" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20h9M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>outro</button>
       </div>
 
       <!-- Input customizado (oculto por padrão) -->
       <div id="waterCustom" style="display:none;margin-top:12px;width:100%;">
         <form id="waterCustomForm" style="display:flex;gap:6px;align-items:center;justify-content:center;">
           <input id="waterCustomInput" type="number" min="50" max="5000" step="50"
-                 placeholder="ml" style="width:84px;padding:6px 10px;border:1px solid rgba(255,255,255,.15);border-radius:8px;background:rgba(255,255,255,.08);color:#E0DEFF;font-size:.9rem;">
-          <button type="submit" style="padding:6px 14px;border-radius:8px;background:#0EA5E9;color:#fff;border:none;cursor:pointer;font-size:.9rem;font-weight:600;">+ Adicionar</button>
+                 placeholder="ml" style="width:84px;padding:6px 10px;border:1px solid rgba(10,87,56,.2);border-radius:8px;background:#fff;color:#0D2A1A;font-size:.9rem;">
+          <button type="submit" style="padding:6px 14px;border-radius:8px;background:#25C97A;color:#fff;border:none;cursor:pointer;font-size:.9rem;font-weight:600;">+ Adicionar</button>
         </form>
       </div>
       <div id="waterMsg" style="margin-top:8px;font-size:.82rem;color:#4ADE80;display:none;"></div>
@@ -226,7 +233,9 @@
   <div class="macro-row">
 
     <div class="card macro-card prot">
-      <div class="macro-icon prot">🫀</div>
+      <div class="macro-icon prot">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="color:#0A5738"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+      </div>
       <div class="macro-body">
         <div class="macro-lbl">Proteína</div>
         <div class="macro-num">{{ total_prot | int }}<small>g</small></div>
@@ -236,7 +245,7 @@
         </div>
         {% if goal_prot_g %}
         <div class="macro-mini-track">
-          <div class="macro-mini-fill" style="width:{{ [pct_prot2, 100]|min }}%;background:linear-gradient(90deg,#6366F1,#818CF8)"></div>
+          <div class="macro-mini-fill" style="width:{{ [pct_prot2, 100]|min }}%;background:linear-gradient(90deg,#0A5738,#25C97A)"></div>
         </div>
         {% endif %}
       </div>
@@ -244,7 +253,9 @@
     </div>
 
     <div class="card macro-card carb">
-      <div class="macro-icon carb">🌾</div>
+      <div class="macro-icon carb">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="color:#0A8F56"><path d="M3 12v3c0 1.657 3.134 3 7 3s7-1.343 7-3v-3c0 1.657-3.134 3-7 3s-7-1.343-7-3z"/><path d="M3 7v3c0 1.657 3.134 3 7 3s7-1.343 7-3V7c0 1.657-3.134 3-7 3S3 8.657 3 7z"/><path d="M17 5c0 1.657-3.134 3-7 3S3 6.657 3 5s3.134-3 7-3 7 1.343 7 3z"/></svg>
+      </div>
       <div class="macro-body">
         <div class="macro-lbl">Carboidratos</div>
         <div class="macro-num">{{ total_carb | int }}<small>g</small></div>
@@ -254,7 +265,7 @@
         </div>
         {% if goal_carb_g %}
         <div class="macro-mini-track">
-          <div class="macro-mini-fill" style="width:{{ [pct_carb, 100]|min }}%;background:linear-gradient(90deg,#0EA5E9,#38BDF8)"></div>
+          <div class="macro-mini-fill" style="width:{{ [pct_carb, 100]|min }}%;background:linear-gradient(90deg,#25C97A,#25C97A)"></div>
         </div>
         {% endif %}
       </div>
@@ -262,7 +273,9 @@
     </div>
 
     <div class="card macro-card fat">
-      <div class="macro-icon fat">🫒</div>
+      <div class="macro-icon fat">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="color:#B87310"><path fill-rule="evenodd" d="M5.05 9.2C5.05 5.6 10 2 10 2s4.95 3.6 4.95 7.2a4.95 4.95 0 01-9.9 0z" clip-rule="evenodd"/></svg>
+      </div>
       <div class="macro-body">
         <div class="macro-lbl">Gordura</div>
         <div class="macro-num">{{ total_fat | int }}<small>g</small></div>
@@ -272,7 +285,7 @@
         </div>
         {% if goal_fat_g %}
         <div class="macro-mini-track">
-          <div class="macro-mini-fill" style="width:{{ [pct_fat, 100]|min }}%;background:linear-gradient(90deg,#A855F7,#C084FC)"></div>
+          <div class="macro-mini-fill" style="width:{{ [pct_fat, 100]|min }}%;background:linear-gradient(90deg,#F0A318,#C084FC)"></div>
         </div>
         {% endif %}
       </div>
@@ -280,7 +293,9 @@
     </div>
 
     <div class="card macro-card fiber">
-      <div class="macro-icon fiber">🌿</div>
+      <div class="macro-icon fiber">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="color:#16A34A"><path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"/></svg>
+      </div>
       <div class="macro-body">
         <div class="macro-lbl">Fibra</div>
         <div class="macro-num">{{ total_fiber | round(1) }}<small>g</small></div>
@@ -300,15 +315,15 @@
   .water-add-btn {
     padding: 6px 12px;
     border-radius: 20px;
-    border: 1.5px solid #0EA5E9;
+    border: 1.5px solid #25C97A;
     background: transparent;
-    color: #0EA5E9;
+    color: #25C97A;
     cursor: pointer;
     font-size: 0.8rem;
     font-weight: 600;
     transition: background .15s, color .15s;
   }
-  .water-add-btn:hover { background: #0EA5E9; color: #fff; }
+  .water-add-btn:hover { background: #25C97A; color: #fff; }
   </style>
 
     <script>
@@ -317,7 +332,7 @@
       let totalMl = {{ water_today_ml }};
 
       function color(pct) {
-        return pct >= 80 ? '#0EA5E9' : (pct >= 40 ? '#F59E0B' : '#EF4444');
+        return pct >= 80 ? '#25C97A' : (pct >= 40 ? '#F59E0B' : '#EF4444');
       }
 
       function updateUI(total) {
@@ -337,13 +352,10 @@
         try {
           const r = await fetch('/api/agua', { method: 'POST', body: fd });
           const data = await r.json();
-          if (data.error) { alert(data.error); return; }
+          if (data.error) { showWaterMsg(data.error, true); return; }
           updateUI(data.total_ml);
-          const msg = document.getElementById('waterMsg');
-          msg.textContent = '+' + ml + 'ml registrado! 💧';
-          msg.style.display = 'block';
-          setTimeout(() => msg.style.display = 'none', 2500);
-        } catch (e) { alert('Erro ao registrar água.'); }
+          showWaterMsg('+' + ml + 'ml registrado!', false);
+        } catch (e) { showWaterMsg('Erro ao registrar água. Tente novamente.', true); }
       }
 
       // Botões rápidos
@@ -358,11 +370,20 @@
         if (el.style.display === 'block') document.getElementById('waterCustomInput').focus();
       });
 
+      function showWaterMsg(text, isErr) {
+        const msg = document.getElementById('waterMsg');
+        msg.textContent = text;
+        msg.style.color = isErr ? '#EF4444' : '#25C97A';
+        msg.style.display = 'block';
+        clearTimeout(msg._t);
+        msg._t = setTimeout(() => { msg.style.display = 'none'; }, 2500);
+      }
+
       // Formulário customizado
       document.getElementById('waterCustomForm').addEventListener('submit', function (e) {
         e.preventDefault();
         const val = parseInt(document.getElementById('waterCustomInput').value);
-        if (!val || val < 50 || val > 5000) { alert('Use entre 50 e 5.000ml.'); return; }
+        if (!val || val < 50 || val > 5000) { showWaterMsg('Use entre 50 e 5.000ml.', true); return; }
         addWater(val);
         document.getElementById('waterCustomInput').value = '';
         document.getElementById('waterCustom').style.display = 'none';
@@ -390,9 +411,9 @@
   <div class="card-title" style="justify-content:space-between;">
     <span>Tendência diária por macronutriente</span>
     <div style="display:flex;gap:10px;font-size:11px;font-weight:600;color:var(--text-3);flex-wrap:wrap;">
-      <span><span style="display:inline-block;width:10px;height:3px;background:#6366F1;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Proteína</span>
-      <span><span style="display:inline-block;width:10px;height:3px;background:#0EA5E9;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Carb</span>
-      <span><span style="display:inline-block;width:10px;height:3px;background:#A855F7;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Gordura</span>
+      <span><span style="display:inline-block;width:10px;height:3px;background:#0A5738;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Proteína</span>
+      <span><span style="display:inline-block;width:10px;height:3px;background:#25C97A;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Carb</span>
+      <span><span style="display:inline-block;width:10px;height:3px;background:#F0A318;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Gordura</span>
       <span><span style="display:inline-block;width:10px;height:3px;background:#16A34A;border-radius:2px;vertical-align:middle;margin-right:3px"></span>Fibra</span>
     </div>
   </div>
@@ -412,7 +433,7 @@
     <div class="hist-stats">
       <div class="stat-box good">
         <div class="stat-top">
-          <div class="stat-val">{{ avg_pct_7 }}<span style="font-size:13px;font-family:'DM Sans',sans-serif;color:var(--text-3)">%</span></div>
+          <div class="stat-val">{{ avg_pct_7 }}<span style="font-size:13px;font-family:'Plus Jakarta Sans',sans-serif;color:var(--text-3)">%</span></div>
         </div>
         <div class="stat-lbl">Média atingida</div>
       </div>
@@ -474,14 +495,14 @@
 
       <div class="mprog-item">
         <div class="mprog-head">
-          <span class="mprog-name"><span class="mprog-dot" style="background:#6366F1"></span>Proteína</span>
+          <span class="mprog-name"><span class="mprog-dot" style="background:#0A5738"></span>Proteína</span>
           {% if goal_prot_g %}<span class="mprog-meta">{{ total_prot | int }}g / {{ goal_prot_g }}g</span>{% endif %}
         </div>
         <div class="mprog-tracks">
           <div class="mprog-row">
             <span class="mprog-row-label">Hoje</span>
             <div class="mprog-track today">
-              <div class="mprog-fill" style="width:{{ [pct_prot2,100]|min }}%;background:linear-gradient(90deg,#6366F1,#818CF8)"></div>
+              <div class="mprog-fill" style="width:{{ [pct_prot2,100]|min }}%;background:linear-gradient(90deg,#0A5738,#25C97A)"></div>
             </div>
             <span class="mprog-pct">{{ pct_prot2 }}%</span>
           </div>
@@ -489,7 +510,7 @@
           <div class="mprog-row" style="margin-top:4px">
             <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
             <div class="mprog-track today" style="opacity:.6">
-              <div class="mprog-fill" style="width:{{ [week_prot_avg_pct,100]|min }}%;background:linear-gradient(90deg,#6366F1,#818CF8);opacity:.75"></div>
+              <div class="mprog-fill" style="width:{{ [week_prot_avg_pct,100]|min }}%;background:linear-gradient(90deg,#0A5738,#25C97A);opacity:.75"></div>
             </div>
             <span class="mprog-pct" style="color:var(--text-3)">{{ week_prot_avg_pct }}%</span>
           </div>
@@ -499,14 +520,14 @@
 
       <div class="mprog-item">
         <div class="mprog-head">
-          <span class="mprog-name"><span class="mprog-dot" style="background:#0EA5E9"></span>Carboidratos</span>
+          <span class="mprog-name"><span class="mprog-dot" style="background:#25C97A"></span>Carboidratos</span>
           {% if goal_carb_g %}<span class="mprog-meta">{{ total_carb | int }}g / {{ goal_carb_g }}g</span>{% endif %}
         </div>
         <div class="mprog-tracks">
           <div class="mprog-row">
             <span class="mprog-row-label">Hoje</span>
             <div class="mprog-track today">
-              <div class="mprog-fill" style="width:{{ [pct_carb,100]|min }}%;background:linear-gradient(90deg,#0EA5E9,#38BDF8)"></div>
+              <div class="mprog-fill" style="width:{{ [pct_carb,100]|min }}%;background:linear-gradient(90deg,#25C97A,#25C97A)"></div>
             </div>
             <span class="mprog-pct">{{ pct_carb }}%</span>
           </div>
@@ -514,7 +535,7 @@
           <div class="mprog-row" style="margin-top:4px">
             <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
             <div class="mprog-track today" style="opacity:.6">
-              <div class="mprog-fill" style="width:{{ [week_carb_avg_pct,100]|min }}%;background:linear-gradient(90deg,#0EA5E9,#38BDF8);opacity:.75"></div>
+              <div class="mprog-fill" style="width:{{ [week_carb_avg_pct,100]|min }}%;background:linear-gradient(90deg,#25C97A,#25C97A);opacity:.75"></div>
             </div>
             <span class="mprog-pct" style="color:var(--text-3)">{{ week_carb_avg_pct }}%</span>
           </div>
@@ -524,14 +545,14 @@
 
       <div class="mprog-item">
         <div class="mprog-head">
-          <span class="mprog-name"><span class="mprog-dot" style="background:#A855F7"></span>Gordura</span>
+          <span class="mprog-name"><span class="mprog-dot" style="background:#F0A318"></span>Gordura</span>
           {% if goal_fat_g %}<span class="mprog-meta">{{ total_fat | int }}g / {{ goal_fat_g }}g</span>{% endif %}
         </div>
         <div class="mprog-tracks">
           <div class="mprog-row">
             <span class="mprog-row-label">Hoje</span>
             <div class="mprog-track today">
-              <div class="mprog-fill" style="width:{{ [pct_fat,100]|min }}%;background:linear-gradient(90deg,#A855F7,#C084FC)"></div>
+              <div class="mprog-fill" style="width:{{ [pct_fat,100]|min }}%;background:linear-gradient(90deg,#F0A318,#C084FC)"></div>
             </div>
             <span class="mprog-pct">{{ pct_fat }}%</span>
           </div>
@@ -539,7 +560,7 @@
           <div class="mprog-row" style="margin-top:4px">
             <span class="mprog-row-label" style="color:var(--text-3)">7 dias</span>
             <div class="mprog-track today" style="opacity:.6">
-              <div class="mprog-fill" style="width:{{ [week_fat_avg_pct,100]|min }}%;background:linear-gradient(90deg,#A855F7,#C084FC);opacity:.75"></div>
+              <div class="mprog-fill" style="width:{{ [week_fat_avg_pct,100]|min }}%;background:linear-gradient(90deg,#F0A318,#C084FC);opacity:.75"></div>
             </div>
             <span class="mprog-pct" style="color:var(--text-3)">{{ week_fat_avg_pct }}%</span>
           </div>
@@ -575,7 +596,7 @@
     </div>
     <div class="mprog-legend">
       <span class="mprog-legend-item" style="font-size:11px;color:var(--text-3)">
-        📊 Barra mais clara = média diária dos últimos 7 dias (exclui dias sem registro)
+        Barra mais clara = média diária dos últimos 7 dias (exclui dias sem registro)
       </span>
     </div>
   </div>
@@ -603,8 +624,16 @@
         <div style="font-size:11px;color:var(--text-3);font-weight:600;margin-top:4px;text-transform:uppercase;letter-spacing:.05em;">
           {% if streak_days == 1 %}dia seguido{% else %}dias seguidos{% endif %}
         </div>
-        <div style="font-size:20px;margin-top:4px;">
-          {% if streak_days >= 7 %}🔥{% elif streak_days >= 3 %}⚡{% elif streak_days >= 1 %}✨{% else %}💤{% endif %}
+        <div style="margin-top:6px;display:flex;justify-content:center;">
+          {% if streak_days >= 7 %}
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="#EF4444" aria-hidden="true"><path fill-rule="evenodd" d="M12.395 2.553a1 1 0 00-1.45-.385c-.345.23-.614.558-.822.88-.214.33-.403.713-.57 1.116-.334.804-.614 1.768-.84 2.734a31.365 31.365 0 00-.613 3.58 2.64 2.64 0 01-.945-1.067c-.328-.68-.398-1.534-.398-2.654A1 1 0 005.05 6.05 6.981 6.981 0 003 11a7 7 0 1011.95-4.95c-.592-.591-.98-.985-1.348-1.467-.363-.476-.724-1.063-1.207-2.03zM12.12 15.12A3 3 0 017 13s.879.5 2.5.5c0-1 .5-4 1.25-4.5.5 1 .786 1.293 1.371 1.879A2.99 2.99 0 0113 13a2.99 2.99 0 01-.879 2.121z" clip-rule="evenodd"/></svg>
+          {% elif streak_days >= 3 %}
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="#F59E0B" aria-hidden="true"><path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd"/></svg>
+          {% elif streak_days >= 1 %}
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="#25C97A" aria-hidden="true"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+          {% else %}
+          <svg width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="#94A3B8" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><path d="M17.657 2.343A8 8 0 005.636 14.364M2.343 17.657A8 8 0 0014.364 5.636"/><circle cx="10" cy="10" r="2"/></svg>
+          {% endif %}
         </div>
       </div>
       <!-- 30-day adherence -->
@@ -632,13 +661,13 @@
       </div>
     </div>
     {% if streak_days == 0 %}
-    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">💡 Registre sua primeira refeição hoje para começar sua sequência!</p>
+    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">Registre sua primeira refeição hoje para começar sua sequência!</p>
     {% elif streak_days >= 7 %}
-    <p style="font-size:12px;color:#D97706;font-weight:600;margin-top:8px;">🔥 Incrível! Você está em uma sequência de {{ streak_days }} dias. Continue assim!</p>
+    <p style="font-size:12px;color:#D97706;font-weight:600;margin-top:8px;">Incrível! Você está em uma sequência de {{ streak_days }} dias. Continue assim!</p>
     {% elif streak_days >= 3 %}
-    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">⚡ Ótima sequência! Mais {{ 7 - streak_days }} dia{{ 's' if (7 - streak_days) != 1 }} para 7 dias seguidos.</p>
+    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">Ótima sequência! Mais {{ 7 - streak_days }} dia{{ 's' if (7 - streak_days) != 1 }} para 7 dias seguidos.</p>
     {% else %}
-    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">✨ Bom começo! Consiste em registrar para construir uma sequência.</p>
+    <p style="font-size:12px;color:var(--text-3);margin-top:8px;">Bom começo! Consiste em registrar para construir uma sequência.</p>
     {% endif %}
   </div>
 
@@ -662,31 +691,31 @@
       <div style="flex:1;display:flex;flex-direction:column;gap:8px;">
         <div class="dist-row">
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-2);">
-            <span style="width:10px;height:10px;border-radius:50%;background:#6366F1;flex-shrink:0;"></span>
+            <span style="width:10px;height:10px;border-radius:50%;background:#0A5738;flex-shrink:0;"></span>
             Proteína
           </div>
           <div style="text-align:right;">
-            <span style="font-size:14px;font-weight:800;color:#6366F1;">{{ dist_prot }}%</span>
+            <span style="font-size:14px;font-weight:800;color:#0A5738;">{{ dist_prot }}%</span>
             <div style="font-size:10px;color:var(--text-3);">{{ total_prot | int }}g · {{ (total_prot * 4) | int }} kcal</div>
           </div>
         </div>
         <div class="dist-row">
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-2);">
-            <span style="width:10px;height:10px;border-radius:50%;background:#0EA5E9;flex-shrink:0;"></span>
+            <span style="width:10px;height:10px;border-radius:50%;background:#25C97A;flex-shrink:0;"></span>
             Carboidratos
           </div>
           <div style="text-align:right;">
-            <span style="font-size:14px;font-weight:800;color:#0EA5E9;">{{ dist_carb }}%</span>
+            <span style="font-size:14px;font-weight:800;color:#25C97A;">{{ dist_carb }}%</span>
             <div style="font-size:10px;color:var(--text-3);">{{ total_carb | int }}g · {{ (total_carb * 4) | int }} kcal</div>
           </div>
         </div>
         <div class="dist-row">
           <div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--text-2);">
-            <span style="width:10px;height:10px;border-radius:50%;background:#A855F7;flex-shrink:0;"></span>
+            <span style="width:10px;height:10px;border-radius:50%;background:#F0A318;flex-shrink:0;"></span>
             Gordura
           </div>
           <div style="text-align:right;">
-            <span style="font-size:14px;font-weight:800;color:#A855F7;">{{ dist_fat }}%</span>
+            <span style="font-size:14px;font-weight:800;color:#F0A318;">{{ dist_fat }}%</span>
             <div style="font-size:10px;color:var(--text-3);">{{ total_fat | int }}g · {{ (total_fat * 9) | int }} kcal</div>
           </div>
         </div>
@@ -695,9 +724,9 @@
     <!-- Barra stacked -->
     <div style="margin-top:12px;">
       <div style="height:10px;border-radius:9px;overflow:hidden;display:flex;gap:1px;">
-        <div style="width:{{ dist_prot }}%;background:#6366F1;border-radius:9px 0 0 9px;transition:width .4s;"></div>
-        <div style="width:{{ dist_carb }}%;background:#0EA5E9;transition:width .4s;"></div>
-        <div style="width:{{ dist_fat  }}%;background:#A855F7;border-radius:0 9px 9px 0;transition:width .4s;"></div>
+        <div style="width:{{ dist_prot }}%;background:#0A5738;border-radius:9px 0 0 9px;transition:width .4s;"></div>
+        <div style="width:{{ dist_carb }}%;background:#25C97A;transition:width .4s;"></div>
+        <div style="width:{{ dist_fat  }}%;background:#F0A318;border-radius:0 9px 9px 0;transition:width .4s;"></div>
       </div>
       <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--text-3);margin-top:4px;">
         <span>Referência ideal: P 25% · C 50% · G 25%</span>
@@ -705,7 +734,7 @@
     </div>
     {% else %}
     <div style="text-align:center;padding:28px 0;color:var(--text-3);">
-      <div style="font-size:2rem;margin-bottom:8px;">🍽️</div>
+      <svg width="36" height="36" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" style="margin:0 auto 10px;display:block;opacity:.35;"><path fill-rule="evenodd" d="M6 3a1 1 0 011-1h.01a1 1 0 010 2H7a1 1 0 01-1-1zm2 3a1 1 0 00-2 0v1a2 2 0 00-2 2v1a2 2 0 00-2 2v.683a3.7 3.7 0 011.055.485 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0A3.7 3.7 0 0118 12.683V12a2 2 0 00-2-2V9a2 2 0 00-2-2V6a1 1 0 10-2 0v1h-1V6a1 1 0 10-2 0v1H8V6zm10 8.868a3.704 3.704 0 01-4.055-.036 1.704 1.704 0 00-1.89 0 3.704 3.704 0 01-4.11 0 1.704 1.704 0 00-1.89 0A3.704 3.704 0 012 14.868V17a1 1 0 001 1h14a1 1 0 001-1v-2.132zM9 3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm3 0a1 1 0 011-1h.01a1 1 0 110 2H13a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
       <p style="font-size:13px;">Nenhuma refeição registrada hoje.</p>
     </div>
     {% endif %}
@@ -735,7 +764,9 @@
   </div>
   {% else %}
   <div class="no-meals">
-    <div class="icon">🍽️</div>
+    <div class="icon">
+      <svg width="40" height="40" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M6 3a1 1 0 011-1h.01a1 1 0 010 2H7a1 1 0 01-1-1zm2 3a1 1 0 00-2 0v1a2 2 0 00-2 2v1a2 2 0 00-2 2v.683a3.7 3.7 0 011.055.485 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0 3.704 3.704 0 014.11 0 1.704 1.704 0 001.89 0A3.7 3.7 0 0118 12.683V12a2 2 0 00-2-2V9a2 2 0 00-2-2V6a1 1 0 10-2 0v1h-1V6a1 1 0 10-2 0v1H8V6zm10 8.868a3.704 3.704 0 01-4.055-.036 1.704 1.704 0 00-1.89 0 3.704 3.704 0 01-4.11 0 1.704 1.704 0 00-1.89 0A3.704 3.704 0 012 14.868V17a1 1 0 001 1h14a1 1 0 001-1v-2.132zM9 3a1 1 0 011-1h.01a1 1 0 110 2H10a1 1 0 01-1-1zm3 0a1 1 0 011-1h.01a1 1 0 110 2H13a1 1 0 01-1-1z" clip-rule="evenodd"/></svg>
+    </div>
     <p>Nenhuma refeição registrada hoje.</p>
     <small>Use o bot no Telegram para registrar suas refeições.</small>
   </div>
@@ -746,9 +777,9 @@
 .goal-chip {
   display:inline-block; margin-left:10px;
   font-size:11px; font-weight:700;
-  background:linear-gradient(135deg,rgba(99,102,241,.12),rgba(14,165,233,.12));
+  background:linear-gradient(135deg,rgba(10,87,56,.12),rgba(37,201,122,.12));
   color:var(--primary);
-  border:1px solid rgba(99,102,241,.2);
+  border:1px solid rgba(10,87,56,.2);
   border-radius:20px; padding:2px 10px;
   vertical-align:middle; white-space:nowrap;
 }
@@ -809,9 +840,9 @@ function sparkline(id, data, color) {
       stroke-linecap="round" stroke-linejoin="round" opacity=".45"/>
     <circle cx="${lx}" cy="${ly}" r="2.8" fill="${color}"/>`;
 }
-sparkline('spProt',  weekProt,  '#6366F1');
-sparkline('spCarb',  weekCarb,  '#0EA5E9');
-sparkline('spFat',   weekFat,   '#A855F7');
+sparkline('spProt',  weekProt,  '#0A5738');
+sparkline('spCarb',  weekCarb,  '#25C97A');
+sparkline('spFat',   weekFat,   '#F0A318');
 sparkline('spFiber', weekFiber, '#16A34A');
 
 /* ── Canvas helper ──────────────────────────────────── */
@@ -834,10 +865,10 @@ function drawWeekPct() {
   if (!r) return;
   const { ctx, W, H } = r;
   const dk = isDark();
-  const gridC = dk ? 'rgba(255,255,255,.05)' : 'rgba(99,102,241,.07)';
-  const textC = dk ? '#4A487A' : '#9096C0';
-  const okC   = '#6366F1', warnC = '#F59E0B', overC = '#EF4444';
-  const refC  = dk ? 'rgba(14,165,233,.55)' : 'rgba(14,165,233,.7)';
+  const gridC = dk ? 'rgba(255,255,255,.05)' : 'rgba(10,87,56,.07)';
+  const textC = dk ? '#3D6B52' : '#7BA88A';
+  const okC   = '#0A5738', warnC = '#F59E0B', overC = '#EF4444';
+  const refC  = dk ? 'rgba(37,201,122,.55)' : 'rgba(37,201,122,.7)';
 
   const pL=44, pR=28, pT=12, pB=44;
   const cW=W-pL-pR, cH=H-pT-pB;
@@ -854,11 +885,11 @@ function drawWeekPct() {
     ctx.setLineDash(v===100 ? [6,4] : []);
     ctx.lineWidth = v===100 ? 1.5 : 1;
     ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle=textC; ctx.font='10px DM Sans,sans-serif';
+    ctx.fillStyle=textC; ctx.font='10px Plus Jakarta Sans,sans-serif';
     ctx.textAlign='right'; ctx.fillText(v+'%', pL-6, yy+3.5);
   });
-  ctx.fillStyle = dk ? 'rgba(14,165,233,.85)' : '#0369A1';
-  ctx.font='9.5px DM Sans,sans-serif'; ctx.textAlign='left';
+  ctx.fillStyle = dk ? 'rgba(37,201,122,.85)' : '#07402A';
+  ctx.font='9.5px Plus Jakarta Sans,sans-serif'; ctx.textAlign='left';
   ctx.fillText('meta', W-pR+4, sy(100)+3.5);
 
   weekPct.forEach((v,i) => {
@@ -877,12 +908,12 @@ function drawWeekPct() {
     if (isToday) { ctx.strokeStyle=clr; ctx.lineWidth=1.5; ctx.stroke(); }
     if (v>12) {
       ctx.fillStyle=isToday?clr:'#fff'; ctx.globalAlpha=isToday?1:.9;
-      ctx.font='bold 10px DM Sans,sans-serif'; ctx.textAlign='center';
+      ctx.font='bold 10px Plus Jakarta Sans,sans-serif'; ctx.textAlign='center';
       ctx.fillText(v+'%', xc, by+(isToday?-5:14)); ctx.globalAlpha=1;
     }
     const parts=(weekLabels[i]||'').split(' ');
-    ctx.fillStyle=isToday?(dk?'#E0DEFF':'#1E1B4B'):textC;
-    ctx.font=(isToday?'600 ':'')+`10px DM Sans,sans-serif`;
+    ctx.fillStyle=isToday?(dk?'#D6F0E0':'#0D2A1A'):textC;
+    ctx.font=(isToday?'600 ':'')+`10px Plus Jakarta Sans,sans-serif`;
     ctx.textAlign='center';
     ctx.fillText(parts[0]||'', xc, H-pB+13);
     ctx.fillText(parts[1]||'', xc, H-pB+25);
@@ -896,15 +927,15 @@ function drawMacroTrend() {
   const { ctx, W, H } = r;
   const dk = isDark();
   const gridC = dk ? 'rgba(255,255,255,.05)' : 'rgba(0,0,0,.05)';
-  const textC = dk ? '#4A487A' : '#9096C0';
+  const textC = dk ? '#3D6B52' : '#7BA88A';
 
   const pL=44, pR=16, pT=14, pB=44;
   const cW=W-pL-pR, cH=H-pT-pB;
 
   const series = [
-    { data: weekProt,  color: '#6366F1', label: 'Prot' },
-    { data: weekCarb,  color: '#0EA5E9', label: 'Carb' },
-    { data: weekFat,   color: '#A855F7', label: 'Gord' },
+    { data: weekProt,  color: '#0A5738', label: 'Prot' },
+    { data: weekCarb,  color: '#25C97A', label: 'Carb' },
+    { data: weekFat,   color: '#F0A318', label: 'Gord' },
     { data: weekFiber, color: '#16A34A', label: 'Fibra' },
   ];
   const allVals = series.flatMap(s => s.data);
@@ -923,7 +954,7 @@ function drawMacroTrend() {
     ctx.beginPath(); ctx.moveTo(pL, yy); ctx.lineTo(W-pR, yy);
     ctx.strokeStyle = gridC; ctx.setLineDash([3,3]); ctx.lineWidth = 1;
     ctx.stroke(); ctx.setLineDash([]);
-    ctx.fillStyle = textC; ctx.font = '9px DM Sans,sans-serif'; ctx.textAlign = 'right';
+    ctx.fillStyle = textC; ctx.font = '9px Plus Jakarta Sans,sans-serif'; ctx.textAlign = 'right';
     ctx.fillText(Math.round(gv)+'g', pL-5, yy+3);
   }
 
@@ -945,7 +976,7 @@ function drawMacroTrend() {
       ctx.fillStyle = s.color; ctx.globalAlpha = v > 0 ? .9 : .25;
       ctx.fill(); ctx.globalAlpha = 1;
       if (v > 0 && n <= 7) {
-        ctx.fillStyle = s.color; ctx.font = 'bold 8px DM Sans,sans-serif';
+        ctx.fillStyle = s.color; ctx.font = 'bold 8px Plus Jakarta Sans,sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(v+'g', x, y - 7);
       }
@@ -957,8 +988,8 @@ function drawMacroTrend() {
     const x = pL + i * step;
     const isToday = i === n - 1;
     const parts = lbl.split(' ');
-    ctx.fillStyle = isToday ? (dk ? '#E0DEFF' : '#1E1B4B') : textC;
-    ctx.font = (isToday ? '600 ' : '') + '10px DM Sans,sans-serif';
+    ctx.fillStyle = isToday ? (dk ? '#D6F0E0' : '#0D2A1A') : textC;
+    ctx.font = (isToday ? '600 ' : '') + '10px Plus Jakarta Sans,sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText(parts[0] || '', x, H-pB+13);
     ctx.fillText(parts[1] || '', x, H-pB+25);
@@ -971,7 +1002,7 @@ function drawHistChart() {
   if (!r) return;
   const { ctx, W, H } = r;
   const dk = isDark();
-  const textC = dk ? '#4A487A' : '#9096C0';
+  const textC = dk ? '#3D6B52' : '#7BA88A';
 
   const pL=30, pR=8, pT=6, pB=22;
   const cW=W-pL-pR, cH=H-pT-pB;
@@ -984,14 +1015,14 @@ function drawHistChart() {
   if (weekGoal>0) {
     const gy=sy(weekGoal); ctx.beginPath();
     ctx.moveTo(pL,gy); ctx.lineTo(W-pR,gy);
-    ctx.strokeStyle='rgba(14,165,233,.45)';
+    ctx.strokeStyle='rgba(37,201,122,.45)';
     ctx.setLineDash([4,3]); ctx.lineWidth=1; ctx.stroke(); ctx.setLineDash([]);
   }
 
   weekKcal.forEach((v,i) => {
     const xc=pL+step*i+step/2, bx=xc-bW/2, by=sy(v), bh=cH+pT-by;
     const r2=3;
-    ctx.fillStyle='#6366F1'; ctx.globalAlpha=i===n-1?.5:.72;
+    ctx.fillStyle='#0A5738'; ctx.globalAlpha=i===n-1?.5:.72;
     ctx.beginPath();
     ctx.moveTo(bx+r2,by); ctx.lineTo(bx+bW-r2,by);
     ctx.quadraticCurveTo(bx+bW,by,bx+bW,by+r2);
@@ -999,7 +1030,7 @@ function drawHistChart() {
     ctx.lineTo(bx,by+r2); ctx.quadraticCurveTo(bx,by,bx+r2,by);
     ctx.closePath(); ctx.fill(); ctx.globalAlpha=1;
 
-    ctx.fillStyle=textC; ctx.font='9px DM Sans,sans-serif'; ctx.textAlign='center';
+    ctx.fillStyle=textC; ctx.font='9px Plus Jakarta Sans,sans-serif'; ctx.textAlign='center';
     ctx.fillText((weekLabels[i]||'').split(' ')[0]||'', xc, H-2);
   });
 }
@@ -1022,9 +1053,9 @@ function drawDonut() {
 
   const cx = 55, cy = 55, r = 44, iR = 30;
   const slices = [
-    { val: protKcal, color: '#6366F1' },
-    { val: carbKcal, color: '#0EA5E9' },
-    { val: fatKcal,  color: '#A855F7' },
+    { val: protKcal, color: '#0A5738' },
+    { val: carbKcal, color: '#25C97A' },
+    { val: fatKcal,  color: '#F0A318' },
   ];
   let start = -Math.PI / 2;
   slices.forEach(s => {
@@ -1061,3 +1092,5 @@ window.addEventListener('resize', () => {
 });
 </script>
 {% endblock %}
+
+

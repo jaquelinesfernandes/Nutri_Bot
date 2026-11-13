@@ -1,8 +1,8 @@
 # NutriBot — Product Requirements Document v2.1
 
-**Status:** Em Produção (Render + Neon)  
+**Status:** Em Produção (VPS + Docker + Nginx + Let's Encrypt)  
 **Versão:** 2.1 (gaps de especificação preenchidos sobre v2.0)  
-**Data:** Setembro 2026  
+**Data:** Setembro 2026 — *atualizado Outubro 2026*  
 **Responsável:** Produto  
 **Changelog v2.1:** Adicionadas seções 15–22 cobrindo catálogo de comandos, máquina de estados, pagamento/billing, fusos horários, erros e edge cases, go-to-market, tom de voz, re-engajamento, analytics, segurança, dependências de features, capacidade de APIs externas e testes de IA.  
 **Changelog 2026-09-14:** Seção 28 — Fase B2B (Nutricionistas) com sprints B2B-1 e B2B-2 implementados. Seção 29 — Rastreamento de Hidratação. Seção 30 — 12 melhorias do painel B2B priorizadas (RF-PAINEL-01 a RF-PAINEL-12).
@@ -13,7 +13,7 @@
 
 ### 1.1 Tipo de Produto
 
-NutriBot é um **assistente de saúde conversacional B2C com potencial B2B**, operando no modelo **SaaS Freemium** com distribuição via canais de mensageria (WhatsApp e Telegram). Combina três categorias:
+**Nouri** (marca) é um **assistente de saúde conversacional B2C com potencial B2B**, operando no modelo **SaaS por assinatura** com distribuição via Telegram (canal único — WhatsApp removido do escopo de produto). Combina três categorias:
 
 | Categoria | Descrição |
 |-----------|-----------|

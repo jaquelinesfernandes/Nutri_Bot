@@ -192,8 +192,8 @@ class TestCmdAjuda:
     async def test_ajuda_free_mostra_upgrade(self, svc):
         user = _make_user(plan="free")
         result = await svc._cmd_ajuda(user, None, None)
-        assert "/premium" in result
-        assert "foto" in result.lower() or "Premium" in result
+        assert "/hoje" in result
+        assert "/alertas" in result
 
     @pytest.mark.asyncio
     async def test_ajuda_premium_sem_upgrade_hint(self, svc):

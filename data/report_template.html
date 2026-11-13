@@ -2,15 +2,28 @@
 <html lang="pt-BR">
 <head>
 <meta charset="UTF-8">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&display=swap">
 <style>
 /* ── Página (WeasyPrint) ───────────────────────────────────────────── */
+/* Primeira página: header full-bleed (sem margem no topo) */
+@page :first {
+  size: A4;
+  margin: 0 0 12mm 0;
+  @bottom-center {
+    content: "Nouri · Relatório · Página " counter(page);
+    font-size: 7.5pt;
+    color: #7BA88A;
+  }
+}
+/* Páginas subsequentes: 18mm no topo para não cortar o conteúdo */
 @page {
   size: A4;
-  margin: 0 0 12mm 0;      /* header full-bleed topo/lados; 12mm baixo p/ rodapé */
+  margin: 18mm 0 12mm 0;
   @bottom-center {
-    content: "NutriBot · Relatório · Página " counter(page);
+    content: "Nouri · Relatório · Página " counter(page);
     font-size: 7.5pt;
-    color: #9096C0;
+    color: #7BA88A;
   }
 }
 
@@ -19,64 +32,67 @@
 body {
   font-family: -apple-system, 'Helvetica Neue', Arial, sans-serif;
   font-size: 10pt;
-  color: #1E1B4B;
+  color: #0D2A1A;
   line-height: 1.5;
-  background: #F8F8FF;
+  background: #F8FAF9;
 }
 
-/* ── Header (dark indigo — igual ao sidebar do painel) ────────────── */
+/* ── Header (verde primário sólido — harmonizado com painel claro) ── */
 .header {
-  background: linear-gradient(135deg, #0F0D2E 0%, #1E1B4B 60%, #13113D 100%);
-  padding: 28pt 30pt 22pt;
+  background: #0A5738;
+  border-bottom: 4pt solid #25C97A;
+  padding: 26pt 30pt 20pt;
   color: white;
   position: relative;
   overflow: hidden;
 }
-/* glows decorativos (como no ring-card do dashboard) */
 .header::before {
   content: '';
   position: absolute;
-  bottom: -40pt; left: -30pt;
-  width: 180pt; height: 180pt;
-  background: radial-gradient(circle, rgba(99,102,241,.28) 0%, transparent 70%);
-  border-radius: 50%;
-}
-.header::after {
-  content: '';
-  position: absolute;
-  top: -20pt; right: -30pt;
-  width: 140pt; height: 140pt;
-  background: radial-gradient(circle, rgba(14,165,233,.2) 0%, transparent 70%);
+  bottom: -40pt; right: -30pt;
+  width: 160pt; height: 160pt;
+  background: radial-gradient(circle, rgba(37,201,122,.15) 0%, transparent 70%);
   border-radius: 50%;
 }
 .header-logo {
+  display: flex;
+  align-items: center;
+  gap: 8pt;
+  margin-bottom: 10pt;
+}
+.header-logo-icon {
+  width: 28pt;
+  height: 28pt;
+  flex-shrink: 0;
+}
+.header-logo-text {
   font-size: 9pt;
   font-weight: 700;
   letter-spacing: 2pt;
   text-transform: uppercase;
-  color: #A5B4FC;
-  margin-bottom: 6pt;
+  color: rgba(255,255,255,.75);
 }
 .header-title {
-  font-size: 24pt;
-  font-weight: 800;
-  color: #E0DEFF;
-  line-height: 1.1;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 22pt;
+  font-weight: 700;
+  color: #FFFFFF;
+  line-height: 1.15;
   margin-bottom: 4pt;
 }
 .header-sub {
-  font-size: 9.5pt;
-  color: rgba(255,255,255,.45);
+  font-size: 9pt;
+  color: rgba(255,255,255,.6);
 }
 .header-meta { margin-top: 14pt; }
 .header-pill {
   display: inline-block;
-  background: rgba(99,102,241,.25);
-  border: 1pt solid rgba(99,102,241,.4);
+  background: rgba(10,87,56,.25);
+  border: 1pt solid rgba(10,87,56,.4);
   border-radius: 20pt;
   padding: 4pt 12pt;
   font-size: 8.5pt;
-  color: #A5B4FC;
+  color: #25C97A;
   margin-right: 6pt;
   margin-bottom: 4pt;
 }
@@ -92,12 +108,12 @@ body {
 .section-title {
   font-size: 9pt;
   font-weight: 700;
-  color: #9096C0;
+  color: #7BA88A;
   text-transform: uppercase;
   letter-spacing: .07em;
   margin-bottom: 10pt;
   padding-bottom: 5pt;
-  border-bottom: 1pt solid #E0E7FF;
+  border-bottom: 1pt solid #D0E6DA;
   display: flex;
   align-items: center;
   gap: 6pt;
@@ -107,7 +123,7 @@ body {
   display: inline-block;
   width: 3pt;
   height: 12pt;
-  background: linear-gradient(to bottom, #6366F1, #7C3AED);
+  background: linear-gradient(to bottom, #0A5738, #F0A318);
   border-radius: 2pt;
   flex-shrink: 0;
 }
@@ -115,7 +131,7 @@ body {
   display: inline-block;
   width: 18pt;
   height: 18pt;
-  background: #EEF2FF;
+  background: #E8F5EE;
   border-radius: 6pt;
   text-align: center;
   line-height: 18pt;
@@ -135,33 +151,35 @@ body {
 .kpi-card {
   display: table-cell;
   background: white;
-  border: 1pt solid #E0E7FF;
+  border: 1pt solid #D0E6DA;
   border-radius: 10pt;
   padding: 10pt 8pt 9pt;
   text-align: center;
   vertical-align: top;
 }
 .kpi-card.highlight {
-  background: #EEF2FF;
-  border-color: #A5B4FC;
+  background: #E8F5EE;
+  border-color: #25C97A;
 }
 .kpi-val {
-  font-size: 18pt;
-  font-weight: 800;
-  color: #4F46E5;
+  font-family: 'Lora', Georgia, serif;
+  font-size: 26pt;
+  font-weight: 700;
+  color: #0A5738;
   line-height: 1;
-  margin-bottom: 3pt;
+  margin-bottom: 2pt;
 }
 .kpi-lbl {
   font-size: 7pt;
-  color: #9096C0;
+  color: #7BA88A;
   text-transform: uppercase;
-  letter-spacing: 0.3pt;
+  letter-spacing: 0.5pt;
   font-weight: 600;
-  margin-bottom: 5pt;
+  margin-bottom: 6pt;
+  display: block;
 }
 .kpi-bar-track {
-  background: #EEF2FF;
+  background: #E8F5EE;
   border-radius: 4pt;
   height: 5pt;
   width: 100%;
@@ -178,7 +196,7 @@ body {
 .kpi-goal {
   display: table-cell;
   font-size: 7pt;
-  color: #9096C0;
+  color: #7BA88A;
   text-align: left;
   vertical-align: middle;
 }
@@ -192,7 +210,7 @@ body {
   vertical-align: middle;
   width: 34pt;
 }
-.pct-ok   { background: #EEF2FF; color: #4338CA; }
+.pct-ok   { background: #E8F5EE; color: #07402A; }
 .pct-low  { background: #FEF9C3; color: #78350F; }
 .pct-over { background: #FEE2E2; color: #991B1B; }
 .pct-zero { background: #F1F5F9; color: #94A3B8; }
@@ -213,26 +231,29 @@ body {
   text-align: center;
   vertical-align: middle;
 }
-.macro-box.prot  { background: #EEF2FF; border: 1pt solid #A5B4FC; }
-.macro-box.carb  { background: #E0F2FE; border: 1pt solid #7DD3FC; }
-.macro-box.fat   { background: #F5F3FF; border: 1pt solid #D8B4FE; }
-.macro-box.fiber { background: #F0FDF4; border: 1pt solid #BBF7D0; }
-.macro-val { font-size: 13pt; font-weight: 800; }
-.macro-box.prot  .macro-val { color: #6366F1; }
-.macro-box.carb  .macro-val { color: #0EA5E9; }
-.macro-box.fat   .macro-val { color: #A855F7; }
+.macro-box.prot  { background: #E8F5EE; border: 1pt solid #B8DFC8; border-top: 3pt solid #0A5738; }
+.macro-box.carb  { background: #E8F5EE; border: 1pt solid #B8DFC8; border-top: 3pt solid #25C97A; }
+.macro-box.fat   { background: #FEF3DC; border: 1pt solid #F5D98A; border-top: 3pt solid #F0A318; }
+.macro-box.fiber { background: #F0FDF4; border: 1pt solid #BBF7D0; border-top: 3pt dashed #16A34A; }
+.macro-val {
+  font-family: 'Lora', Georgia, serif;
+  font-size: 14pt; font-weight: 700;
+}
+.macro-box.prot  .macro-val { color: #0A5738; }
+.macro-box.carb  .macro-val { color: #0A8F56; }
+.macro-box.fat   .macro-val { color: #B87310; }
 .macro-box.fiber .macro-val { color: #16A34A; }
 .macro-lbl {
-  font-size: 7pt; color: #9096C0;
+  font-size: 7pt; color: #7BA88A;
   font-weight: 600; text-transform: uppercase;
   letter-spacing: 0.3pt; margin-top: 2pt;
 }
 
-/* ── Day table (header roxo escuro como sidebar) ──────────────────── */
+/* ── Day table ────────────────────────────────────────────────────── */
 .days-table { width: 100%; border-collapse: collapse; font-size: 9pt; }
 .days-table thead tr {
-  background: #1E1B4B;
-  color: rgba(255,255,255,.75);
+  background: #0A5738;
+  color: rgba(255,255,255,.85);
 }
 .days-table th {
   padding: 7pt 8pt;
@@ -246,16 +267,16 @@ body {
 .days-table tbody tr:nth-child(even) { background: #F8F8FF; }
 .days-table td {
   padding: 7pt 8pt;
-  border-bottom: 0.5pt solid #EEF2FF;
+  border-bottom: 0.5pt solid #E8F5EE;
   vertical-align: middle;
 }
 .days-table tbody tr:last-child td { border-bottom: none; }
-.day-name { font-weight: 600; color: #1E1B4B; }
+.day-name { font-weight: 600; color: #0D2A1A; }
 
 /* ── Progress bar ─────────────────────────────────────────────────── */
 .bar-wrap {
   display: inline-block;
-  background: #EEF2FF;
+  background: #E8F5EE;
   border-radius: 6pt;
   height: 8pt;
   width: 80pt;
@@ -264,13 +285,13 @@ body {
 }
 .bar-fill { height: 8pt; border-radius: 6pt; display: block; }
 /* indigo para meta atingida (igual ao ok-c do dashboard) */
-.bar-indigo { background: linear-gradient(90deg, #6366F1, #818CF8); }
+.bar-indigo { background: linear-gradient(90deg, #0A5738, #25C97A); }
 .bar-yellow { background: linear-gradient(90deg, #D97706, #FBBF24); }
 .bar-orange { background: linear-gradient(90deg, #DC2626, #F97316); }
 .bar-gray   { background: #CBD5E1; width: 2pt !important; }
 /* manter aliases antigos para compatibilidade (report.py usa bar-green) */
-.bar-green  { background: linear-gradient(90deg, #6366F1, #818CF8); }
-.pct-label  { font-size: 7.5pt; color: #9096C0; margin-left: 4pt; vertical-align: middle; }
+.bar-green  { background: linear-gradient(90deg, #0A5738, #25C97A); }
+.pct-label  { font-size: 7.5pt; color: #7BA88A; margin-left: 4pt; vertical-align: middle; }
 
 /* ── Badges ───────────────────────────────────────────────────────── */
 .badge {
@@ -281,7 +302,7 @@ body {
   font-weight: 700;
   letter-spacing: 0.2pt;
 }
-.badge-ok   { background: #EEF2FF; color: #4338CA; }
+.badge-ok   { background: #E8F5EE; color: #07402A; }
 .badge-low  { background: #FEF9C3; color: #713F12; }
 .badge-over { background: #FEE2E2; color: #7F1D1D; }
 .badge-miss { background: #F1F5F9; color: #64748B; }
@@ -289,10 +310,10 @@ body {
 /* ── Highlights ───────────────────────────────────────────────────── */
 .highlights-wrap {
   background: white;
-  border: 1pt solid #E0E7FF;
+  border: 1pt solid #D0E6DA;
   border-radius: 12pt;
   padding: 12pt 14pt;
-  box-shadow: 0 1pt 3pt rgba(99,102,241,.06);
+  box-shadow: 0 1pt 3pt rgba(10,87,56,.06);
 }
 .highlight-item {
   display: table;
@@ -300,9 +321,9 @@ body {
   table-layout: fixed;
   border-collapse: collapse;
   padding: 4pt 0;
-  border-bottom: 0.5pt solid #EEF2FF;
+  border-bottom: 0.5pt solid #E8F5EE;
   font-size: 9.5pt;
-  color: #1E1B4B;
+  color: #0D2A1A;
 }
 .highlight-item:last-child { border-bottom: none; }
 .highlight-dot {
@@ -316,7 +337,7 @@ body {
   display: inline-block;
   width: 7pt;
   height: 7pt;
-  background: #6366F1;
+  background: #0A5738;
   border-radius: 50%;
 }
 .highlight-text { display: table-cell; vertical-align: top; }
@@ -328,7 +349,7 @@ body {
   table-layout: fixed;
   border-collapse: collapse;
   background: white;
-  border: 1pt solid #E0E7FF;
+  border: 1pt solid #D0E6DA;
   border-radius: 10pt;
   margin-bottom: 8pt;
 }
@@ -342,8 +363,8 @@ body {
 .sug-accent.carboidrato { background: #EA580C; }
 .sug-accent.gordura     { background: #CA8A04; }
 .sug-accent.hidratacao  { background: #0284C7; }
-.sug-accent.horario     { background: #7C3AED; }
-.sug-accent.variedade   { background: #6366F1; }
+.sug-accent.horario     { background: #F0A318; }
+.sug-accent.variedade   { background: #0A5738; }
 .sug-body {
   display: table-cell;
   padding: 10pt 12pt;
@@ -361,10 +382,10 @@ body {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.8pt;
-  color: #9096C0;
+  color: #7BA88A;
   margin-bottom: 4pt;
 }
-.sug-txt { font-size: 9.5pt; color: #1E1B4B; line-height: 1.45; }
+.sug-txt { font-size: 9.5pt; color: #0D2A1A; line-height: 1.45; }
 .sug-priority {
   display: inline-block;
   font-size: 6.5pt;
@@ -374,7 +395,7 @@ body {
 }
 .priority-high   { background: #FEE2E2; color: #991B1B; }
 .priority-medium { background: #FEF9C3; color: #78350F; }
-.priority-low    { background: #EEF2FF; color: #4338CA; }
+.priority-low    { background: #E8F5EE; color: #07402A; }
 
 /* ── Insight box (análise da IA — gradiente índigo/violeta) ───────── */
 .insight-box {
@@ -382,8 +403,8 @@ body {
   width: 100%;
   table-layout: fixed;
   border-collapse: collapse;
-  background: linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 100%);
-  border: 1pt solid #C7D2FE;
+  background: linear-gradient(135deg, #E8F5EE 0%, #F5F3FF 100%);
+  border: 1pt solid #B8DFC8;
   border-radius: 12pt;
   margin-top: 6pt;
 }
@@ -419,7 +440,7 @@ body {
 .score-num {
   font-size: 14pt;
   font-weight: 900;
-  color: #A5B4FC;
+  color: #25C97A;
   line-height: 1;
 }
 .score-label { font-size: 8pt; color: rgba(255,255,255,.7); }
@@ -449,14 +470,14 @@ body {
 .dist-label {
   display: table-cell;
   width: 100pt;
-  color: #1E1B4B;
+  color: #0D2A1A;
   font-weight: 500;
   vertical-align: middle;
   padding-right: 6pt;
 }
 .dist-bar-track {
   display: table-cell;
-  background: #EEF2FF;
+  background: #E8F5EE;
   border-radius: 6pt;
   height: 8pt;
   overflow: hidden;
@@ -465,7 +486,7 @@ body {
 .dist-bar-fill {
   height: 8pt;
   border-radius: 6pt;
-  background: linear-gradient(90deg, #6366F1, #818CF8);
+  background: linear-gradient(90deg, #0A5738, #25C97A);
   display: block;
 }
 .dist-stats {
@@ -473,7 +494,7 @@ body {
   width: 62pt;
   text-align: right;
   font-size: 7.5pt;
-  color: #9096C0;
+  color: #7BA88A;
   vertical-align: middle;
   padding-left: 5pt;
 }
@@ -491,20 +512,20 @@ body {
   display: table-cell;
   width: 16pt;
   height: 15pt;
-  background: #EEF2FF;
+  background: #E8F5EE;
   border-radius: 50%;
   text-align: center;
   line-height: 15pt;
   font-size: 7pt;
   font-weight: 800;
-  color: #4338CA;
+  color: #07402A;
   vertical-align: middle;
   padding-right: 5pt;
 }
 .rank-name {
   display: table-cell;
   width: 95pt;
-  color: #1E1B4B;
+  color: #0D2A1A;
   font-weight: 500;
   font-size: 8pt;
   vertical-align: middle;
@@ -512,7 +533,7 @@ body {
 }
 .rank-bar-track {
   display: table-cell;
-  background: #EEF2FF;
+  background: #E8F5EE;
   border-radius: 6pt;
   height: 8pt;
   overflow: hidden;
@@ -528,7 +549,7 @@ body {
   width: 55pt;
   text-align: right;
   font-size: 7pt;
-  color: #9096C0;
+  color: #7BA88A;
   vertical-align: middle;
   padding-left: 5pt;
 }
@@ -544,7 +565,7 @@ body {
 .hl-box {
   display: table-cell;
   background: white;
-  border: 1pt solid #C7D2FE;
+  border: 1pt solid #B8DFC8;
   border-radius: 10pt;
   padding: 9pt 8pt;
   text-align: center;
@@ -554,13 +575,13 @@ body {
 .hl-value {
   font-size: 16pt;
   font-weight: 900;
-  color: #4338CA;
+  color: #07402A;
   line-height: 1.2;
   margin-top: 3pt;
 }
 .hl-unit {
   font-size: 7pt;
-  color: #9096C0;
+  color: #7BA88A;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -602,7 +623,7 @@ body {
 /* ── Macro sub-text no período detalhado ─────────────────────────── */
 .macro-sub {
   font-size: 7pt;
-  color: #9096C0;
+  color: #7BA88A;
   margin-top: 2pt;
   line-height: 1.3;
 }
@@ -612,9 +633,9 @@ body {
 .footer {
   margin-top: 20pt;
   padding: 12pt 0 0;
-  border-top: 1pt solid #E0E7FF;
+  border-top: 1pt solid #D0E6DA;
   font-size: 7.5pt;
-  color: #9096C0;
+  color: #7BA88A;
   text-align: center;
   line-height: 1.7;
 }
@@ -625,7 +646,16 @@ body {
 
 <!-- ── HEADER ─────────────────────────────────────────────────────── -->
 <div class="header">
-  <div class="header-logo">NutriBot</div>
+  <div class="header-logo">
+    <!-- Ícone Nouri — paths brancos s/ background rect (visível sobre verde) -->
+    <svg class="header-logo-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+      <path d="M 24 40 C 24 18 76 18 76 40" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+      <line x1="76" y1="40" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+      <circle cx="50" cy="15" r="6" fill="#F0A318"/>
+    </svg>
+    <span class="header-logo-text">Nouri</span>
+  </div>
   <div class="header-title">Relatório Nutricional</div>
   <div class="header-sub">{{ week_label }} · {{ user_name }}</div>
   <div class="header-meta">
@@ -737,8 +767,8 @@ body {
     </div>
     <!-- RF-AGUA-04: Hidratação -->
     {% if avg_water_ml is defined %}
-    <div class="macro-box" style="background:linear-gradient(135deg,rgba(14,165,233,.08),rgba(56,189,248,.04));border-top:3px solid {% if pct_water >= 80 %}#0EA5E9{% elif pct_water >= 40 %}#F59E0B{% else %}#EF4444{% endif %};">
-      <div class="macro-val" style="color:{% if pct_water >= 80 %}#0369A1{% elif pct_water >= 40 %}#D97706{% else %}#DC2626{% endif %};">💧 {{ avg_water_ml }}ml</div>
+    <div class="macro-box" style="background:linear-gradient(135deg,rgba(37,201,122,.08),rgba(56,189,248,.04));border-top:3px solid {% if pct_water >= 80 %}#25C97A{% elif pct_water >= 40 %}#F59E0B{% else %}#EF4444{% endif %};">
+      <div class="macro-val" style="color:{% if pct_water >= 80 %}#07402A{% elif pct_water >= 40 %}#D97706{% else %}#DC2626{% endif %};">💧 {{ avg_water_ml }}ml</div>
       <div class="macro-lbl">Água · Meta {{ goal_water_ml }}ml · {{ pct_water }}%</div>
     </div>
     {% endif %}
@@ -757,7 +787,7 @@ body {
     {% if meal_type_dist %}
     <!-- Distribuição calórica por tipo de refeição -->
     <div class="col">
-      <div style="font-size:8pt;font-weight:700;color:#4338CA;text-transform:uppercase;letter-spacing:.5pt;margin-bottom:8pt;">Calorias por Refeição</div>
+      <div style="font-size:8pt;font-weight:700;color:#07402A;text-transform:uppercase;letter-spacing:.5pt;margin-bottom:8pt;">Calorias por Refeição</div>
       {% for m in meal_type_dist %}
       <div class="dist-row">
         <div class="dist-label">{{ m.icon }} {{ m.label }}</div>
@@ -773,13 +803,13 @@ body {
     {% if food_ranking %}
     <!-- Ranking top alimentos -->
     <div class="col">
-      <div style="font-size:8pt;font-weight:700;color:#4338CA;text-transform:uppercase;letter-spacing:.5pt;margin-bottom:8pt;">Top Alimentos (por kcal)</div>
+      <div style="font-size:8pt;font-weight:700;color:#07402A;text-transform:uppercase;letter-spacing:.5pt;margin-bottom:8pt;">Top Alimentos (por kcal)</div>
       {% for food in food_ranking %}
       <div class="rank-row">
         <div class="rank-num">{{ loop.index }}</div>
         <div class="rank-name">{{ food.name }}</div>
         <div class="rank-bar-track">
-          <div class="rank-bar-fill" style="width:{{ food.bar_pct }}%; background: {% if loop.index == 1 %}linear-gradient(90deg,#6366F1,#7C3AED){% elif loop.index <= 3 %}linear-gradient(90deg,#818CF8,#A78BFA){% else %}linear-gradient(90deg,#A5B4FC,#C4B5FD){% endif %};"></div>
+          <div class="rank-bar-fill" style="width:{{ food.bar_pct }}%; background: {% if loop.index == 1 %}linear-gradient(90deg,#0A5738,#F0A318){% elif loop.index <= 3 %}linear-gradient(90deg,#25C97A,#A78BFA){% else %}linear-gradient(90deg,#25C97A,#C4B5FD){% endif %};"></div>
         </div>
         <div class="rank-info">{{ food.total_kcal }} kcal</div>
       </div>
@@ -803,7 +833,7 @@ body {
     <!-- Dias registrados -->
     <div class="hl-box">
       <div class="hl-icon">📅</div>
-      <div class="hl-value">{{ period_highlights.days_logged }}<span style="font-size:10pt;font-weight:600;color:#9096C0;">/{{ total_days }}</span></div>
+      <div class="hl-value">{{ period_highlights.days_logged }}<span style="font-size:10pt;font-weight:600;color:#7BA88A;">/{{ total_days }}</span></div>
       <div class="hl-unit">dias registrados</div>
       {% if period_highlights.days_logged == total_days %}
       <div class="hl-label" style="color:#16A34A;font-weight:700;">✔ Período completo!</div>
@@ -842,7 +872,7 @@ body {
   <!-- Macros médios diários -->
   <table style="display:table;width:100%;table-layout:fixed;border-collapse:separate;border-spacing:10pt 0;margin-top:8pt;">
     <tr>
-      <td style="background:#EEF2FF;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#3730A3;vertical-align:middle;">
+      <td style="background:#E8F5EE;border-radius:8pt;padding:7pt 11pt;font-size:8pt;color:#3730A3;vertical-align:middle;">
         <span style="font-size:9.5pt;">💪</span>
         <strong>Proteína média/dia:</strong> {{ period_highlights.avg_prot_daily }}g
       </td>
@@ -889,7 +919,7 @@ body {
         </td>
         <td>
           {% if day.days_with_data > 0 %}
-          <div class="macro-sub" style="color:#4338CA;">💪 {{ day.protein_g }}g prot</div>
+          <div class="macro-sub" style="color:#07402A;">💪 {{ day.protein_g }}g prot</div>
           <div class="macro-sub" style="color:#16A34A;">🌿 {{ day.fiber_g }}g fibra</div>
           {% else %}
           <div class="macro-sub">—</div>
@@ -993,3 +1023,4 @@ body {
 </div><!-- .body-wrap -->
 </body>
 </html>
+

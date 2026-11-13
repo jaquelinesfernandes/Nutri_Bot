@@ -1,13 +1,13 @@
 {
-  "name": "NutriBot",
-  "short_name": "NutriBot",
-  "description": "Seu assistente nutricional no WhatsApp e Telegram",
+  "name": "Nouri — Diário Nutricional",
+  "short_name": "Nouri",
+  "description": "Seu diário nutricional inteligente no Telegram",
   "start_url": "/dashboard",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#0F0D2E",
-  "theme_color": "#6366F1",
+  "background_color": "#071F15",
+  "theme_color": "#0A5738",
   "lang": "pt-BR",
   "icons": [
     {

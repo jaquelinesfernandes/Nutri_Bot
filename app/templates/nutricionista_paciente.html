@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ patient.first_name or patient.patient_name }} — NutriBot{% endblock %}
+{% block title %}{{ patient.first_name or patient.patient_name }} — Nouri{% endblock %}
 {% block body %}
 <style>
   /* ── Layout compartilhado com o painel ──────────────────────────── */
@@ -21,8 +21,8 @@
     border-radius: 9px; display: grid; place-items: center;
     font-size: 16px; flex-shrink: 0;
   }
-  .nsb-brand { font-weight: 600; font-size: 14px; color: #DDD8FF; }
-  .nsb-brand small { display: block; font-size: 11px; color: #7B78C8; font-weight: 400; }
+  .nsb-brand { font-weight: 600; font-size: 14px; color: #D6F0E0; }
+  .nsb-brand small { display: block; font-size: 11px; color: #7BAA8C; font-weight: 400; }
   .nsb-nav { flex: 1; padding: 14px 10px; }
   .nsb-link {
     display: flex; align-items: center; gap: 10px;
@@ -33,7 +33,7 @@
     text-decoration: none; margin-bottom: 2px;
   }
   .nsb-link:hover { background: var(--sidebar-hov); color: rgba(255,255,255,.8); }
-  .nsb-link.active { background: var(--sidebar-act); color: #A5B4FC; border-left-color: var(--primary); }
+  .nsb-link.active { background: var(--sidebar-act); color: #25C97A; border-left-color: var(--primary); }
   .nsb-foot { padding: 12px 10px; border-top: 1px solid rgba(255,255,255,.06); }
   .nsb-user { display: flex; align-items: center; gap: 9px; padding: 7px 10px; margin-bottom: 4px; }
   .nsb-avatar {
@@ -107,7 +107,7 @@
     cursor: pointer; text-align: center; transition: all .15s;
   }
   .pdf-period-btn.selected,
-  .pdf-period-btn:hover { border-color: var(--primary); background: rgba(99,102,241,.1); color: var(--primary); }
+  .pdf-period-btn:hover { border-color: var(--primary); background: rgba(10,87,56,.1); color: var(--primary); }
   .pdf-modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 4px; }
   .pdf-cancel {
     padding: 9px 16px; border-radius: 9px; border: 1.5px solid var(--card-b);
@@ -222,18 +222,18 @@
   .section-header h2 { font-size: 14px; font-weight: 700; color: var(--text-1); margin: 0; }
   .btn-nova-nota {
     display: inline-flex; align-items: center; gap: 6px;
-    background: rgba(99,102,241,.12); color: var(--primary);
+    background: rgba(10,87,56,.12); color: var(--primary);
     border: none; border-radius: 8px; padding: 8px 14px;
     font-family: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
     transition: background .15s;
   }
-  .btn-nova-nota:hover { background: rgba(99,102,241,.2); }
+  .btn-nova-nota:hover { background: rgba(10,87,56,.2); }
 
   /* Notas */
   .note-item {
     border-left: 3px solid var(--primary);
     padding: 10px 14px; margin-bottom: 12px;
-    background: rgba(99,102,241,.04); border-radius: 0 8px 8px 0;
+    background: rgba(10,87,56,.04); border-radius: 0 8px 8px 0;
   }
   .note-date { font-size: 11px; color: var(--text-3); margin-bottom: 5px; font-weight: 600; }
   .note-text { font-size: 13.5px; color: var(--text-1); white-space: pre-wrap; }
@@ -252,7 +252,7 @@
   }
   .form-row input:focus, .form-row textarea:focus {
     outline: none; border-color: var(--primary);
-    box-shadow: 0 0 0 3px rgba(99,102,241,.18);
+    box-shadow: 0 0 0 3px rgba(10,87,56,.18);
   }
   .form-actions { display: flex; gap: 10px; }
   .btn-save {
@@ -276,7 +276,7 @@
     border: none; width: 100%; font-family: inherit;
     transition: background .15s;
   }
-  .day-toggle:hover { background: rgba(99,102,241,.08); }
+  .day-toggle:hover { background: rgba(10,87,56,.08); }
   .day-kcal { font-family: 'DM Mono', monospace; font-size: 12px; color: var(--text-3); }
   .day-meals { display: none; border: 1px solid var(--card-b); border-radius: 0 0 10px 10px; overflow: hidden; }
   .day-meals.open { display: block; }
@@ -300,9 +300,9 @@
   /* Toast */
   .toast {
     position: fixed; bottom: 20px; right: 20px; z-index: 200;
-    background: #1E1B4B; color: #A5B4FC; border-radius: 10px;
+    background: #0A5738; color: #fff; border-radius: 10px;
     padding: 12px 18px; font-size: 13.5px; font-weight: 500;
-    box-shadow: 0 4px 24px rgba(0,0,0,.35);
+    box-shadow: 0 4px 24px rgba(10,87,56,.35);
     transform: translateY(40px); opacity: 0;
     transition: transform .25s, opacity .25s;
     max-width: 320px;
@@ -328,7 +328,7 @@
   <aside class="nutri-sidebar">
     <div class="nsb-logo">
       <div class="nsb-leaf">🥗</div>
-      <div class="nsb-brand">NutriBot<small>Painel Nutricionista</small></div>
+      <div class="nsb-brand">Nouri<small>Painel Nutricionista</small></div>
     </div>
     <nav class="nsb-nav">
       <div style="font-size:10px;font-weight:700;letter-spacing:.1em;color:rgba(255,255,255,.22);text-transform:uppercase;padding:10px 10px 4px;">Visão geral</div>
@@ -614,7 +614,7 @@ const PATIENT_ID   = "{{ patient.id }}";
 
   const textColor  = isDark ? '#C4C4E0' : '#6B7280';
   const gridColor  = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
-  const barColor   = 'rgba(99,102,241,.72)';
+  const barColor   = 'rgba(10,87,56,.72)';
   const goalColor  = 'rgba(16,185,129,.7)';
 
   const ctx = document.getElementById('kcalChart').getContext('2d');
@@ -882,3 +882,5 @@ document.addEventListener('DOMContentLoaded', () => {
 </div>
 
 {% endblock %}
+
+

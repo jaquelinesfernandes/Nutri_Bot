@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Painel Nutricionista — NutriBot{% endblock %}
+{% block title %}Painel Nutricionista — Nouri{% endblock %}
 {% block body %}
 <style>
   /* ── Layout ─────────────────────────────────────────────────────────── */
@@ -21,10 +21,10 @@
     width: 32px; height: 32px;
     background: linear-gradient(135deg, var(--primary), var(--violet));
     border-radius: 9px; display: grid; place-items: center;
-    font-size: 16px; flex-shrink: 0;
+    flex-shrink: 0;
   }
-  .nsb-brand { font-weight: 600; font-size: 14px; color: #DDD8FF; }
-  .nsb-brand small { display: block; font-size: 11px; color: #7B78C8; font-weight: 400; }
+  .nsb-brand { font-weight: 600; font-size: 14px; color: #D6F0E0; }
+  .nsb-brand small { display: block; font-size: 11px; color: #7BAA8C; font-weight: 400; }
 
   .nsb-nav { flex: 1; padding: 12px 10px; }
   .nsb-section-label {
@@ -41,9 +41,9 @@
     text-decoration: none; margin-bottom: 2px;
   }
   .nsb-link:hover { background: var(--sidebar-hov); color: rgba(255,255,255,.8); }
-  .nsb-link.active { background: var(--sidebar-act); color: #A5B4FC; border-left-color: var(--primary); }
+  .nsb-link.active { background: var(--sidebar-act); color: #25C97A; border-left-color: var(--primary); }
   .nsb-badge {
-    margin-left: auto; background: rgba(99,102,241,.25); color: #A5B4FC;
+    margin-left: auto; background: rgba(10,87,56,.25); color: #25C97A;
     font-size: 10.5px; font-weight: 700; border-radius: 20px;
     padding: 1px 7px; min-width: 20px; text-align: center;
   }
@@ -118,7 +118,7 @@
   .act-dots { display: flex; gap: 3px; }
   .dot {
     width: 12px; height: 12px; border-radius: 3px;
-    background: rgba(99,102,241,.15);
+    background: rgba(10,87,56,.15);
   }
   .dot.on  { background: var(--primary); }
   .dot.ok  { background: #10B981; }
@@ -146,7 +146,7 @@
     text-decoration: none; color: inherit; cursor: pointer;
   }
   .pt-row:last-child { border-bottom: none; }
-  .pt-row:hover { background: rgba(99,102,241,.04); }
+  .pt-row:hover { background: rgba(10,87,56,.04); }
   .pt-name { font-weight: 600; font-size: 13.5px; color: var(--text-1); }
   .pt-plan { font-size: 11.5px; color: var(--text-3); margin-top: 2px; }
   .pt-last { font-size: 12.5px; color: var(--text-2); }
@@ -159,7 +159,7 @@
   }
   .badge-pending {
     display: inline-flex; align-items: center; gap: 4px;
-    background: rgba(99,102,241,.1); color: var(--primary);
+    background: rgba(10,87,56,.1); color: var(--primary);
     border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
   }
   .badge-active {
@@ -177,11 +177,15 @@
     background: rgba(239,68,68,.1); color: #EF4444;
     border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
   }
-  .badge-revoked { @extend .badge-expired; }
+  .badge-revoked {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(156,163,175,.12); color: var(--text-3);
+    border-radius: 20px; padding: 2px 9px; font-size: 11px; font-weight: 600;
+  }
 
   /* Empty state */
   .empty-state { text-align: center; padding: 56px 24px; }
-  .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+  .empty-state .icon { display: flex; justify-content: center; color: var(--card-b); margin-bottom: 16px; }
   .empty-state h3 { font-size: 1.1rem; color: var(--text-1); margin-bottom: 8px; }
   .empty-state p { font-size: 13.5px; color: var(--text-2); max-width: 340px; margin: 0 auto; }
 
@@ -221,10 +225,10 @@
   }
   .btn-sm-primary:hover { opacity: .88; }
   .btn-sm-ghost {
-    background: rgba(99,102,241,.08); color: var(--primary);
-    border: 1px solid rgba(99,102,241,.2);
+    background: rgba(10,87,56,.08); color: var(--primary);
+    border: 1px solid rgba(10,87,56,.2);
   }
-  .btn-sm-ghost:hover { background: rgba(99,102,241,.15); }
+  .btn-sm-ghost:hover { background: rgba(10,87,56,.15); }
   .btn-sm-danger {
     background: rgba(239,68,68,.08); color: #EF4444;
     border: 1px solid rgba(239,68,68,.2);
@@ -278,13 +282,13 @@
   /* Link gerado */
   .invite-result {
     display: none; margin-top: 16px;
-    background: var(--primary-lt); border: 1px solid rgba(99,102,241,.2);
+    background: var(--primary-lt); border: 1px solid rgba(10,87,56,.2);
     border-radius: 12px; padding: 14px;
   }
   .invite-result p { font-size: 12.5px; color: var(--text-2); margin-bottom: 8px; }
   .link-row { display: flex; gap: 8px; align-items: center; }
   .link-input {
-    flex: 1; padding: 8px 11px; border: 1.5px solid rgba(99,102,241,.25);
+    flex: 1; padding: 8px 11px; border: 1.5px solid rgba(10,87,56,.25);
     border-radius: 8px; background: var(--card); color: var(--text-1);
     font-family: 'DM Mono', monospace; font-size: 12px; outline: none;
   }
@@ -306,7 +310,7 @@
     display: inline-flex; align-items: center; gap: 3px;
     border-radius: 20px; padding: 1px 7px; font-size: 10px; font-weight: 600;
   }
-  .badge-goal.goal-perder { background: rgba(99,102,241,.1); color: #818CF8; }
+  .badge-goal.goal-perder { background: rgba(10,87,56,.1); color: #25C97A; }
   .badge-goal.goal-ganhar { background: rgba(16,185,129,.1); color: #059669; }
   .badge-goal.goal-manter { background: rgba(245,158,11,.1); color: #D97706; }
 
@@ -395,26 +399,29 @@
   <!-- ── Sidebar ──────────────────────────────────────────────────── -->
   <aside class="nutri-sidebar">
     <div class="nsb-logo">
-      <div class="nsb-leaf">🥗</div>
+      <div class="nsb-leaf"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="18" height="18"><line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="13" stroke-linecap="round"/><path d="M 24 40 C 24 18 76 18 76 40" stroke="white" stroke-width="13" stroke-linecap="round" fill="none"/><line x1="76" y1="40" x2="76" y2="70" stroke="white" stroke-width="13" stroke-linecap="round"/><circle cx="50" cy="15" r="6" fill="#F0A318"/></svg></div>
       <div class="nsb-brand">
-        NutriBot
+        Nouri
         <small>Nutricionista</small>
       </div>
     </div>
     <nav class="nsb-nav">
       <div class="nsb-section-label">Visão geral</div>
       <a class="nsb-link" data-tab="dashboard" href="#dashboard">
-        📊 Dashboard
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 0 1 3 19.875v-6.75ZM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V8.625ZM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 0 1-1.125-1.125V4.125Z"/></svg>
+        Dashboard
       </a>
       <div class="nsb-section-label" style="margin-top:8px;">Pacientes</div>
       <a class="nsb-link" data-tab="pacientes" href="#pacientes">
-        👥 Área de Pacientes
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg>
+        Área de Pacientes
         {% if inactive_count > 0 %}
         <span class="nsb-badge warn">{{ inactive_count }}</span>
         {% endif %}
       </a>
       <a class="nsb-link" data-tab="convites" href="#convites">
-        📩 Convites
+        <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8" style="flex-shrink:0"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg>
+        Convites
         {% if pending_count > 0 %}
         <span class="nsb-badge">{{ pending_count }}</span>
         {% endif %}
@@ -470,7 +477,7 @@
         <!-- RF-PAINEL-06: Gráfico de engajamento coletivo -->
         {% if patients_data %}
         <div class="activity-card" style="margin-bottom:18px;">
-          <h2>📊 Engajamento Coletivo — últimos 7 dias</h2>
+          <h2>Engajamento Coletivo — últimos 7 dias</h2>
           <canvas id="engChart" style="width:100%;height:140px;display:block;margin-top:12px;"></canvas>
           <div style="display:flex;gap:14px;justify-content:center;margin-top:10px;flex-wrap:wrap;">
             {% for d in daily_engagement %}
@@ -554,7 +561,7 @@
             {% endfor %}
           {% else %}
             <div class="no-activity">
-              👋 Nenhum paciente ativo ainda.<br>
+              Nenhum paciente ativo ainda.<br>
               <a href="#convites" onclick="switchTab('convites')" style="color:var(--primary);">Gere um convite</a> para começar.
             </div>
           {% endif %}
@@ -574,7 +581,7 @@
             <div>
               <button class="btn-sm btn-sm-ghost"
                 onclick="copiarLink('{{ base_url }}/convite/{{ lk.invite_token }}')">
-                📋 Copiar link
+                Copiar link
               </button>
             </div>
           </div>
@@ -702,9 +709,9 @@
 
           {% else %}
           <div class="empty-state">
-            <div class="icon">👋</div>
+            <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" opacity=".35"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 0 0 2.625.372 9.337 9.337 0 0 0 4.121-.952 4.125 4.125 0 0 0-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 0 1 8.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0 1 11.964-3.07M12 6.375a3.375 3.375 0 1 1-6.75 0 3.375 3.375 0 0 1 6.75 0Zm8.25 2.25a2.625 2.625 0 1 1-5.25 0 2.625 2.625 0 0 1 5.25 0Z"/></svg></div>
             <h3>Convide seu primeiro paciente</h3>
-            <p>Clique em "Convidar paciente" para gerar um link e enviar pelo WhatsApp ou Telegram.</p>
+            <p>Clique em "Convidar paciente" para gerar um link e enviar pelo Telegram.</p>
           </div>
           {% endif %}
         </div>
@@ -745,7 +752,7 @@
             <div class="convite-actions">
               <button class="btn-sm btn-sm-ghost"
                 onclick="copiarLink('{{ base_url }}/convite/{{ lk.invite_token }}')" title="Copiar link do convite">
-                📋 Copiar link
+                Copiar link
               </button>
             </div>
           </div>
@@ -842,7 +849,7 @@
         <!-- Empty state se não houver nenhum convite -->
         {% if not pending_links and not patients_data and not expired_links and not declined_links and not revoked_links %}
         <div class="empty-state">
-          <div class="icon">📩</div>
+          <div class="icon"><svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5" opacity=".35"><path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25h-15a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-1.07 1.916l-7.5 4.615a2.25 2.25 0 0 1-2.36 0L3.32 8.91a2.25 2.25 0 0 1-1.07-1.916V6.75"/></svg></div>
           <h3>Nenhum convite ainda</h3>
           <p>Clique em "Novo convite" para gerar um link e enviar ao seu paciente.</p>
         </div>
@@ -887,7 +894,7 @@
     </div>
 
     <div class="invite-result" id="invite-result">
-      <p>🔗 Link gerado (válido por 7 dias) — envie ao paciente pelo WhatsApp ou Telegram:</p>
+      <p>🔗 Link gerado (válido por 7 dias) — envie ao paciente pelo Telegram:</p>
       <div class="link-row">
         <input class="link-input" type="text" id="invite-url" readonly>
         <button class="btn-copy" onclick="copyInviteLink()">Copiar</button>
@@ -909,9 +916,9 @@
 <!-- Toast -->
 <div id="toast-global" style="
   position:fixed;bottom:20px;right:20px;z-index:300;
-  background:#1E1B4B;color:#A5B4FC;border-radius:10px;
+  background:#0A5738;color:#fff;border-radius:10px;
   padding:12px 18px;font-size:13.5px;font-weight:500;
-  box-shadow:0 4px 24px rgba(0,0,0,.35);
+  box-shadow:0 4px 24px rgba(10,87,56,.35);
   transform:translateY(40px);opacity:0;
   transition:transform .25s,opacity .25s;
   max-width:300px;pointer-events:none;
@@ -994,7 +1001,7 @@ async function gerarConvite() {
   errEl.style.display = 'none';
 
   if (!name) { errEl.textContent = 'Nome é obrigatório.'; errEl.style.display = 'block'; return; }
-  if (!phone && !tg) { errEl.textContent = 'Informe WhatsApp ou Telegram.'; errEl.style.display = 'block'; return; }
+  if (!phone && !tg) { errEl.textContent = 'Informe o Telegram.'; errEl.style.display = 'block'; return; }
 
   btn.disabled = true;
   btn.textContent = 'Gerando…';
@@ -1200,4 +1207,6 @@ async function excluirConvite(id) {
 }
 </script>
 {% endblock %}
+
+
 

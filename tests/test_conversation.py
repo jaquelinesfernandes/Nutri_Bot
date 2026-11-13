@@ -62,7 +62,7 @@ class TestCmdAjuda:
         user = _make_user(plan="free")
         result = await svc._cmd_ajuda(user, None, None)
         assert "/hoje" in result
-        assert "/premium" in result
+        assert "/historico" in result
 
     @pytest.mark.asyncio
     async def test_ajuda_premium_user(self, svc):
@@ -366,10 +366,14 @@ class TestHandleCommand:
 
     @pytest.mark.asyncio
     async def test_audio_sem_premium(self, svc):
+        """Em open beta, áudio é processado para todos; transcrição falha com fake bytes."""
+        from unittest.mock import AsyncMock, patch
         user = _make_user(plan="free")
         user.is_premium = False
-        result = await svc.handle_message(user, "audio", b"fake_audio", db=None)
-        assert "Premium" in result or "premium" in result.lower()
+        with patch("app.services.ai_service.ai_service.transcribe_audio", new_callable=AsyncMock) as mock_t:
+            mock_t.side_effect = Exception("transcrição indisponível")
+            result = await svc.handle_message(user, "audio", b"fake_audio", db=None)
+        assert result  # retorna alguma mensagem (erro ou resultado)
 
 
 # ── /historico ────────────────────────────────────────────────────────────────

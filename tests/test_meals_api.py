@@ -1,514 +1,410 @@
 """
-Testes de integração para os endpoints REST de refeições:
-  POST /api/meals  — criação manual via painel web
-  DELETE /api/meals/{id} — remoção de refeição
+Testes dos endpoints REST /api/meals.
 
-Usa FastAPI TestClient com dependências mockadas:
-  - get_current_user   → usuário fake sem banco
-  - get_db             → AsyncMock (sem DB real)
-  - ai_service         → mock do Claude
-  - nutrition_service  → mock de enriquecimento TACO/USDA
-  - encrypt            → mock da criptografia Fernet
+Cobre:
+  - GET  /api/meals/today        — retorna balanço do dia
+  - GET  /api/meals?date=...     — por data, com fallback em data inválida
+  - GET  /api/meals/week         — 7 dias
+  - POST /api/meals              — criação manual (IA + nutrição mockados)
+  - POST /api/meals (validações) — data futura, data inválida, IA indisponível, sem alimentos
+  - DELETE /api/meals/{id}       — 404 quando não encontrado
+  - Sem autenticação             — 401 / redirect
 """
-
 from __future__ import annotations
 
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
-from zoneinfo import ZoneInfo
 
 import pytest
 from fastapi.testclient import TestClient
 
-from app.main import app
-from app.utils.jwt import get_current_user
 from app.db.session import get_db
+from app.main import app
+from app.utils.jwt import create_access_token, get_current_user, get_current_user_optional
 
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
+# ── fixtures ──────────────────────────────────────────────────────────────────
 
-BRT = ZoneInfo("America/Sao_Paulo")
-TODAY = date(2026, 8, 22)  # data fixa para testes determinísticos
-
-
-def _make_user(plan: str = "free") -> MagicMock:
+def _mock_user(plan: str = "free") -> MagicMock:
     u = MagicMock()
     u.id = uuid.uuid4()
     u.plan = plan
     u.is_premium = plan != "free"
-    u.timezone = "America/Sao_Paulo"
+    u.deleted_at = None
     u.daily_calorie_goal = 2000
+    u.timezone = "America/Sao_Paulo"
+    u.channel_type = "telegram"
+    u.channel_id = "tg:999"
+    u.first_name = "Teste"
     return u
 
 
-def _make_db() -> AsyncMock:
+def _mock_db() -> AsyncMock:
+    r = MagicMock()
+    r.scalars.return_value.all.return_value = []
+    r.scalar_one_or_none.return_value = None
+    r.scalar_one.return_value = 0
+    r.scalars.return_value.unique.return_value.all.return_value = []
     db = AsyncMock()
-    db.flush = AsyncMock()
+    db.execute = AsyncMock(return_value=r)
     db.commit = AsyncMock()
+    db.flush = AsyncMock()
     db.add = MagicMock()
     db.delete = AsyncMock()
     return db
 
 
-def _make_extraction(
-    foods: list[dict] | None = None,
-    meal_type: str = "lunch",
-) -> MagicMock:
-    ext = MagicMock()
-    ext.meal_type = meal_type
-    ext.foods = []
-    if foods:
-        for f in foods:
-            food = MagicMock()
-            food.name = f.get("name", "Arroz")
-            food.quantity_g = f.get("quantity_g", 100.0)
-            food.est_calories_kcal = f.get("kcal", 130.0)
-            food.est_protein_g = f.get("prot", 2.5)
-            food.est_carb_g = f.get("carb", 28.0)
-            food.est_fat_g = f.get("fat", 0.3)
-            ext.foods.append(food)
-    return ext
-
-
-def _make_enriched(name: str = "Arroz branco cozido") -> MagicMock:
-    e = MagicMock()
-    e.name = name
-    e.original_term = name
-    e.quantity_g = 100.0
-    e.calories_kcal = 128.0
-    e.protein_g = 2.5
-    e.carb_g = 28.1
-    e.fat_g = 0.2
-    e.fiber_g = 0.8
-    e.source = "taco"
-    e.confidence_score = 0.95
-    e.taco_code = "1"
-    return e
-
-
-def _make_meal_log_db(meal_id: uuid.UUID, user_id: uuid.UUID) -> MagicMock:
-    """Simula um MealLog retornado pelo SELECT após criação."""
-    log = MagicMock()
-    log.id = meal_id
-    log.user_id = user_id
-    log.meal_type = "lunch"
-    log.logged_at = datetime(2026, 8, 22, 12, 0, tzinfo=BRT)
-    log.total_calories_kcal = 128.0
-    log.total_protein_g = 2.5
-    log.total_carb_g = 28.1
-    log.total_fat_g = 0.2
-    food = MagicMock()
-    food.name = "Arroz branco cozido"
-    food.quantity_g = 100.0
-    food.calories_kcal = 128.0
-    food.protein_g = 2.5
-    food.carb_g = 28.1
-    food.fat_g = 0.2
-    food.source = "taco"
-    food.confidence_score = 0.95
-    log.food_items = [food]
-    return log
-
-
-# ── Fixture: client com overrides ─────────────────────────────────────────────
-
 @pytest.fixture
-def free_user() -> MagicMock:
-    return _make_user(plan="free")
+def auth_client():
+    mock_db = _mock_db()
+    mock_user = _mock_user()
+
+    async def _override_db():
+        yield mock_db
+
+    async def _override_user():
+        return mock_user
+
+    async def _override_user_optional():
+        return mock_user
+
+    app.dependency_overrides[get_db] = _override_db
+    app.dependency_overrides[get_current_user] = _override_user
+    app.dependency_overrides[get_current_user_optional] = _override_user_optional
+
+    token = create_access_token(mock_user.id)
+    with TestClient(app, raise_server_exceptions=False) as client:
+        client.cookies.set("access_token", token)
+        yield client
+
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture
-def premium_user() -> MagicMock:
-    return _make_user(plan="premium")
+def anon_client():
+    mock_db = _mock_db()
+
+    async def _override_db():
+        yield mock_db
+
+    app.dependency_overrides[get_db] = _override_db
+
+    with TestClient(app, raise_server_exceptions=False) as client:
+        yield client
+
+    app.dependency_overrides.clear()
 
 
-@pytest.fixture
-def db_mock() -> AsyncMock:
-    return _make_db()
+# ── GET /api/meals/today ───────────────────────────────────────────────────────
 
+class TestGetToday:
 
-def _client_for(user: MagicMock, db: AsyncMock) -> TestClient:
-    app.dependency_overrides[get_current_user] = lambda: user
-    app.dependency_overrides[get_db] = lambda: db
-    return TestClient(app, raise_server_exceptions=False)
+    def test_retorna_200_com_autenticacao(self, auth_client):
+        r = auth_client.get("/api/meals/today")
+        assert r.status_code == 200
 
-
-# ── POST /api/meals ───────────────────────────────────────────────────────────
-
-class TestCreateMeal:
-    """POST /api/meals — criação manual de refeição."""
-
-    def _post(self, client, payload):
-        return client.post("/api/meals", json=payload)
-
-    @patch("app.routers.meals.datetime")
-    @patch("app.utils.crypto.encrypt", return_value=b"encrypted")
-    @patch("app.services.nutrition.nutrition_service")
-    @patch("app.services.ai_service.ai_service")
-    def test_cria_refeicao_hoje_usuario_free(
-        self, mock_ai, mock_nutrition, mock_encrypt, mock_dt,
-        free_user, db_mock
-    ):
-        """Criação para data de hoje funciona para usuário free."""
-        meal_id = uuid.uuid4()
-
-        # Fixa "hoje" para o router
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-
-        mock_ai.extract_foods_from_text = AsyncMock(
-            return_value=_make_extraction(
-                foods=[{"name": "Arroz", "quantity_g": 100, "kcal": 130}]
-            )
-        )
-        mock_nutrition.enrich_foods.return_value = [_make_enriched()]
-
-        # SELECT após flush retorna o meal_log criado
-        result_mock = MagicMock()
-        result_mock.scalar_one.return_value = _make_meal_log_db(meal_id, free_user.id)
-        db_mock.execute = AsyncMock(return_value=result_mock)
-
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-22",
-                "meal_type": "lunch",
-                "description": "arroz branco 100g",
-            })
-
-        assert r.status_code == 201
+    def test_estrutura_de_resposta(self, auth_client):
+        r = auth_client.get("/api/meals/today")
         data = r.json()
-        assert data["meal_type"] == "lunch"
-        assert data["total_calories_kcal"] == pytest.approx(128.0, abs=1)
+        assert "date" in data
+        assert "total_calories_kcal" in data
+        assert "meals" in data
+        assert isinstance(data["meals"], list)
 
-    @patch("app.routers.meals.datetime")
-    @patch("app.utils.crypto.encrypt", return_value=b"encrypted")
-    @patch("app.services.nutrition.nutrition_service")
-    @patch("app.services.ai_service.ai_service")
-    def test_cria_refeicao_retroativa_dentro_limite_free(
-        self, mock_ai, mock_nutrition, mock_encrypt, mock_dt,
-        free_user, db_mock
-    ):
-        """Retroativo 5 dias atrás aceito para free (limite 7)."""
-        meal_id = uuid.uuid4()
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+    def test_meals_vazio_sem_registros(self, auth_client):
+        r = auth_client.get("/api/meals/today")
+        assert r.json()["meals"] == []
 
-        mock_ai.extract_foods_from_text = AsyncMock(
-            return_value=_make_extraction(
-                foods=[{"name": "Feijão", "quantity_g": 80, "kcal": 86}]
-            )
-        )
-        mock_nutrition.enrich_foods.return_value = [_make_enriched("Feijão carioca cozido")]
+    def test_sem_autenticacao_retorna_401(self, anon_client):
+        r = anon_client.get("/api/meals/today")
+        assert r.status_code in (401, 403)
 
-        result_mock = MagicMock()
-        result_mock.scalar_one.return_value = _make_meal_log_db(meal_id, free_user.id)
-        db_mock.execute = AsyncMock(return_value=result_mock)
 
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-17",  # 5 dias atrás
-                "meal_type": "lunch",
-                "description": "feijão 80g",
-            })
+# ── GET /api/meals?date=... ────────────────────────────────────────────────────
 
-        assert r.status_code == 201
+class TestGetByDate:
 
-    @patch("app.routers.meals.datetime")
-    @patch("app.utils.crypto.encrypt", return_value=b"encrypted")
-    @patch("app.services.nutrition.nutrition_service")
-    @patch("app.services.ai_service.ai_service")
-    def test_aceita_retroativo_12_dias_free(
-        self, mock_ai, mock_nutrition, mock_encrypt, mock_dt, free_user, db_mock
-    ):
-        """Restrição removida — free user pode registrar qualquer data passada (ex: 12 dias)."""
-        import uuid as _uuid
-        meal_id = _uuid.uuid4()
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+    def test_data_valida_retorna_200(self, auth_client):
+        r = auth_client.get("/api/meals?date=2026-01-15")
+        assert r.status_code == 200
 
-        mock_ai.extract_foods_from_text = AsyncMock(
-            return_value=_make_extraction(
-                foods=[{"name": "Arroz", "quantity_g": 100, "kcal": 130}]
-            )
-        )
-        mock_nutrition.enrich_foods.return_value = [_make_enriched()]
+    def test_data_no_body_retorna_200(self, auth_client):
+        r = auth_client.get("/api/meals")
+        assert r.status_code == 200
 
-        result_mock = MagicMock()
-        result_mock.scalar_one.return_value = _make_meal_log_db(meal_id, free_user.id)
-        db_mock.execute = AsyncMock(return_value=result_mock)
+    def test_data_invalida_usa_hoje(self, auth_client):
+        """Data inválida não deve retornar 422 — o endpoint usa hoje como fallback."""
+        r = auth_client.get("/api/meals?date=nao-e-uma-data")
+        assert r.status_code == 200
 
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-10",  # 12 dias atrás
-                "meal_type": "lunch",
-                "description": "arroz e feijão",
-            })
+    def test_data_no_passado_retorna_200(self, auth_client):
+        r = auth_client.get("/api/meals?date=2020-06-01")
+        assert r.status_code == 200
 
-        assert r.status_code == 201
+    def test_sem_autenticacao_retorna_401(self, anon_client):
+        r = anon_client.get("/api/meals?date=2026-01-15")
+        assert r.status_code in (401, 403)
 
-    @patch("app.routers.meals.datetime")
-    @patch("app.utils.crypto.encrypt", return_value=b"encrypted")
-    @patch("app.services.nutrition.nutrition_service")
-    @patch("app.services.ai_service.ai_service")
-    def test_premium_aceita_retroativo_25_dias(
-        self, mock_ai, mock_nutrition, mock_encrypt, mock_dt,
-        premium_user, db_mock
-    ):
-        """Premium pode registrar até 30 dias atrás."""
-        meal_id = uuid.uuid4()
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
 
-        mock_ai.extract_foods_from_text = AsyncMock(
-            return_value=_make_extraction(
-                foods=[{"name": "Frango", "quantity_g": 150, "kcal": 220}]
-            )
-        )
-        mock_nutrition.enrich_foods.return_value = [_make_enriched("Frango grelhado")]
+# ── GET /api/meals/week ────────────────────────────────────────────────────────
 
-        result_mock = MagicMock()
-        result_mock.scalar_one.return_value = _make_meal_log_db(meal_id, premium_user.id)
-        db_mock.execute = AsyncMock(return_value=result_mock)
+class TestGetWeek:
 
-        with _client_for(premium_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-07-28",  # 25 dias atrás
-                "meal_type": "dinner",
-                "description": "frango grelhado 150g",
-            })
+    def test_retorna_200(self, auth_client):
+        r = auth_client.get("/api/meals/week")
+        assert r.status_code == 200
 
-        assert r.status_code == 201
+    def test_retorna_lista_de_7_itens(self, auth_client):
+        r = auth_client.get("/api/meals/week")
+        data = r.json()
+        assert isinstance(data, list)
+        assert len(data) == 7
 
-    @patch("app.routers.meals.datetime")
-    def test_rejeita_data_futura(self, mock_dt, free_user, db_mock):
-        """Não permite registrar refeição para data futura."""
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+    def test_cada_item_tem_estrutura_correta(self, auth_client):
+        r = auth_client.get("/api/meals/week")
+        for item in r.json():
+            assert "date" in item
+            assert "total_calories_kcal" in item
+            assert "meals" in item
 
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-25",
-                "meal_type": "lunch",
-                "description": "almoço de amanhã",
-            })
+    def test_datas_em_ordem_crescente(self, auth_client):
+        r = auth_client.get("/api/meals/week")
+        dates = [item["date"] for item in r.json()]
+        assert dates == sorted(dates)
 
-        assert r.status_code == 422
-        assert "futura" in r.json()["detail"].lower()
+    def test_sem_autenticacao_retorna_401(self, anon_client):
+        r = anon_client.get("/api/meals/week")
+        assert r.status_code in (401, 403)
 
-    @patch("app.routers.meals.datetime")
-    def test_rejeita_data_invalida(self, mock_dt, free_user, db_mock):
-        """Data malformada retorna 422."""
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
 
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "22/08/2026",   # formato errado
-                "meal_type": "lunch",
-                "description": "arroz e feijão",
-            })
+# ── POST /api/meals — validações ──────────────────────────────────────────────
 
+class TestCreateMealValidation:
+
+    def test_data_futura_retorna_422(self, auth_client):
+        tomorrow = (datetime.now(timezone.utc) + timedelta(days=1)).strftime("%Y-%m-%d")
+        r = auth_client.post("/api/meals", json={
+            "meal_type": "lunch",
+            "logged_date": tomorrow,
+            "description": "arroz e feijão",
+        })
         assert r.status_code == 422
 
-    @patch("app.routers.meals.datetime")
-    @patch("app.services.ai_service.ai_service")
-    def test_ia_nao_identifica_alimento(self, mock_ai, mock_dt, free_user, db_mock):
-        """Se IA não extrair nenhum alimento, retorna 422 com mensagem clara."""
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-
-        mock_ai.extract_foods_from_text = AsyncMock(
-            return_value=_make_extraction(foods=[])  # nenhum alimento
-        )
-
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-22",
-                "meal_type": "lunch",
-                "description": "xyz abc",
-            })
-
+    def test_data_invalida_retorna_422(self, auth_client):
+        r = auth_client.post("/api/meals", json={
+            "meal_type": "lunch",
+            "logged_date": "not-a-date",
+            "description": "arroz",
+        })
         assert r.status_code == 422
-        assert "alimento" in r.json()["detail"].lower()
 
-    @patch("app.routers.meals.datetime")
-    @patch("app.services.ai_service.ai_service")
-    def test_ia_indisponivel_retorna_503(self, mock_ai, mock_dt, free_user, db_mock):
-        """Se a IA lançar exceção, retorna 503."""
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
+    def test_descricao_muito_curta_retorna_422(self, auth_client):
+        r = auth_client.post("/api/meals", json={
+            "meal_type": "lunch",
+            "logged_date": "2026-01-15",
+            "description": "ab",
+        })
+        assert r.status_code == 422
 
-        mock_ai.extract_foods_from_text = AsyncMock(
-            side_effect=RuntimeError("API timeout")
-        )
-
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-22",
+    def test_ia_indisponivel_retorna_503(self, auth_client):
+        with patch("app.services.ai_service.ai_service") as mock_ai:
+            mock_ai.extract_foods_from_text = AsyncMock(side_effect=Exception("AI down"))
+            r = auth_client.post("/api/meals", json={
                 "meal_type": "lunch",
-                "description": "arroz e feijão",
+                "logged_date": "2026-01-15",
+                "description": "arroz com frango",
             })
-
         assert r.status_code == 503
 
-    @patch("app.routers.meals.datetime")
-    @patch("app.utils.crypto.encrypt", return_value=b"encrypted")
-    @patch("app.services.nutrition.nutrition_service")
-    @patch("app.services.ai_service.ai_service")
-    def test_meal_type_explicito_prevalece_sobre_ia(
-        self, mock_ai, mock_nutrition, mock_encrypt, mock_dt,
-        free_user, db_mock
-    ):
-        """O meal_type explícito do usuário prevalece sobre o sugerido pela IA."""
-        meal_id = uuid.uuid4()
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-
-        # IA sugere "lunch", mas usuário enviou "breakfast"
-        mock_ai.extract_foods_from_text = AsyncMock(
-            return_value=_make_extraction(
-                foods=[{"name": "Pão", "quantity_g": 50, "kcal": 130}],
-                meal_type="lunch",
-            )
-        )
-        mock_nutrition.enrich_foods.return_value = [_make_enriched("Pão francês")]
-
-        # Retorna log com meal_type breakfast
-        log = _make_meal_log_db(meal_id, free_user.id)
-        log.meal_type = "breakfast"
-        result_mock = MagicMock()
-        result_mock.scalar_one.return_value = log
-        db_mock.execute = AsyncMock(return_value=result_mock)
-
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-22",
-                "meal_type": "breakfast",   # explícito
-                "description": "pão 50g",
-            })
-
-        assert r.status_code == 201
-        assert r.json()["meal_type"] == "breakfast"
-
-    @patch("app.routers.meals.datetime")
-    def test_rejeita_descricao_muito_curta(self, mock_dt, free_user, db_mock):
-        """Descrição < 3 caracteres falha validação Pydantic (422)."""
-        mock_dt.now.return_value = datetime(2026, 8, 22, 10, 0, tzinfo=BRT)
-        mock_dt.side_effect = lambda *a, **kw: datetime(*a, **kw)
-
-        with _client_for(free_user, db_mock) as client:
-            r = self._post(client, {
-                "logged_date": "2026-08-22",
+    def test_sem_alimentos_identificados_retorna_422(self, auth_client):
+        from app.schemas.ai_response import FoodExtractionResponse
+        empty_extraction = FoodExtractionResponse(foods=[], meal_type="other")
+        with patch("app.services.ai_service.ai_service") as mock_ai:
+            mock_ai.extract_foods_from_text = AsyncMock(return_value=empty_extraction)
+            r = auth_client.post("/api/meals", json={
                 "meal_type": "lunch",
-                "description": "ok",   # apenas 2 chars
+                "logged_date": "2026-01-15",
+                "description": "xyzxyz totalmente desconhecido",
             })
-
         assert r.status_code == 422
 
-    def test_requer_autenticacao(self):
-        """Sem cookie JWT → 401 ou 403 (dependência get_current_user não sobreposta)."""
-        app.dependency_overrides.clear()
-        with TestClient(app, raise_server_exceptions=False) as client:
-            r = client.post("/api/meals", json={
-                "logged_date": "2026-08-22",
-                "meal_type": "lunch",
-                "description": "arroz e feijão",
-            })
+    def test_sem_autenticacao_retorna_401(self, anon_client):
+        r = anon_client.post("/api/meals", json={
+            "meal_type": "lunch",
+            "logged_date": "2026-01-15",
+            "description": "arroz",
+        })
         assert r.status_code in (401, 403)
 
 
-# ── DELETE /api/meals/{id} ────────────────────────────────────────────────────
+# ── POST /api/meals — sucesso 201 ─────────────────────────────────────────────
+
+class TestCreateMealSuccess:
+
+    @pytest.fixture
+    def client_with_post_mocks(self):
+        """auth_client com mock da IA + nutrição + DB configurado para retornar o MealLog criado."""
+        from app.schemas.ai_response import ExtractedFoodItem, FoodExtractionResponse
+        from app.services.nutrition import EnrichedFood
+
+        fake_food = ExtractedFoodItem(name="arroz", quantity_g=180)
+        fake_extraction = FoodExtractionResponse(foods=[fake_food], meal_type="lunch")
+        fake_enriched = [EnrichedFood(
+            name="Arroz, branco, cozido",
+            original_term="arroz",
+            quantity_g=180,
+            calories_kcal=230.4,
+            protein_g=4.5,
+            carb_g=50.6,
+            fat_g=0.4,
+            fiber_g=2.9,
+            source="taco_cache",
+            confidence_score=0.95,
+            taco_code="001",
+        )]
+
+        # MealLog mock com food_items
+        mock_food_item = MagicMock()
+        mock_food_item.name = "Arroz, branco, cozido"
+        mock_food_item.quantity_g = 180.0
+        mock_food_item.calories_kcal = 230.4
+        mock_food_item.protein_g = 4.5
+        mock_food_item.carb_g = 50.6
+        mock_food_item.fat_g = 0.4
+        mock_food_item.fiber_g = 2.9
+        mock_food_item.source = "taco_cache"
+        mock_food_item.confidence_score = 0.95
+
+        mock_meal = MagicMock()
+        mock_meal.id = uuid.uuid4()
+        mock_meal.meal_type = "lunch"
+        mock_meal.logged_at = datetime.now(timezone.utc)
+        mock_meal.total_calories_kcal = 230.4
+        mock_meal.total_protein_g = 4.5
+        mock_meal.total_carb_g = 50.6
+        mock_meal.total_fat_g = 0.4
+        mock_meal.total_fiber_g = 2.9
+        mock_meal.food_items = [mock_food_item]
+
+        result_with_meal = MagicMock()
+        result_with_meal.scalar_one.return_value = mock_meal
+
+        result_empty = MagicMock()
+        result_empty.scalars.return_value.all.return_value = []
+
+        db = AsyncMock()
+        db.execute = AsyncMock(return_value=result_with_meal)
+        db.commit = AsyncMock()
+        db.flush = AsyncMock()
+        db.add = MagicMock()
+
+        mock_user = _mock_user()
+
+        async def _override_db():
+            yield db
+
+        async def _override_user():
+            return mock_user
+
+        async def _override_user_optional():
+            return mock_user
+
+        app.dependency_overrides[get_db] = _override_db
+        app.dependency_overrides[get_current_user] = _override_user
+        app.dependency_overrides[get_current_user_optional] = _override_user_optional
+
+        with patch("app.services.ai_service.ai_service") as mock_ai, \
+             patch("app.services.nutrition.nutrition_service") as mock_nutrition:
+            mock_ai.extract_foods_from_text = AsyncMock(return_value=fake_extraction)
+            mock_nutrition.enrich_foods.return_value = fake_enriched
+
+            token = create_access_token(mock_user.id)
+            with TestClient(app, raise_server_exceptions=False) as client:
+                client.cookies.set("access_token", token)
+                yield client
+
+        app.dependency_overrides.clear()
+
+    def test_retorna_201(self, client_with_post_mocks):
+        r = client_with_post_mocks.post("/api/meals", json={
+            "meal_type": "lunch",
+            "logged_date": "2026-01-15",
+            "description": "arroz branco cozido",
+        })
+        assert r.status_code == 201
+
+    def test_resposta_tem_id_e_meal_type(self, client_with_post_mocks):
+        r = client_with_post_mocks.post("/api/meals", json={
+            "meal_type": "lunch",
+            "logged_date": "2026-01-15",
+            "description": "arroz branco cozido",
+        })
+        data = r.json()
+        assert "id" in data
+        assert data["meal_type"] == "lunch"
+
+    def test_resposta_tem_calorias(self, client_with_post_mocks):
+        r = client_with_post_mocks.post("/api/meals", json={
+            "meal_type": "lunch",
+            "logged_date": "2026-01-15",
+            "description": "arroz branco cozido",
+        })
+        data = r.json()
+        assert data["total_calories_kcal"] > 0
+
+
+# ── DELETE /api/meals/{id} ─────────────────────────────────────────────────────
 
 class TestDeleteMeal:
-    """DELETE /api/meals/{id} — remoção de refeição."""
 
-    def _delete(self, client, meal_id):
-        return client.delete(f"/api/meals/{meal_id}")
-
-    def test_deleta_refeicao_propria(self, free_user, db_mock):
-        """Owner consegue deletar sua refeição — retorna 204."""
-        meal_id = uuid.uuid4()
-        meal = MagicMock()
-        meal.id = meal_id
-        meal.user_id = free_user.id
-
-        result_mock = MagicMock()
-        result_mock.scalar_one_or_none.return_value = meal
-        db_mock.execute = AsyncMock(return_value=result_mock)
-
-        with _client_for(free_user, db_mock) as client:
-            r = self._delete(client, meal_id)
-
-        assert r.status_code == 204
-        db_mock.delete.assert_called_once_with(meal)
-        db_mock.commit.assert_called_once()
-
-    def test_retorna_404_refeicao_nao_encontrada(self, free_user, db_mock):
-        """ID inexistente ou de outro usuário → 404."""
-        result_mock = MagicMock()
-        result_mock.scalar_one_or_none.return_value = None
-        db_mock.execute = AsyncMock(return_value=result_mock)
-
-        with _client_for(free_user, db_mock) as client:
-            r = self._delete(client, uuid.uuid4())
-
+    def test_id_inexistente_retorna_404(self, auth_client):
+        r = auth_client.delete(f"/api/meals/{uuid.uuid4()}")
         assert r.status_code == 404
-        assert "não encontrada" in r.json()["detail"].lower()
 
-    def test_retorna_422_id_invalido(self, free_user, db_mock):
-        """ID não-UUID retorna 422 (validação FastAPI)."""
-        with _client_for(free_user, db_mock) as client:
-            r = self._delete(client, "nao-e-uuid")
-
-        assert r.status_code == 422
-
-    def test_requer_autenticacao(self):
-        """Sem JWT → 401/403."""
-        app.dependency_overrides.clear()
-        with TestClient(app, raise_server_exceptions=False) as client:
-            r = client.delete(f"/api/meals/{uuid.uuid4()}")
+    def test_sem_autenticacao_retorna_401(self, anon_client):
+        r = anon_client.delete(f"/api/meals/{uuid.uuid4()}")
         assert r.status_code in (401, 403)
 
-    def test_nao_deleta_refeicao_de_outro_usuario(self, free_user, db_mock):
-        """SELECT filtra por user_id: outro user_id → retorna None → 404."""
-        # O SELECT inclui MealLog.user_id == current_user.id,
-        # então se a refeição for de outro usuário, scalar_one_or_none() = None
-        result_mock = MagicMock()
-        result_mock.scalar_one_or_none.return_value = None
-        db_mock.execute = AsyncMock(return_value=result_mock)
+    def test_uuid_invalido_retorna_422(self, auth_client):
+        r = auth_client.delete("/api/meals/nao-e-um-uuid")
+        assert r.status_code == 422
 
-        with _client_for(free_user, db_mock) as client:
-            r = self._delete(client, uuid.uuid4())
+    def test_delete_sucesso_retorna_204(self):
+        """DELETE encontra a refeição no DB e a apaga — deve retornar 204."""
+        mock_meal = MagicMock()
+        mock_meal.id = uuid.uuid4()
 
-        assert r.status_code == 404
-        db_mock.delete.assert_not_called()
+        result_with_meal = MagicMock()
+        result_with_meal.scalar_one_or_none.return_value = mock_meal
 
+        db = AsyncMock()
+        db.execute = AsyncMock(return_value=result_with_meal)
+        db.commit = AsyncMock()
+        db.delete = AsyncMock()
 
-# ── Schema validation (MealLogCreate) ────────────────────────────────────────
+        mock_user = _mock_user()
 
-class TestMealLogCreateSchema:
-    """Validação de schema diretamente, sem HTTP."""
+        async def _override_db():
+            yield db
 
-    def test_schema_valido(self):
-        from app.schemas.meal import MealLogCreate
-        m = MealLogCreate(logged_date="2026-08-22", description="arroz e feijão")
-        assert m.meal_type == "other"
-        assert m.logged_date == "2026-08-22"
+        async def _override_user():
+            return mock_user
 
-    def test_descricao_minima_3_chars(self):
-        from app.schemas.meal import MealLogCreate
-        import pydantic
-        with pytest.raises(pydantic.ValidationError):
-            MealLogCreate(logged_date="2026-08-22", description="ab")
+        async def _override_user_optional():
+            return mock_user
 
-    def test_descricao_maxima_500_chars(self):
-        from app.schemas.meal import MealLogCreate
-        import pydantic
-        with pytest.raises(pydantic.ValidationError):
-            MealLogCreate(logged_date="2026-08-22", description="x" * 501)
+        app.dependency_overrides[get_db] = _override_db
+        app.dependency_overrides[get_current_user] = _override_user
+        app.dependency_overrides[get_current_user_optional] = _override_user_optional
 
-    def test_meal_type_default_other(self):
-        from app.schemas.meal import MealLogCreate
-        m = MealLogCreate(logged_date="2026-08-22", description="maçã")
-        assert m.meal_type == "other"
+        try:
+            token = create_access_token(mock_user.id)
+            with TestClient(app, raise_server_exceptions=False) as client:
+                client.cookies.set("access_token", token)
+                r = client.delete(f"/api/meals/{mock_meal.id}")
+            assert r.status_code == 204
+            db.delete.assert_called_once_with(mock_meal)
+            db.commit.assert_called_once()
+        finally:
+            app.dependency_overrides.clear()

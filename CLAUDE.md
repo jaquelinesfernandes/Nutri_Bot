@@ -4,62 +4,66 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-NutriBot is a multicanal nutritional tracking chatbot (WhatsApp, Telegram) that lets users log meals via text, audio, or photo in natural language. It identifies foods, calculates calories and macronutrients using three local databases — TACO/UNICAMP (306 items), TBCA/USP-FoRC (1,994 items), and USDA (25 items) — tracks meal schedules, sends proactive alerts, and delivers weekly PDF reports with AI-generated personalized suggestions.
+NutriBot is a Telegram nutritional tracking chatbot that lets users log meals via text, audio, or photo in natural language. It identifies foods, calculates calories and macronutrients using three local databases — TACO/UNICAMP (306 items), TBCA/USP-FoRC (1,994 items), and USDA (25 items) — tracks meal schedules, sends proactive alerts, and delivers weekly PDF reports with AI-generated personalized suggestions.
 
 The PRD (`docs/NutriBot_PRD_v2.1.md`) is the authoritative source for scope, priorities, and acceptance criteria.
 
-## Current State (September 2026)
+## Current State (October 2026)
 
-**All 6 sprints + Post-6 UX polish complete — in production on Render + Neon. TBCA integrated.**
+**All 6 sprints + Post-6 UX + B2B-1/2 + Admin-1 complete — pre-prod local Docker, production on VPS.**
 
-- 454 tests passing · coverage 76% (threshold ≥ 55%)
-- Deployed at: `https://nutri-bot-ot0p.onrender.com`
+- 447 tests passing · coverage 60% (threshold ≥ 55%)
+- Channel: **Telegram only** (WhatsApp removed — not implemented)
 - Beta open: reports unlocked for all users via `REPORTS_OPEN_BETA=true`
 - Sessions persist for 365 days with sliding-expiration renewal (no re-login needed)
+- Production: **VPS + Docker + Nginx** (Render/Railway removed)
 
-## Real Architecture (differs from original PRD)
+## Real Architecture
 
 **Backend:** Python 3.13 · FastAPI (monolith)  
-**AI primary:** Anthropic Claude — `claude-haiku-4-5-20251001` for NLP, `claude-sonnet-4-6` for Vision  
+**AI primary:** Anthropic Claude — `claude-haiku-4-5` for NLP, `claude-sonnet-4-6` for Vision  
 **AI secondary:** OpenAI Whisper — audio transcription only  
-**Database:** PostgreSQL 16 · SQLAlchemy asyncio · asyncpg · Alembic — hosted on **Neon**  
-**Alerts:** APScheduler AsyncIOScheduler · UptimeRobot keep-alive (Render free tier sleeps)  
+**Database:** PostgreSQL 16 · SQLAlchemy asyncio · asyncpg · Alembic — **Docker container**  
+**Alerts:** APScheduler AsyncIOScheduler (12 jobs)  
 **PDF reports:** WeasyPrint + Jinja2 (not Puppeteer)  
 **Auth:** JWT (python-jose) + bcrypt (passlib) · httpOnly cookie  
-**Channels:** Telegram Bot API · WhatsApp via **Evolution API** (not Z-API or Twilio)  
-**Nutrition data:** TACO/UNICAMP + TBCA/USP-FoRC + USDA as local JSON — no external call at runtime (5-layer fuzzy pipeline: cache → TACO → TBCA → USDA → GPT estimated)  
+**Channels:** Telegram Bot API only (WhatsApp removed)  
+**Nutrition data:** TACO/UNICAMP + TBCA/USP-FoRC + USDA as local JSON — no external call at runtime (5-layer fuzzy pipeline: cache → TACO → TBCA → USDA → Claude estimated)  
 **Payments:** MercadoPago SDK  
 **Analytics:** PostHog  
 **Monitoring:** Sentry SDK  
-**Hosting:** Render (app) + Neon (PostgreSQL)  
-**Scale path:** GCP Cloud Run + Cloud SQL São Paulo (documented in `docs/infra-arch-render-neon.md`)
+**Hosting (prod):** VPS + Docker Compose + Nginx reverse proxy + Let's Encrypt SSL  
+**Hosting (dev):** Local Docker Compose (db + pgadmin + app with live reload)  
+**Website:** Static marketing site served by Nginx (`website/index.html`)
 
 ## Development Commands
 
 ```powershell
-# Activate venv
+# ── Pré-prod local (Docker) ───────────────────────────────────────────
+# Subir db + pgadmin + app (live reload)
+./scripts/dev-start.ps1
+
+# Aplicar migrations no container
+./scripts/dev-migrate.ps1
+
+# Polling Telegram local (em outro terminal)
+docker exec nutribot_app python scripts/run_bot_polling.py
+
+# ── Testes (no venv local, não no Docker) ────────────────────────────
 .venv\Scripts\Activate.ps1
-
-# Install dependencies
-pip install -r requirements.txt -r requirements-dev.txt
-
-# Run FastAPI dev server
-uvicorn app.main:app --reload
-
-# Run tests
 pytest
-
-# Run with coverage
 pytest --cov=app --cov-report=term-missing
-
-# Single test file
 pytest tests/test_nutrition.py -v
 
-# Apply DB migrations
-alembic upgrade head
+# ── Produção VPS ─────────────────────────────────────────────────────
+# 1ª vez — emitir SSL
+./scripts/init-ssl.sh seudominio.com admin@seudominio.com
 
-# Register Telegram webhook (after deploy)
-python scripts/register_telegram_webhook.py https://nutri-bot-ot0p.onrender.com
+# Deploy / atualização
+./scripts/deploy.sh --build
+
+# Registrar webhook Telegram
+python scripts/register_telegram_webhook.py https://app.seudominio.com
 ```
 
 ## Environment Variables
@@ -86,10 +90,7 @@ TELEGRAM_WEBHOOK_SECRET   # Prevents fake webhook injection
 ### Optional / feature-specific
 
 ```env
-OPENAI_API_KEY            # Whisper audio transcription (Sprint 2)
-EVOLUTION_API_URL         # WhatsApp via Evolution API
-EVOLUTION_API_KEY
-EVOLUTION_WEBHOOK_SECRET
+OPENAI_API_KEY            # Whisper audio transcription only
 MERCADOPAGO_ACCESS_TOKEN  # Payments
 MERCADOPAGO_WEBHOOK_SECRET
 MERCADOPAGO_MONTHLY_PLAN_ID
@@ -108,7 +109,7 @@ REPORTS_OPEN_BETA         # true (default) = all users access reports; false = p
 - **Language:** Portuguese (Brazilian), including gírias and regionalismos alimentares.
 - **LGPD compliance:** Health data is classified as *dados sensíveis* (Art. 11). Explicit consent required on onboarding; support right-to-deletion within 72h. Raw meal input is encrypted at rest via `app/utils/crypto.py` (Fernet/AES-256).
 - **MVP acceptance thresholds:** >80% text recognition accuracy on top-500 TACO foods; >75% photo identification; alerts delivered within 2 min in 99% of cases.
-- **Scheduler reliability:** APScheduler uses `misfire_grace_time=3600` and `coalesce=True` so jobs fire up to 1h late after Render wakes from sleep.
+- **Scheduler reliability:** APScheduler uses `misfire_grace_time=3600` and `coalesce=True` so jobs fire up to 1h late. 12 jobs total.
 
 ## Project Structure
 
@@ -119,7 +120,6 @@ app/
   routers/
     health.py              # /health, /ping, /scheduler/status*, /scheduler/trigger*
     webhook_telegram.py    # POST /webhook/telegram (validates X-Telegram-Bot-Api-Secret-Token)
-    webhook_whatsapp.py    # POST /webhook/whatsapp
     webhook_payment.py     # POST /webhook/payment (HMAC validation, required in prod)
     auth.py                # POST /api/auth/register|login|logout
     dashboard.py           # Jinja2 server-rendered web dashboard · GET /login · GET /esqueci-senha · POST /auth/esqueci-senha · GET /auth/magic
@@ -128,13 +128,20 @@ app/
     users.py               # REST API user profile
     admin.py               # Painel admin /admin — auth JWT própria (type=admin), gestão de usuários, LGPD, scheduler
   services/
-    conversation.py        # Conversational state machine (~61 KB) — main bot logic
-    ai_service.py          # Anthropic Claude integration (text, vision, audio)
-    nutrition.py           # TACO + USDA lookup + RapidFuzz matching
-    scheduler.py           # APScheduler jobs: meal alerts (5/day) + reports + reengagement
+    conversation/          # Pacote — refatorado de conversation.py (2.631 linhas)
+      __init__.py          # Re-exporta ConversationService (backward-compatible)
+      _constants.py        # ConversationState, timeouts, emojis
+      _helpers.py          # HelpersMixin — DB helpers, URLs, formatters
+      _handlers_meal.py    # MealMixin — confirmar, corrigir, texto/foto/áudio
+      _handlers_commands.py# CommandsMixin — todos os /cmd_* handlers + água
+      _handlers_b2b.py     # B2BMixin — convite nutricionista, revogação LGPD
+      service.py           # ConversationService(HelpersMixin, MealMixin, ...) + dispatch
+    ai_service.py          # Anthropic Claude integration (text, vision); Whisper (audio)
+    nutrition.py           # TACO + TBCA + USDA lookup + RapidFuzz (5-layer pipeline)
+    scheduler.py           # APScheduler jobs: 12 jobs (alertas + relatório + água + re-engage)
     report.py              # PDF generation (WeasyPrint)
     analytics.py           # PostHog event tracking
-    notification.py        # Send messages via Telegram/WhatsApp
+    notification.py        # Send messages via Telegram only
     payment.py             # MercadoPago webhook handler
   models/                  # SQLAlchemy ORM (9 tables)
     user.py                # plan: free|premium|nutritionist; is_premium property
@@ -148,11 +155,10 @@ app/
   schemas/
     auth.py                # AuthResponse — token NOT in body (httpOnly cookie only)
     telegram.py
-    whatsapp.py
     meal.py
     ai_response.py
   db/
-    session.py             # AsyncSession factory (pool_size=3 for Neon free tier)
+    session.py             # AsyncSession factory (pool_size=3)
     base.py
   utils/
     crypto.py              # Fernet AES-256 encrypt/decrypt for health data
@@ -168,15 +174,28 @@ data/
 migrations/versions/
   aa27ebf221d2_initial_schema.py
   b3c91f4e7d02_add_report_period_fields.py
+docker-compose.yml             # Pré-prod local: db + pgadmin + app (live reload)
+docker-compose.prod.yml        # Produção VPS: db + app + nginx + certbot
+nginx/
+  nginx.conf                   # Config global Nginx
+  conf.d/
+    app.conf                   # app.seudominio.com → FastAPI + SSL
+    website.conf               # seudominio.com → site estático + SSL
+website/
+  index.html                   # Landing page de marketing (PT-BR)
 scripts/
-  register_telegram_webhook.py   # setWebhook with secret_token
-  run_bot_polling.py             # Local dev polling mode
+  dev-start.ps1                # Sobe docker-compose.yml (dev local)
+  dev-migrate.ps1              # Aplica migrations no container dev
+  init-ssl.sh                  # Emite certificados SSL Let's Encrypt (1ª vez no VPS)
+  deploy.sh                    # Deploy / atualização na VPS
+  register_telegram_webhook.py # setWebhook com secret_token
+  run_bot_polling.py           # Polling mode (dev local)
   check_db.py
   testar_relatorio.py
   testar_alerta.py
   expand_taco.py
-  scrape_tbca.py                 # Web scraping TBCA (20 pages → tbca.json); use --retomar to resume
-  fix_tbca_categories.py         # Post-processing: re-categorizes tbca.json using tbca_raw.json groups
+  scrape_tbca.py               # Web scraping TBCA (20 páginas → tbca.json); --retomar para retomar
+  fix_tbca_categories.py       # Pós-processamento: recategoriza tbca.json
 tests/
   conftest.py
   test_nutrition.py
@@ -186,15 +205,13 @@ tests/
   test_sprint5.py
   test_webhooks.py
 docs/
-  NutriBot_PRD_v2.1.md          # Authoritative PRD
-  architecture.md
+  NutriBot_PRD_v2.1.md         # PRD autoritativo
+  architecture.md              # Arquitetura real (atualizado outubro 2026)
   api-spec.md
   prompts.md
   fuzzy-match.md
-  infra-arch-render-neon.md     # GCP migration plan (9 phases)
-  infra-setup-render-neon.md    # Step-by-step Render + Neon setup
-  admin-panel.md                # Painel admin: autenticação, rotas, auditoria, roadmap
-  prd-historico-peso.md         # PRD para implementação futura do histórico de peso
+  admin-panel.md               # Painel admin: autenticação, rotas, auditoria, roadmap
+  prd-historico-peso.md        # PRD para implementação futura do histórico de peso
 ```
 
 *Endpoints marked `*` require `X-Admin-Key: <ADMIN_API_KEY>` header when `ADMIN_API_KEY` is set.*
@@ -222,10 +239,11 @@ docs/
 | 3 | Alertas por janela de refeição · meta de calorias | ✅ |
 | 4 | Relatório PDF semanal · sugestões IA · histórico | ✅ |
 | 5 | Onboarding · UX polish · dashboard web · beta fechado | ✅ |
-| 6 | Deploy Render + Neon · UptimeRobot · auditoria segurança · beta aberto | ✅ |
+| 6 | Deploy (orig. Render + Neon, migrado para VPS + Docker) · auditoria segurança · beta aberto | ✅ |
 | Post-6 | Registro retroativo sem limite · entrada manual no painel · relatórios pelo painel (gerar/limpar/baixar) · acesso automático após 7 dias | ✅ |
 | Post-6 UX | Login redesenhado (Telegram como primário) · recuperação de senha via magic link · sessão 365 dias sem re-login · calculadora TDEE no cadastro · banner CTA Telegram · countdown preciso no rate-limit · datepicker bloqueia datas futuras | ✅ |
 | B2B-1 | Infra · cadastro nutricionista · convites · deep link Telegram · scheduler expiração · LGPD consentimento | ✅ |
 | B2B-2 | Perfil do paciente · gráfico kcal 30d · notas clínicas · PDF on-demand · revogação pelo bot (estado REVOKING) | ✅ |
 | Admin-1 | Painel admin /admin · auth JWT própria · gestão usuários · LGPD anonimização · scheduler trigger · auditoria admin_logs | ✅ |
+| Infra VPS | WhatsApp removido · Render removido · conversation.py → pacote · VPS Docker + Nginx · site marketing · segurança (CSP, _apply_pending_ddl removido) | ✅ |
 | Fase 3 | App nativo / Web | 🗓️ Planejado |

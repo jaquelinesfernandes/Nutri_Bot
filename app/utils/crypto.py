@@ -1,10 +1,12 @@
 import base64
+import functools
 
 from cryptography.fernet import Fernet
 
 from app.config import settings
 
 
+@functools.lru_cache(maxsize=1)
 def _get_fernet() -> Fernet:
     key_bytes = bytes.fromhex(settings.raw_input_encryption_key)
     b64_key = base64.urlsafe_b64encode(key_bytes)

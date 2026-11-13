@@ -1,0 +1,848 @@
+<title>Nouri — Diário Nutricional</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml"/>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600&display=swap">
+
+<style>
+/* ─── tokens ──────────────────────────────────────────────────── */
+:root {
+  --forest:  #0A5738;
+  --forest2: #0D7048;
+  --bright:  #25C97A;
+  --amber:   #F0A318;
+  --ink:     #111C16;
+  --muted:   #4A6358;
+  --bg:      #FFFFFF;
+  --surface: #F2F9F5;
+  --border:  #D0E6DA;
+  --wa:      #25D366;
+  --radius:  12px;
+  --ff-head: 'Sora', sans-serif;
+  --ff-body: 'Plus Jakarta Sans', sans-serif;
+  color-scheme: light;
+}
+
+/* ─── reset ───────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--ff-body);
+  background: var(--bg);
+  color: var(--ink);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+.container {
+  max-width: 1120px; margin: 0 auto;
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+}
+.badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-family: var(--ff-head); font-size: 11.5px; font-weight: 600;
+  letter-spacing: .05em; text-transform: uppercase;
+  color: var(--forest); background: var(--surface);
+  border: 1px solid var(--border); border-radius: 99px;
+  padding: 5px 14px;
+}
+.badge .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--bright); }
+
+/* ─── nav ─────────────────────────────────────────────────────── */
+.nav {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 100;
+  background: rgba(255,255,255,.92); backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.nav-inner {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-block: 14px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+}
+.nav-logo { display: flex; align-items: center; gap: 10px; text-decoration: none; color: var(--ink); }
+.nav-logo-text { font-family: var(--ff-head); font-weight: 800; font-size: 20px; letter-spacing: -.02em; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a { font-size: 14px; font-weight: 500; color: var(--muted); text-decoration: none; transition: color .2s; }
+.nav-links a:hover { color: var(--ink); }
+.btn-sm {
+  font-family: var(--ff-head); font-size: 13px; font-weight: 700;
+  padding: 9px 20px; border-radius: 8px; text-decoration: none;
+  transition: all .2s; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+}
+.btn-primary { background: var(--forest); color: white; border: none; cursor: pointer; }
+.btn-primary:hover { background: var(--forest2); }
+@media (max-width: 640px) { .nav-links { display: none; } }
+
+/* ─── hero ────────────────────────────────────────────────────── */
+.hero {
+  padding-block: 96px 72px; overflow: hidden;
+  background: radial-gradient(ellipse 55% 80% at 72% 50%, rgba(37,201,122,.07) 0%, transparent 68%);
+}
+.hero-inner {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 64px; align-items: center;
+}
+.hero-copy { display: flex; flex-direction: column; gap: 28px; }
+.hero h1 {
+  font-family: var(--ff-head); font-weight: 800;
+  font-size: clamp(36px, 5vw, 58px);
+  line-height: 1.08; letter-spacing: -.03em; text-wrap: balance;
+}
+.hero h1 em { font-style: normal; color: var(--forest); }
+.hero-sub { font-size: 18px; color: var(--muted); max-width: 480px; line-height: 1.65; }
+.hero-ctas { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn-lg {
+  font-family: var(--ff-head); font-size: 15px; font-weight: 700;
+  padding: 15px 28px; border-radius: 10px; text-decoration: none;
+  transition: all .2s; display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+}
+.btn-forest { background: var(--forest); color: white; }
+.btn-forest:hover { background: var(--forest2); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(10,87,56,.25); }
+.btn-whatsapp { background: var(--wa); color: white; }
+.btn-whatsapp:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 8px 24px rgba(37,211,102,.3); }
+.hero-trust { display: flex; align-items: center; gap: 18px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.hero-trust strong { color: var(--ink); }
+.hero-trust-sep { width: 1px; height: 14px; background: var(--border); }
+
+/* phone mockup */
+.phone-wrap { display: flex; justify-content: center; position: relative; }
+.phone {
+  width: 300px; background: var(--surface);
+  border-radius: 32px; border: 2px solid var(--border);
+  overflow: hidden; box-shadow: 0 24px 64px rgba(0,0,0,.12);
+}
+.phone-bar {
+  background: var(--forest); padding: 14px 20px;
+  display: flex; align-items: center; gap: 10px;
+}
+.phone-bar-name { font-family: var(--ff-head); font-size: 14px; font-weight: 700; color: white; }
+.phone-bar-status { font-size: 11px; color: rgba(255,255,255,.7); }
+.chat-area { padding: 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+.bubble { max-width: 82%; padding: 10px 14px; border-radius: 16px; font-size: 13px; line-height: 1.5; }
+.bubble-user { align-self: flex-end; background: var(--forest); color: white; border-bottom-right-radius: 4px; }
+.bubble-bot {
+  align-self: flex-start; background: var(--bg); color: var(--ink);
+  border: 1px solid var(--border); border-bottom-left-radius: 4px;
+}
+.bubble strong { display: block; margin-bottom: 4px; }
+.bubble-macro {
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border);
+  font-size: 11.5px; font-weight: 600; color: var(--forest);
+  display: flex; gap: 10px; flex-wrap: wrap;
+}
+.phone-input {
+  border-top: 1px solid var(--border); padding: 12px 16px;
+  display: flex; align-items: center; gap: 10px; background: var(--bg);
+}
+.phone-input-field { flex: 1; font-size: 13px; color: var(--muted); min-width: 0; }
+.phone-send {
+  width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+  background: var(--forest); display: flex; align-items: center; justify-content: center;
+}
+.phone-tag {
+  position: absolute; top: -14px; right: -18px;
+  background: var(--amber); color: white;
+  font-family: var(--ff-head); font-size: 11px; font-weight: 700;
+  padding: 6px 12px; border-radius: 99px;
+  box-shadow: 0 4px 14px rgba(240,163,24,.4);
+}
+@media (max-width: 768px) {
+  .hero-inner { grid-template-columns: 1fr; gap: 48px; }
+  .phone-wrap { order: -1; }
+  .phone { width: 260px; }
+}
+
+/* trust bar */
+.trust-bar { border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); padding-block: 32px; }
+.trust-grid { display: flex; gap: 0; justify-content: space-around; flex-wrap: wrap; }
+.trust-item { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 8px 24px; }
+.trust-num {
+  font-family: var(--ff-head); font-size: 32px; font-weight: 800;
+  color: var(--forest); letter-spacing: -.03em; font-variant-numeric: tabular-nums;
+}
+.trust-label { font-size: 13px; color: var(--muted); text-align: center; }
+
+/* sections */
+.section { padding-block: 88px; }
+.section-alt { background: var(--surface); }
+.section-head { display: flex; flex-direction: column; gap: 12px; margin-bottom: 56px; }
+.section-head.center { align-items: center; text-align: center; }
+.eyebrow {
+  font-family: var(--ff-head); font-size: 11.5px; font-weight: 700;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--forest);
+}
+.section-head h2 {
+  font-family: var(--ff-head); font-size: clamp(28px, 3.5vw, 42px);
+  font-weight: 800; letter-spacing: -.025em; text-wrap: balance;
+}
+.section-head p { font-size: 17px; color: var(--muted); max-width: 560px; line-height: 1.65; }
+
+/* features */
+.feat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 24px; }
+.feat-card {
+  background: var(--bg); border: 1.5px solid var(--border); border-radius: var(--radius);
+  padding: 28px; display: flex; flex-direction: column; gap: 14px;
+  transition: border-color .2s, box-shadow .2s;
+}
+.feat-card:hover { border-color: var(--bright); box-shadow: 0 8px 28px rgba(10,87,56,.08); }
+.feat-icon {
+  width: 44px; height: 44px; border-radius: 10px;
+  background: var(--surface); border: 1px solid var(--border);
+  display: flex; align-items: center; justify-content: center; color: var(--forest);
+}
+.feat-card h3 { font-family: var(--ff-head); font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
+.feat-card p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+/* how it works */
+.steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; position: relative; }
+.steps-grid::before {
+  content: ''; position: absolute; top: 28px;
+  left: calc(33.33% - 16px); right: calc(33.33% - 16px);
+  height: 2px; background: var(--border);
+}
+.step { display: flex; flex-direction: column; align-items: flex-start; gap: 16px; }
+.step-num {
+  width: 56px; height: 56px; border-radius: 16px;
+  background: var(--forest); color: white;
+  font-family: var(--ff-head); font-size: 22px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center; position: relative; z-index: 1;
+}
+.step h3 { font-family: var(--ff-head); font-size: 18px; font-weight: 700; letter-spacing: -.01em; }
+.step p { font-size: 14px; color: var(--muted); line-height: 1.6; min-width: 0; }
+@media (max-width: 640px) {
+  .steps-grid { grid-template-columns: 1fr; gap: 32px; }
+  .steps-grid::before { display: none; }
+}
+
+/* databases */
+.db-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+.db-card {
+  background: var(--bg); border: 1.5px solid var(--border);
+  border-radius: var(--radius); padding: 28px;
+  display: flex; flex-direction: column; gap: 10px;
+}
+.db-name {
+  font-family: var(--ff-head); font-size: 12px; font-weight: 800;
+  letter-spacing: .1em; text-transform: uppercase; color: var(--forest);
+}
+.db-count {
+  font-family: var(--ff-head); font-size: 40px; font-weight: 800;
+  color: var(--ink); letter-spacing: -.04em; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.db-desc { font-size: 13px; color: var(--muted); line-height: 1.55; }
+.db-tag {
+  font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 99px;
+  background: var(--surface); color: var(--muted); border: 1px solid var(--border);
+  display: inline-block; align-self: flex-start;
+}
+.db-tag.primary { background: #E8F5EE; color: var(--forest); border-color: #B8DFC8; }
+@media (max-width: 640px) { .db-grid { grid-template-columns: 1fr; } }
+
+/* CTA */
+.cta-section {
+  background: var(--forest); padding-block: 96px;
+  text-align: center; display: flex; flex-direction: column; align-items: center; gap: 32px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+}
+.cta-section h2 {
+  font-family: var(--ff-head); font-size: clamp(30px, 4vw, 48px);
+  font-weight: 800; letter-spacing: -.03em; color: white; text-wrap: balance; max-width: 640px;
+}
+.cta-section > p { font-size: 17px; color: rgba(255,255,255,.75); max-width: 480px; line-height: 1.65; }
+.cta-btns { display: flex; gap: 14px; flex-wrap: wrap; justify-content: center; }
+.btn-white {
+  background: white; color: var(--forest); font-family: var(--ff-head); font-size: 15px; font-weight: 700;
+  padding: 15px 28px; border-radius: 10px; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 10px; transition: all .2s;
+}
+.btn-white:hover { transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,.18); }
+.btn-wa-cta {
+  background: rgba(255,255,255,.15); color: white;
+  border: 2px solid rgba(255,255,255,.35); font-family: var(--ff-head); font-size: 15px; font-weight: 700;
+  padding: 15px 28px; border-radius: 10px; text-decoration: none;
+  display: inline-flex; align-items: center; gap: 10px; transition: all .2s;
+}
+.btn-wa-cta:hover { background: rgba(255,255,255,.22); transform: translateY(-2px); }
+.cta-fine { font-size: 13px; color: rgba(255,255,255,.5); }
+
+/* pricing */
+.pricing-wrap { display: flex; flex-direction: column; align-items: center; gap: 48px; }
+.pricing-toggle { display: flex; align-items: center; gap: 14px; }
+.toggle-label { font-family: var(--ff-head); font-size: 14px; font-weight: 600; color: var(--muted); cursor: pointer; transition: color .2s; }
+.toggle-label.active { color: var(--ink); }
+.toggle-switch {
+  position: relative; width: 48px; height: 26px; cursor: pointer;
+  background: var(--border); border-radius: 99px; transition: background .2s; flex-shrink: 0;
+}
+.toggle-switch.on { background: var(--forest); }
+.toggle-knob {
+  position: absolute; top: 3px; left: 3px; width: 20px; height: 20px;
+  background: white; border-radius: 50%; transition: transform .22s;
+  box-shadow: 0 1px 4px rgba(0,0,0,.18);
+}
+.toggle-switch.on .toggle-knob { transform: translateX(22px); }
+.annual-chip {
+  font-family: var(--ff-head); font-size: 11px; font-weight: 700; letter-spacing: .03em;
+  background: #FEF3C7; color: #92400E; border-radius: 99px; padding: 2px 9px;
+  border: 1px solid #FDE68A;
+}
+
+.plans-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; width: 100%;
+}
+.plan-card {
+  background: var(--bg); border: 1.5px solid var(--border); border-radius: 16px;
+  padding: 32px; display: flex; flex-direction: column;
+  position: relative; transition: box-shadow .2s;
+}
+.plan-card:hover { box-shadow: 0 8px 32px rgba(10,87,56,.1); }
+.plan-card.featured {
+  background: var(--forest); border-color: var(--forest); border-width: 2px;
+  box-shadow: 0 20px 60px rgba(10,87,56,.35);
+  transform: translateY(-6px);
+}
+.plan-card.featured .plan-name,
+.plan-card.featured .plan-price,
+.plan-card.featured .plan-cur,
+.plan-card.featured .plan-val,
+.plan-card.featured .plan-frac { color: white; }
+.plan-card.featured .plan-desc,
+.plan-card.featured .plan-per { color: rgba(255,255,255,.65); }
+.plan-card.featured .plan-annual-note { color: rgba(255,255,255,.45); }
+.plan-card.featured .plan-cta-solid { background: white; color: var(--forest); box-shadow: none; }
+.plan-card.featured .plan-cta-solid:hover { background: #EFF8F2; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(0,0,0,.12); }
+.plan-card.featured .plan-divider { border-color: rgba(255,255,255,.15); }
+.plan-card.featured .plan-feats li { color: rgba(255,255,255,.88); }
+.plan-card.featured .plan-feats li.off { color: rgba(255,255,255,.2); }
+.plan-card.featured .plan-badge-top { background: var(--amber); color: var(--ink); }
+.plan-badge-top {
+  position: absolute; top: -13px; left: 50%; transform: translateX(-50%);
+  background: var(--forest); color: white; white-space: nowrap;
+  font-family: var(--ff-head); font-size: 11px; font-weight: 700;
+  padding: 4px 16px; border-radius: 99px; letter-spacing: .03em;
+}
+.plan-name { font-family: var(--ff-head); font-size: 19px; font-weight: 800; letter-spacing: -.01em; margin-bottom: 6px; }
+.plan-desc { font-size: 13px; color: var(--muted); line-height: 1.55; margin-bottom: 24px; flex: 0; }
+.plan-price { line-height: 1; margin-bottom: 6px; }
+.plan-cur { font-family: var(--ff-head); font-size: 18px; font-weight: 600; vertical-align: super; }
+.plan-val { font-family: var(--ff-head); font-size: 44px; font-weight: 800; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+.plan-frac { font-family: var(--ff-head); font-size: 22px; font-weight: 700; }
+.plan-per { font-size: 14px; color: var(--muted); margin-left: 2px; }
+.plan-annual-note { font-size: 12px; color: var(--muted); min-height: 18px; margin-bottom: 24px; }
+.plan-cta-btn {
+  font-family: var(--ff-head); font-size: 14px; font-weight: 700;
+  padding: 13px 20px; border-radius: 10px; text-align: center;
+  text-decoration: none; transition: all .2s; display: block; cursor: pointer;
+  margin-bottom: 24px;
+}
+.plan-cta-solid { background: var(--forest); color: white; }
+.plan-cta-solid:hover { background: var(--forest2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(10,87,56,.25); }
+.plan-cta-ghost { background: transparent; color: var(--ink); border: 1.5px solid var(--border); }
+.plan-cta-ghost:hover { border-color: var(--forest); color: var(--forest); }
+.plan-divider { border: none; border-top: 1px solid var(--border); margin-bottom: 22px; }
+.plan-feats { list-style: none; display: flex; flex-direction: column; gap: 11px; flex: 1; }
+.plan-feats li { display: flex; align-items: flex-start; gap: 10px; font-size: 13.5px; line-height: 1.5; color: var(--ink); }
+.plan-feats li .fi { flex-shrink: 0; margin-top: 2px; }
+.plan-feats li.off { color: var(--border); }
+@media (max-width: 768px) { .plans-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; } }
+
+/* footer */
+footer { border-top: 1px solid var(--border); padding-block: 40px; }
+.footer-inner {
+  display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 20px;
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+}
+.footer-logo { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+.footer-logo-text { font-family: var(--ff-head); font-weight: 700; font-size: 16px; color: var(--ink); }
+.footer-links { display: flex; gap: 24px; flex-wrap: wrap; }
+.footer-links a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color .2s; }
+.footer-links a:hover { color: var(--ink); }
+.footer-copy { font-size: 12px; color: var(--muted); }
+
+/* testimonials */
+.testimonials-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 24px; }
+.testi-card { background: var(--bg); border: 1px solid var(--border); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+.testi-stars { color: var(--amber); font-size: 15px; letter-spacing: 2px; }
+.testi-quote { font-size: 15px; line-height: 1.65; color: var(--ink); flex: 1; font-style: italic; }
+.testi-author { display: flex; align-items: center; gap: 12px; }
+.testi-avatar { width: 40px; height: 40px; border-radius: 50%; background: var(--forest); color: white; font-family: var(--ff-head); font-weight: 700; font-size: 15px; display: grid; place-items: center; flex-shrink: 0; }
+.testi-author-info strong { display: block; font-size: 14px; font-weight: 700; color: var(--ink); }
+.testi-author-info span { font-size: 12px; color: var(--muted); }
+@media (max-width: 768px) { .testimonials-grid { grid-template-columns: 1fr; } }
+
+/* faq */
+.section-inner-narrow { max-width: 720px; }
+.faq-list { display: flex; flex-direction: column; border: 1px solid var(--border); border-radius: 16px; overflow: hidden; }
+.faq-item { border-bottom: 1px solid var(--border); }
+.faq-item:last-child { border-bottom: none; }
+.faq-q { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 20px 24px; font-family: var(--ff-head); font-size: 15.5px; font-weight: 600; color: var(--ink); cursor: pointer; list-style: none; user-select: none; }
+.faq-q::-webkit-details-marker { display: none; }
+.faq-q::after { content: '+'; font-size: 22px; font-weight: 300; color: var(--forest); flex-shrink: 0; transition: transform .2s; }
+details[open] > .faq-q::after { transform: rotate(45deg); }
+details[open] > .faq-q { color: var(--forest); }
+.faq-a { padding: 0 24px 20px; font-size: 14.5px; line-height: 1.7; color: var(--muted); }
+</style>
+
+<!-- NAV -->
+<nav class="nav">
+  <div class="nav-inner">
+    <a href="#" class="nav-logo">
+      <svg width="30" height="30" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="100" height="100" rx="22" fill="#0A5738"/>
+        <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+        <path d="M 24 40 C 24 18 76 18 76 40" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+        <line x1="76" y1="40" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+        <circle cx="50" cy="15" r="6" fill="#F0A318"/>
+      </svg>
+      <span class="nav-logo-text">nouri</span>
+    </a>
+    <nav class="nav-links" aria-label="Links da página">
+      <a href="#funcionalidades">Funcionalidades</a>
+      <a href="#como-funciona">Como funciona</a>
+      <a href="#banco-de-dados">Banco de dados</a>
+      <a href="#planos">Planos</a>
+    </nav>
+    <a href="#planos" class="btn-sm btn-primary">Ver planos</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-inner">
+      <div class="hero-copy">
+        <div>
+          <span class="badge"><span class="dot"></span>Telegram · LGPD · AES-256</span>
+        </div>
+        <h1>Registre o que comeu.<br><em>Nouri calcula o resto.</em></h1>
+        <p class="hero-sub">Mande uma mensagem em português, do jeito que você fala. A IA identifica o alimento, calcula as calorias e os macronutrientes — com dados do TACO, TBCA e USDA.</p>
+        <div class="hero-ctas">
+          <a href="https://t.me/NouriNutriBot" class="btn-lg btn-forest" target="_blank" rel="noopener">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Iniciar no Telegram
+          </a>
+          <a href="#planos" class="btn-lg" style="background:var(--surface);color:var(--forest);border:1.5px solid var(--border);">
+            Ver planos
+          </a>
+        </div>
+        <div class="hero-trust">
+          <span><strong>2.300+</strong> usuários</span>
+          <span class="hero-trust-sep"></span>
+          <span><strong>2.325</strong> alimentos brasileiros</span>
+        </div>
+      </div>
+      <div class="phone-wrap">
+        <span class="phone-tag">Ao vivo no chat</span>
+        <div class="phone">
+          <div class="phone-bar">
+            <svg width="28" height="28" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <rect width="100" height="100" rx="22" fill="rgba(255,255,255,.18)"/>
+              <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="13" stroke-linecap="round"/>
+              <path d="M 24 40 C 24 18 76 18 76 40" stroke="white" stroke-width="13" stroke-linecap="round" fill="none"/>
+              <line x1="76" y1="40" x2="76" y2="70" stroke="white" stroke-width="13" stroke-linecap="round"/>
+              <circle cx="50" cy="15" r="6" fill="#F0A318"/>
+            </svg>
+            <div>
+              <div class="phone-bar-name">nouri</div>
+              <div class="phone-bar-status">● online agora</div>
+            </div>
+          </div>
+          <div class="chat-area">
+            <div class="bubble bubble-user">Almocei arroz, feijão preto e frango grelhado 🍗</div>
+            <div class="bubble bubble-bot">
+              <strong>✅ Refeição registrada!</strong>
+              Arroz branco (120g) — 156 kcal<br>
+              Feijão preto (100g) — 76 kcal<br>
+              Frango grelhado (150g) — 165 kcal
+              <div class="bubble-macro">
+                <span>Total: 397 kcal</span>
+                <span>P: 38g</span>
+                <span>C: 42g</span>
+                <span>G: 6g</span>
+              </div>
+            </div>
+            <div class="bubble bubble-user">E o café da manhã de ontem?</div>
+            <div class="bubble bubble-bot">Certo! Me diga o que comeu no café de ontem 🌅</div>
+          </div>
+          <div class="phone-input">
+            <div class="phone-input-field">Digite o que comeu…</div>
+            <div class="phone-send">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRUST BAR -->
+<div class="trust-bar">
+  <div class="container">
+    <div class="trust-grid">
+      <div class="trust-item">
+        <span class="trust-num">2.325</span>
+        <span class="trust-label">alimentos brasileiros<br>nas tabelas TACO + TBCA</span>
+      </div>
+      <div class="trust-item">
+        <span class="trust-num">97%</span>
+        <span class="trust-label">precisão no reconhecimento<br>de alimentos em português</span>
+      </div>
+      <div class="trust-item">
+        <span class="trust-num">&lt;2s</span>
+        <span class="trust-label">para calcular calorias<br>e macronutrientes</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- FEATURES -->
+<section class="section" id="funcionalidades">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Funcionalidades</span>
+      <h2>Tudo que você precisa.<br>Sem abrir outro app.</h2>
+      <p>Nouri vive no chat que você já usa. Registre por texto, foto ou áudio e acompanhe toda a sua evolução.</p>
+    </div>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        </div>
+        <h3>Linguagem natural</h3>
+        <p>Diga "almocei uma marmita de arroz e feijão com frango" e a IA entende. Sem formulários, sem categorias.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <h3>Foto do prato</h3>
+        <p>Tirou uma foto antes de comer? Mande para o Nouri. A visão computacional identifica os alimentos e estima as porções.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18v-6a9 9 0 0 1 18 0v6"/><path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"/></svg>
+        </div>
+        <h3>Áudio também</h3>
+        <p>Mandou um áudio dizendo o que comeu? Transcrevemos com Whisper e registramos automaticamente.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+        </div>
+        <h3>Macros completos</h3>
+        <p>Calorias, proteínas, carboidratos e gorduras para cada refeição. Meta diária configurável pelo perfil.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+        </div>
+        <h3>Alertas de refeição</h3>
+        <p>Lembretes nos horários das suas refeições. Não esquece de registrar o almoço nunca mais.</p>
+      </div>
+      <div class="feat-card">
+        <div class="feat-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        </div>
+        <h3>Relatório semanal em PDF</h3>
+        <p>Todo domingo, um relatório com análise nutricional completa e sugestões personalizadas geradas por IA.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section section-alt" id="como-funciona">
+  <div class="container">
+    <div class="section-head center">
+      <span class="eyebrow">Como funciona</span>
+      <h2>Três passos. Zero complicação.</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Abra o Telegram</h3>
+        <p>Procure por <strong>@NouriNutriBot</strong> ou clique no link. Nenhum app para instalar. Funciona direto no Telegram.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Registre o que comeu</h3>
+        <p>Texto, foto ou áudio — no seu jeito. "Comi um pão de queijo e um café com leite." A IA processa em segundos.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Acompanhe seu progresso</h3>
+        <p>Veja o resumo do dia, consulte o histórico e receba relatórios semanais com sugestões personalizadas.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- DATABASES -->
+<section class="section" id="banco-de-dados">
+  <div class="container">
+    <div class="section-head">
+      <span class="eyebrow">Base de dados</span>
+      <h2>Dados brasileiros.<br>Para a mesa do brasileiro.</h2>
+      <p>Nouri usa as três principais tabelas nutricionais para garantir precisão nos alimentos que você realmente come.</p>
+    </div>
+    <div class="db-grid">
+      <div class="db-card">
+        <span class="db-name">TACO</span>
+        <span class="db-count">306</span>
+        <p class="db-desc">Tabela Brasileira de Composição de Alimentos — UNICAMP. Referência oficial para alimentos típicos do Brasil.</p>
+        <span class="db-tag primary">Prioridade 1</span>
+      </div>
+      <div class="db-card">
+        <span class="db-name">TBCA</span>
+        <span class="db-count">1.994</span>
+        <p class="db-desc">Tabela Brasileira de Composição de Alimentos — USP/FoRC. A maior base de dados nutricionais brasileira.</p>
+        <span class="db-tag primary">Prioridade 2</span>
+      </div>
+      <div class="db-card">
+        <span class="db-name">USDA</span>
+        <span class="db-count">25</span>
+        <p class="db-desc">Tabela americana para alimentos importados e industrializados não presentes nas bases brasileiras.</p>
+        <span class="db-tag">Complementar</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- PRICING -->
+<section class="section section-alt" id="planos">
+  <div class="container">
+    <div class="section-head center">
+      <span class="eyebrow">Planos</span>
+      <h2>Escolha o plano ideal para você.</h2>
+      <p>Cancele quando quiser. Sem taxa de setup. Mude de plano a qualquer momento.</p>
+    </div>
+    <div class="pricing-wrap">
+      <div class="pricing-toggle">
+        <span class="toggle-label active" id="lbl-mensal">Mensal</span>
+        <div class="toggle-switch" id="billing-toggle" role="switch" aria-checked="false" tabindex="0" aria-label="Alternar cobrança anual">
+          <div class="toggle-knob"></div>
+        </div>
+        <span class="toggle-label" id="lbl-anual">Anual <span class="annual-chip">−20%</span></span>
+      </div>
+      <div class="plans-grid">
+
+        <!-- Básico -->
+        <div class="plan-card">
+          <div class="plan-name">Básico</div>
+          <div class="plan-desc">Para quem quer começar a registrar as refeições e entender o que come.</div>
+          <div class="plan-price">
+            <span class="plan-cur">R$</span><span class="plan-val" data-m="19" data-a="15">19</span><span class="plan-frac">,90</span><span class="plan-per">/mês</span>
+          </div>
+          <div class="plan-annual-note" data-note-m="" data-note-a="R$ 190,80 cobrado anualmente"></div>
+          <a href="https://t.me/NouriNutriBot" class="plan-cta-btn plan-cta-ghost" target="_blank" rel="noopener">Assinar Básico</a>
+          <hr class="plan-divider">
+          <ul class="plan-feats">
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Registro por texto em português</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Cálculo de calorias e macros</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Metas de calorias diárias</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Histórico dos últimos 30 dias</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>1 alerta de refeição por dia</li>
+            <li class="off"><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Foto e áudio (IA)</li>
+            <li class="off"><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Relatório semanal PDF</li>
+            <li class="off"><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>Dashboard web</li>
+          </ul>
+        </div>
+
+        <!-- Premium (featured) -->
+        <div class="plan-card featured">
+          <div class="plan-badge-top">Mais popular</div>
+          <div class="plan-name">Premium</div>
+          <div class="plan-desc">O plano completo para resultados reais com acompanhamento inteligente.</div>
+          <div class="plan-price">
+            <span class="plan-cur">R$</span><span class="plan-val" data-m="39" data-a="31">39</span><span class="plan-frac">,90</span><span class="plan-per">/mês</span>
+          </div>
+          <div class="plan-annual-note" data-note-m="" data-note-a="R$ 382,80 cobrado anualmente"></div>
+          <a href="https://t.me/NouriNutriBot" class="plan-cta-btn plan-cta-solid" target="_blank" rel="noopener">Assinar Premium</a>
+          <hr class="plan-divider">
+          <ul class="plan-feats">
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Tudo do plano Básico</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Registro por foto e áudio (IA)</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Alertas personalizados (5/dia)</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Relatório semanal em PDF</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Sugestões personalizadas por IA</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Dashboard web completo</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Histórico ilimitado</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Lembretes de hidratação</li>
+          </ul>
+        </div>
+
+        <!-- Nutricionista -->
+        <div class="plan-card">
+          <div class="plan-name">Nutricionista</div>
+          <div class="plan-desc">Para profissionais que acompanham pacientes com dados nutricionais precisos.</div>
+          <div class="plan-price">
+            <span class="plan-cur">R$</span><span class="plan-val" data-m="99" data-a="79">99</span><span class="plan-frac">,90</span><span class="plan-per">/mês</span>
+          </div>
+          <div class="plan-annual-note" data-note-m="" data-note-a="R$ 958,80 cobrado anualmente"></div>
+          <a href="https://t.me/NouriNutriBot" class="plan-cta-btn plan-cta-ghost" target="_blank" rel="noopener">Falar com vendas</a>
+          <hr class="plan-divider">
+          <ul class="plan-feats">
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Tudo do plano Premium</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Gestão de até 30 pacientes</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Dashboard B2B com gráficos kcal</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Notas clínicas por paciente</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Relatório PDF on-demand</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Convite de pacientes via Telegram</li>
+            <li><svg class="fi" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#25C97A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>Suporte prioritário</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+(function() {
+  var toggle = document.getElementById('billing-toggle');
+  var lblM = document.getElementById('lbl-mensal');
+  var lblA = document.getElementById('lbl-anual');
+
+  function update(annual) {
+    toggle.classList.toggle('on', annual);
+    toggle.setAttribute('aria-checked', annual ? 'true' : 'false');
+    lblM.classList.toggle('active', !annual);
+    lblA.classList.toggle('active', annual);
+    document.querySelectorAll('.plan-val').forEach(function(el) {
+      el.textContent = annual ? el.dataset.a : el.dataset.m;
+    });
+    document.querySelectorAll('.plan-annual-note').forEach(function(el) {
+      el.textContent = annual ? el.dataset.noteA : el.dataset.noteM;
+    });
+  }
+
+  toggle.addEventListener('click', function() {
+    update(toggle.getAttribute('aria-checked') !== 'true');
+  });
+  toggle.addEventListener('keydown', function(e) {
+    if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      update(toggle.getAttribute('aria-checked') !== 'true');
+    }
+  });
+})();
+</script>
+
+<!-- TESTIMONIALS -->
+<section class="section" id="depoimentos">
+  <div class="container">
+    <div class="section-head center">
+      <span class="eyebrow">Depoimentos</span>
+      <h2>Quem já usa o Nouri</h2>
+    </div>
+    <div class="testimonials-grid">
+      <div class="testi-card">
+        <div class="testi-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="testi-quote">"Nunca achei que fosse conseguir controlar minha alimentação. Com o Nouri, só mando uma foto e pronto — ele calcula tudo na hora."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">M</div>
+          <div class="testi-author-info"><strong>Mariana S.</strong><span>São Paulo, SP</span></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="testi-quote">"Minha nutricionista adorou. Ela acessa meu histórico em tempo real e ajusta o plano sem eu precisar lembrar de tudo."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">R</div>
+          <div class="testi-author-info"><strong>Rafael T.</strong><span>Belo Horizonte, MG</span></div>
+        </div>
+      </div>
+      <div class="testi-card">
+        <div class="testi-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        <p class="testi-quote">"A precisão com comida brasileira impressiona. Feijoada, coxinha, acarajé — o Nouri reconhece tudo e manda o macro completo."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">A</div>
+          <div class="testi-author-info"><strong>Ana C.</strong><span>Salvador, BA</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section section-alt" id="faq">
+  <div class="container">
+    <div class="section-head center">
+      <span class="eyebrow">FAQ</span>
+      <h2>Perguntas frequentes</h2>
+    </div>
+    <div class="section-inner-narrow" style="margin:0 auto;">
+      <div class="faq-list">
+        <details class="faq-item">
+          <summary class="faq-q">Meus dados de saúde ficam seguros?</summary>
+          <p class="faq-a">Sim. O Nouri é compatível com a LGPD. Seus registros são cifrados com AES-256 antes de serem armazenados. Nenhum dado é vendido ou compartilhado com terceiros. Você pode solicitar exclusão completa a qualquer momento.</p>
+        </details>
+        <details class="faq-item">
+          <summary class="faq-q">Funciona só pelo Telegram?</summary>
+          <p class="faq-a">Por enquanto, o bot funciona pelo Telegram. O painel web é acessível por qualquer navegador para ver seu histórico, gerar relatórios PDF e gerenciar sua conta.</p>
+        </details>
+        <details class="faq-item">
+          <summary class="faq-q">Qual a precisão no reconhecimento de alimentos?</summary>
+          <p class="faq-a">Nossa base prioritária é a TACO/UNICAMP (306 alimentos) complementada pela TBCA/USP-FoRC (1.994 itens). Para fotos, mais de 75% de acerto. Para texto, mais de 80% nos 500 alimentos mais comuns. Itens não encontrados são estimados pela IA com aviso explícito.</p>
+        </details>
+        <details class="faq-item">
+          <summary class="faq-q">Posso cancelar quando quiser?</summary>
+          <p class="faq-a">Sim, sem multa e sem complicação. Você cancela pelo painel web ou pelo próprio bot no Telegram. O plano fica ativo até o fim do período já pago.</p>
+        </details>
+        <details class="faq-item">
+          <summary class="faq-q">O plano Nutricionista serve para clínicas?</summary>
+          <p class="faq-a">Sim. Um nutricionista cadastrado convida pacientes via link direto no Telegram. Você tem acesso ao histórico, gráfico de calorias em 30 dias, notas clínicas e PDF por paciente — tudo em um único painel.</p>
+        </details>
+        <details class="faq-item">
+          <summary class="faq-q">E se meu alimento não estiver no banco de dados?</summary>
+          <p class="faq-a">O Nouri usa um pipeline de 5 camadas: cache → TACO → TBCA → USDA → estimativa via IA. Se nenhum banco tiver o alimento, o Claude estima com base em similares e avisa que é uma estimativa.</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section">
+  <h2>Comece agora. Cancele quando quiser.</h2>
+  <p>Sem taxa de setup. Seus dados protegidos pela LGPD. Mude de plano a qualquer momento.</p>
+  <div class="cta-btns">
+    <a href="#planos" class="btn-white">
+      Ver planos e preços
+    </a>
+    <a href="https://t.me/NouriNutriBot" class="btn-wa-cta" target="_blank" rel="noopener">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Iniciar no Telegram
+    </a>
+  </div>
+  <p class="cta-fine">Dados de saúde protegidos pela LGPD · Criptografia AES-256</p>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <a href="#" class="footer-logo">
+      <svg width="22" height="22" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="100" height="100" rx="22" fill="#0A5738"/>
+        <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+        <path d="M 24 40 C 24 18 76 18 76 40" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+        <line x1="76" y1="40" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+        <circle cx="50" cy="15" r="6" fill="#F0A318"/>
+      </svg>
+      <span class="footer-logo-text">nouri</span>
+    </a>
+    <nav class="footer-links" aria-label="Links do rodapé">
+      <a href="#planos">Planos</a>
+      <a href="#">Privacidade</a>
+      <a href="#">Termos de uso</a>
+      <a href="#">LGPD</a>
+      <a href="https://t.me/NouriNutriBot" target="_blank" rel="noopener">Contato</a>
+    </nav>
+    <span class="footer-copy">© 2026 Nouri · Diário Nutricional</span>
+  </div>
+</footer>

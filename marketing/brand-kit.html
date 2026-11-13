@@ -1,0 +1,488 @@
+<title>Nouri Brand Kit</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+
+<style>
+:root {
+  --forest:  #0A5738;
+  --forest2: #0D7048;
+  --bright:  #25C97A;
+  --amber:   #F0A318;
+  --ink:     #111C16;
+  --muted:   #4A6358;
+  --bg:      #FFFFFF;
+  --surface: #F2F9F5;
+  --border:  #D0E6DA;
+  --ff-head: 'Sora', sans-serif;
+  --ff-body: 'Plus Jakarta Sans', sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --forest: #25C97A; --forest2: #3DDEA0; --bright: #5AEDB5; --amber: #F5B732;
+    --ink: #E4F5EC; --muted: #88AE9A; --bg: #0C160F; --surface: #131F18; --border: #1E3428;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --forest: #25C97A; --forest2: #3DDEA0; --bright: #5AEDB5; --amber: #F5B732;
+  --ink: #E4F5EC; --muted: #88AE9A; --bg: #0C160F; --surface: #131F18; --border: #1E3428;
+  color-scheme: dark;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: var(--ff-body); background: var(--bg); color: var(--ink);
+  line-height: 1.6; -webkit-font-smoothing: antialiased;
+}
+.page {
+  max-width: 960px; margin: 0 auto;
+  padding: 64px max(24px, env(safe-area-inset-left, 0px)) 96px max(24px, env(safe-area-inset-right, 0px));
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+}
+
+/* header */
+.kit-header { display: flex; flex-direction: column; gap: 12px; margin-bottom: 72px; padding-bottom: 40px; border-bottom: 1.5px solid var(--border); }
+.kit-eyebrow { font-family: var(--ff-head); font-size: 11px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--forest); }
+.kit-title { font-family: var(--ff-head); font-size: 48px; font-weight: 800; letter-spacing: -.035em; }
+.kit-sub { font-size: 17px; color: var(--muted); max-width: 500px; }
+
+/* section */
+.kit-section { margin-bottom: 72px; }
+.kit-section-title { font-family: var(--ff-head); font-size: 13px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 28px; padding-bottom: 10px; border-bottom: 1px solid var(--border); }
+
+/* logo showcase */
+.logo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.logo-cell {
+  border: 1.5px solid var(--border); border-radius: 12px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; padding: 36px 20px;
+}
+.logo-cell.dark-bg { background: #0A5738; }
+.logo-cell.amber-bg { background: var(--amber); }
+.logo-cell-label { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+.logo-cell.dark-bg .logo-cell-label { color: rgba(255,255,255,.5); }
+.logo-cell.amber-bg .logo-cell-label { color: rgba(255,255,255,.6); }
+.logo-horizontal { display: flex; align-items: center; gap: 12px; }
+.logo-wordmark { font-family: var(--ff-head); font-weight: 800; font-size: 26px; letter-spacing: -.02em; color: var(--ink); }
+.logo-wordmark.light { color: white; }
+@media (max-width: 600px) { .logo-grid { grid-template-columns: 1fr; } }
+
+/* colors */
+.color-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 16px; }
+.swatch {
+  border-radius: 10px; overflow: hidden; border: 1px solid var(--border);
+}
+.swatch-color { height: 80px; }
+.swatch-info { padding: 10px 12px; background: var(--surface); }
+.swatch-name { font-family: var(--ff-head); font-size: 12px; font-weight: 700; color: var(--ink); }
+.swatch-hex { font-size: 11px; color: var(--muted); font-family: monospace; margin-top: 2px; }
+.swatch-role { font-size: 10.5px; color: var(--muted); margin-top: 3px; line-height: 1.4; }
+
+/* typography */
+.type-specimen { display: flex; flex-direction: column; gap: 24px; }
+.type-row { display: flex; flex-direction: column; gap: 4px; padding: 24px; background: var(--surface); border-radius: 10px; border: 1px solid var(--border); }
+.type-meta { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .08em; text-transform: uppercase; }
+.type-sample-head { font-family: var(--ff-head); font-size: 36px; font-weight: 800; letter-spacing: -.025em; color: var(--ink); line-height: 1.1; }
+.type-sample-sub { font-family: var(--ff-head); font-size: 20px; font-weight: 600; color: var(--ink); }
+.type-sample-body { font-family: var(--ff-body); font-size: 16px; color: var(--muted); line-height: 1.65; max-width: 520px; }
+.type-sample-label { font-family: var(--ff-head); font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--forest); }
+
+/* profile previews */
+.profile-row { display: flex; align-items: flex-end; gap: 32px; flex-wrap: wrap; }
+.profile-item { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.profile-item-label { font-size: 11px; color: var(--muted); font-weight: 600; }
+.profile-circle { border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+
+/* social mockup */
+.social-mockup {
+  aspect-ratio: 1; max-width: 360px;
+  background: #0A5738; border-radius: 16px; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 20px; padding: 40px;
+  box-shadow: 0 16px 48px rgba(0,0,0,.14);
+}
+.social-tagline { font-family: var(--ff-head); font-size: 22px; font-weight: 800; color: white; text-align: center; line-height: 1.2; letter-spacing: -.01em; }
+.social-sub { font-size: 13px; color: rgba(255,255,255,.65); text-align: center; }
+.social-cta { background: var(--amber); color: white; font-family: var(--ff-head); font-size: 12px; font-weight: 700; padding: 10px 22px; border-radius: 99px; letter-spacing: .02em; }
+
+/* code block */
+.code-block { position: relative; }
+.code-pre {
+  background: var(--surface); border: 1.5px solid var(--border); border-radius: 10px;
+  padding: 20px; font-family: monospace; font-size: 12px; color: var(--muted);
+  overflow-x: auto; line-height: 1.6; white-space: pre;
+}
+.copy-btn {
+  position: absolute; top: 10px; right: 10px;
+  background: var(--bg); border: 1px solid var(--border); border-radius: 6px;
+  font-size: 11px; font-weight: 600; color: var(--muted);
+  padding: 4px 10px; cursor: pointer; font-family: var(--ff-body);
+  transition: all .15s;
+}
+.copy-btn:hover { border-color: var(--forest); color: var(--forest); }
+.copy-btn.copied { color: var(--bright); border-color: var(--bright); }
+
+/* usage rules */
+.rules-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.rule-card { border-radius: 10px; padding: 22px; }
+.rule-card.do { background: #E8F5EE; border: 1px solid #B8DFC8; }
+.rule-card.dont { background: #FEF2F2; border: 1px solid #FECACA; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rule-card.do { background: #1A3528; border-color: #2A5040; }
+  :root:not([data-theme="light"]) .rule-card.dont { background: #2D1515; border-color: #4D2020; }
+}
+:root[data-theme="dark"] .rule-card.do { background: #1A3528; border-color: #2A5040; }
+:root[data-theme="dark"] .rule-card.dont { background: #2D1515; border-color: #4D2020; }
+.rule-label { font-family: var(--ff-head); font-size: 12px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 12px; }
+.rule-card.do .rule-label { color: #0A5738; }
+.rule-card.dont .rule-label { color: #C0392B; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .rule-card.do .rule-label { color: var(--bright); }
+  :root:not([data-theme="light"]) .rule-card.dont .rule-label { color: #EF9090; }
+}
+:root[data-theme="dark"] .rule-card.do .rule-label { color: var(--bright); }
+:root[data-theme="dark"] .rule-card.dont .rule-label { color: #EF9090; }
+.rule-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+.rule-list li { font-size: 13px; color: var(--muted); padding-left: 16px; position: relative; line-height: 1.5; }
+.rule-list li::before { content: ''; position: absolute; left: 0; top: 7px; width: 6px; height: 6px; border-radius: 50%; }
+.rule-card.do .rule-list li::before { background: var(--bright); }
+.rule-card.dont .rule-list li::before { background: #EF9090; }
+@media (max-width: 560px) { .rules-grid { grid-template-columns: 1fr; } }
+</style>
+
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="kit-header">
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:8px;">
+      <svg width="48" height="48" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect width="100" height="100" rx="22" fill="#0A5738"/>
+        <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+        <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+        <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+        <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+      </svg>
+      <span class="kit-title">nouri</span>
+    </div>
+    <span class="kit-eyebrow">Brand Kit · v2.0 · Outubro 2026</span>
+    <p class="kit-sub">Guia de identidade visual para uso em mídias sociais, parceiros e plataformas de design.</p>
+  </div>
+
+  <!-- BRAND STORY -->
+  <div class="kit-section">
+    <div class="kit-section-title">Conceito da marca</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start;">
+      <div style="display:flex;flex-direction:column;gap:14px;">
+        <p style="font-size:15px;color:var(--muted);line-height:1.7;">O nome <strong style="color:var(--ink)">nouri</strong> vem de <em>nourish</em> — nutrir. A marca foi criada para o brasileiro que quer comer melhor sem complicar a vida: sem planilha, sem aplicativo novo, sem contar caloria na cabeça.</p>
+        <p style="font-size:15px;color:var(--muted);line-height:1.7;">O símbolo é um <strong style="color:var(--ink)">monograma em traço</strong> do "n" minúsculo — limpo, geométrico, distinctivo. O ponto âmbar no arco representa um brotinho: o início de um hábito, o primeiro passo de uma mudança.</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;padding:22px;background:var(--surface);border-radius:10px;border:1px solid var(--border);">
+        <p style="font-family:var(--ff-head);font-size:13px;font-weight:700;color:var(--forest);">Personalidade da marca</p>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--bright);flex-shrink:0;"></span>
+            <strong style="color:var(--ink);">Direto:</strong> fala claro, sem enrolação
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--bright);flex-shrink:0;"></span>
+            <strong style="color:var(--ink);">Brasileiro:</strong> entende a comida do dia a dia
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--bright);flex-shrink:0;"></span>
+            <strong style="color:var(--ink);">Confiável:</strong> dados reais, não estimativas
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--muted);">
+            <span style="width:6px;height:6px;border-radius:50%;background:var(--amber);flex-shrink:0;"></span>
+            <strong style="color:var(--ink);">Acolhedor:</strong> não julga, só ajuda
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOGO SYSTEM -->
+  <div class="kit-section">
+    <div class="kit-section-title">Sistema de logo</div>
+    <div class="logo-grid">
+      <div class="logo-cell">
+        <svg width="64" height="64" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-label="Ícone nouri">
+          <rect width="100" height="100" rx="22" fill="#0A5738"/>
+          <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+          <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+          <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+          <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+        </svg>
+        <span class="logo-cell-label">Ícone</span>
+      </div>
+      <div class="logo-cell">
+        <div class="logo-horizontal">
+          <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect width="100" height="100" rx="22" fill="#0A5738"/>
+            <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+            <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+          </svg>
+          <span class="logo-wordmark">nouri</span>
+        </div>
+        <span class="logo-cell-label">Horizontal</span>
+      </div>
+      <div class="logo-cell dark-bg">
+        <div class="logo-horizontal">
+          <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect width="100" height="100" rx="22" fill="rgba(255,255,255,.15)"/>
+            <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+            <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+          </svg>
+          <span class="logo-wordmark light">nouri</span>
+        </div>
+        <span class="logo-cell-label">Em fundo escuro</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- COLORS -->
+  <div class="kit-section">
+    <div class="kit-section-title">Paleta de cores</div>
+    <div class="color-grid">
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0A5738;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Floresta</div>
+          <div class="swatch-hex">#0A5738</div>
+          <div class="swatch-role">Cor primária · fundos escuros · CTA principal</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#0D7048;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Floresta 2</div>
+          <div class="swatch-hex">#0D7048</div>
+          <div class="swatch-role">Hover · variante mais clara do primário</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#25C97A;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Verde vivo</div>
+          <div class="swatch-hex">#25C97A</div>
+          <div class="swatch-role">Destaques · ícones de check · badges</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#F0A318;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Âmbar</div>
+          <div class="swatch-hex">#F0A318</div>
+          <div class="swatch-role">Acento quente · ponto do ícone · WhatsApp CTA</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#111C16;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Tinta</div>
+          <div class="swatch-hex">#111C16</div>
+          <div class="swatch-role">Texto principal · títulos</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#4A6358;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Texto suave</div>
+          <div class="swatch-hex">#4A6358</div>
+          <div class="swatch-role">Texto secundário · descrições</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#F2F9F5;border:1px solid #D0E6DA;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Superfície</div>
+          <div class="swatch-hex">#F2F9F5</div>
+          <div class="swatch-role">Fundo de cards · seções alternadas</div>
+        </div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background:#D0E6DA;"></div>
+        <div class="swatch-info">
+          <div class="swatch-name">Borda</div>
+          <div class="swatch-hex">#D0E6DA</div>
+          <div class="swatch-role">Bordas de cards · divisores · inputs</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TYPOGRAPHY -->
+  <div class="kit-section">
+    <div class="kit-section-title">Tipografia</div>
+    <div class="type-specimen">
+      <div class="type-row">
+        <span class="type-meta">Sora 800 — Display / Marca</span>
+        <div class="type-sample-head">Registre o que comeu.</div>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">Sora 700 — Título de seção</span>
+        <div class="type-sample-sub">Dados brasileiros. Para a mesa do brasileiro.</div>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">Plus Jakarta Sans 400 — Corpo de texto</span>
+        <p class="type-sample-body">Nouri usa as três principais tabelas nutricionais do Brasil — TACO, TBCA e USDA — para garantir precisão nos alimentos que você realmente come no dia a dia.</p>
+      </div>
+      <div class="type-row">
+        <span class="type-meta">Sora 700 — Label / Eyebrow</span>
+        <div class="type-sample-label">Base de dados</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE PREVIEWS -->
+  <div class="kit-section">
+    <div class="kit-section-title">Imagem de perfil — Telegram e WhatsApp</div>
+    <div class="profile-row">
+      <div class="profile-item">
+        <div class="profile-circle" style="width:40px;height:40px;">
+          <svg width="40" height="40" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" fill="#0A5738"/>
+            <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+            <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+          </svg>
+        </div>
+        <span class="profile-item-label">40px — lista</span>
+      </div>
+      <div class="profile-item">
+        <div class="profile-circle" style="width:80px;height:80px;">
+          <svg width="80" height="80" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" fill="#0A5738"/>
+            <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+            <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+          </svg>
+        </div>
+        <span class="profile-item-label">80px — perfil</span>
+      </div>
+      <div class="profile-item">
+        <div class="profile-circle" style="width:160px;height:160px;">
+          <svg width="160" height="160" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <rect width="100" height="100" fill="#0A5738"/>
+            <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+            <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+            <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+          </svg>
+        </div>
+        <span class="profile-item-label">160px — destaque</span>
+      </div>
+      <div class="profile-item">
+        <p style="font-size:12px;color:var(--muted);max-width:160px;line-height:1.5;">Arquivo: <code style="font-size:11px;">profile.svg</code><br>Exporte como PNG 512×512 para Telegram e WhatsApp.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- SOCIAL POST -->
+  <div class="kit-section">
+    <div class="kit-section-title">Post para redes sociais (1:1)</div>
+    <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start;">
+      <div class="social-mockup">
+        <svg width="56" height="56" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="100" height="100" rx="22" fill="rgba(255,255,255,.14)"/>
+          <line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+          <path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/>
+          <line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/>
+          <circle cx="50" cy="11" r="5.5" fill="#F0A318"/>
+        </svg>
+        <div class="social-tagline">Seu diário nutricional no WhatsApp.</div>
+        <div class="social-sub">Calorias e macros automáticos em português</div>
+        <div class="social-cta">Começar grátis</div>
+      </div>
+      <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:10px;">
+        <p style="font-size:13px;color:var(--muted);line-height:1.6;">Template base para posts no Instagram, LinkedIn e WhatsApp Status. Use o Canva com fundo <strong style="color:var(--ink);">#0A5738</strong> e texto Sora 800.</p>
+        <div style="padding:14px;background:var(--surface);border-radius:8px;border:1px solid var(--border);">
+          <p style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;">Tom de voz</p>
+          <p style="font-size:13px;color:var(--muted);line-height:1.6;">Direto e útil. Nunca preachy. Mostre o resultado, não a funcionalidade.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SVG EXPORTS -->
+  <div class="kit-section">
+    <div class="kit-section-title">SVG para exportar</div>
+    <div style="display:flex;flex-direction:column;gap:20px;">
+      <div class="code-block">
+        <pre class="code-pre" id="svg-icon">&lt;svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100"&gt;
+  &lt;rect width="100" height="100" rx="22" fill="#0A5738"/&gt;
+  &lt;line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/&gt;
+  &lt;path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/&gt;
+  &lt;line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/&gt;
+  &lt;circle cx="50" cy="11" r="5.5" fill="#F0A318"/&gt;
+&lt;/svg&gt;</pre>
+        <button class="copy-btn" onclick="copy(this,'svg-icon')">Copiar</button>
+      </div>
+      <div class="code-block">
+        <pre class="code-pre" id="svg-wordmark">&lt;!-- Logo horizontal --&gt;
+&lt;div style="display:flex;align-items:center;gap:10px"&gt;
+  &lt;svg width="36" height="36" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg"&gt;
+    &lt;rect width="100" height="100" rx="22" fill="#0A5738"/&gt;
+    &lt;line x1="24" y1="70" x2="24" y2="40" stroke="white" stroke-width="12.5" stroke-linecap="round"/&gt;
+    &lt;path d="M 24 40 C 24 19 76 19 76 44" stroke="white" stroke-width="12.5" stroke-linecap="round" fill="none"/&gt;
+    &lt;line x1="76" y1="44" x2="76" y2="70" stroke="white" stroke-width="12.5" stroke-linecap="round"/&gt;
+    &lt;circle cx="50" cy="11" r="5.5" fill="#F0A318"/&gt;
+  &lt;/svg&gt;
+  &lt;span style="font-family:'Sora',sans-serif;font-weight:800;font-size:22px;letter-spacing:-.02em"&gt;nouri&lt;/span&gt;
+&lt;/div&gt;</pre>
+        <button class="copy-btn" onclick="copy(this,'svg-wordmark')">Copiar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- USAGE RULES -->
+  <div class="kit-section">
+    <div class="kit-section-title">Regras de uso</div>
+    <div class="rules-grid">
+      <div class="rule-card do">
+        <div class="rule-label">Pode</div>
+        <ul class="rule-list">
+          <li>Usar o ícone em fundo branco ou verde #0A5738</li>
+          <li>Usar "nouri" em minúsculo (nunca "Nouri" como logo)</li>
+          <li>Usar o âmbar como destaque único na composição</li>
+          <li>Redimensionar proporcionalmente mantendo as cores</li>
+          <li>Usar o ícone sem o wordmark em formatos quadrados</li>
+        </ul>
+      </div>
+      <div class="rule-card dont">
+        <div class="rule-label">Não pode</div>
+        <ul class="rule-list">
+          <li>Alterar as cores do ícone ou do ponto âmbar</li>
+          <li>Adicionar contorno ou sombra ao ícone</li>
+          <li>Distorcer ou rotacionar o logotipo</li>
+          <li>Usar o ícone em fundo âmbar ou vermelho</li>
+          <li>Colocar o ícone sobre fotos sem tratamento de contraste</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function copy(btn, id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copiado!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('copied'); }, 2000);
+  }).catch(() => {
+    const sel = window.getSelection();
+    const range = document.createRange();
+    range.selectNodeContents(document.getElementById(id));
+    sel.removeAllRanges();
+    sel.addRange(range);
+  });
+}
+</script>

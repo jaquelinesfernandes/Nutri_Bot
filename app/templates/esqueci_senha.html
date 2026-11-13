@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Recuperar acesso — NutriBot{% endblock %}
+{% block title %}Recuperar acesso — Nouri{% endblock %}
 {% block body %}
 <style>
   .auth-wrap {
@@ -35,7 +35,7 @@
   .success-text { font-size: .875rem; color: var(--text-2); line-height: 1.55; }
   .success-note {
     margin-top: 16px; padding: 12px 14px;
-    background: var(--primary-lt); border: 1px solid rgba(99,102,241,.2); border-radius: 10px;
+    background: var(--primary-lt); border: 1px solid rgba(10,87,56,.2); border-radius: 10px;
     font-size: .8rem; color: var(--text-2); line-height: 1.5;
   }
 
@@ -65,23 +65,22 @@
 
   /* ── Alternativa Telegram ───────────────────── */
   .tg-alt {
-    background: linear-gradient(135deg, #1E1B4B 0%, #13113D 100%);
-    border-color: rgba(99,102,241,.3);
+    background: linear-gradient(135deg, #E8F5EE 0%, #F0F9F4 100%);
     border-radius: 16px; padding: 20px 22px;
-    border: 1px solid rgba(99,102,241,.3);
+    border: 1px solid rgba(10,87,56,.2);
   }
-  .tg-alt-title { font-size: .85rem; font-weight: 600; color: #E0DEFF; margin-bottom: 8px; }
-  .tg-alt-desc { font-size: .8rem; color: rgba(255,255,255,.5); margin-bottom: 14px; line-height: 1.4; }
+  .tg-alt-title { font-size: .85rem; font-weight: 600; color: #0D2A1A; margin-bottom: 8px; }
+  .tg-alt-desc { font-size: .8rem; color: #3D6B52; margin-bottom: 14px; line-height: 1.4; }
   .tg-cmd {
     display: inline-block;
-    background: rgba(99,102,241,.3); color: #A5B4FC;
+    background: rgba(10,87,56,.08); color: #0A5738;
     font-family: 'DM Mono', monospace; font-size: .8rem;
-    padding: 1px 7px; border-radius: 5px; border: 1px solid rgba(99,102,241,.3);
+    padding: 1px 7px; border-radius: 5px; border: 1px solid rgba(10,87,56,.2);
   }
   .tg-btn {
     display: flex; align-items: center; justify-content: center; gap: 7px;
     width: 100%; padding: 11px;
-    background: linear-gradient(135deg, #6366F1, #4F46E5);
+    background: #0A5738;
     color: #fff; font-size: .85rem; font-weight: 600;
     border: none; border-radius: 10px; cursor: pointer;
     text-decoration: none; font-family: 'DM Sans', sans-serif;
@@ -108,7 +107,7 @@
 
     <div class="auth-logo">
       <span class="icon">🔐</span>
-      <h1>NutriBot</h1>
+      <h1>Nouri</h1>
       <p>Recuperar acesso à conta</p>
     </div>
 
@@ -171,3 +170,5 @@
   </div>
 </div>
 {% endblock %}
+
+
